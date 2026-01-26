@@ -1,6 +1,8 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import * as pdfjs from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import {
@@ -9,7 +11,7 @@ import {
     InputGroupButton,
     InputGroupTextarea,
 } from './ui/input-group';
-import { FileUpIcon, X } from 'lucide-react';
+import { FileUpIcon, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Spinner } from './ui/spinner';
 import { formatBytes } from '@/lib/formatBytes';
 import { Turnstile } from '@marsidev/react-turnstile';
@@ -24,6 +26,9 @@ import { Button } from '@/components/ui/button';
 export interface AIInputData {
     text: string;
     options: { summary: boolean; flashcards: boolean; quiz: boolean };
+    difficulty: 'beginner' | 'standard' | 'advanced';
+    flashcardCount: number;
+    quizCount: number;
     turnstile: string;
 }
 
@@ -31,7 +36,10 @@ interface AIInputProps {
     onSubmit: (data: AIInputData) => Promise<void>;
 }
 
+type Difficulty = 'beginner' | 'standard' | 'advanced';
+
 export function AIInput({ onSubmit }: AIInputProps) {
+    const { t } = useTranslation();
     const [inputText, setInputText] = React.useState('');
     const [files, setFiles] = React.useState<FileList | null>(null);
     const [options, setOptions] = React.useState({
@@ -39,12 +47,16 @@ export function AIInput({ onSubmit }: AIInputProps) {
         flashcards: true,
         quiz: true,
     });
+    const [difficulty, setDifficulty] = React.useState<Difficulty>('standard');
+    const [flashcardCount, setFlashcardCount] = React.useState(10);
+    const [quizCount, setQuizCount] = React.useState(5);
+    const [showAdvanced, setShowAdvanced] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showTurnstile, setShowTurnstile] = React.useState(false);
     const [turnstileToken, setTurnstileToken] = React.useState<string | null>(null);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const turnstileRef = React.useRef<any>(null);
+    const turnstileRef = React.useRef<{ reset?: () => void } | null>(null);
 
     const handleOptionChange = (opt: keyof typeof options) => {
         setOptions((p) => ({ ...p, [opt]: !p[opt] }));
@@ -83,7 +95,7 @@ export function AIInput({ onSubmit }: AIInputProps) {
                         for (let i = 1; i <= pdf.numPages; i++) {
                             const page = await pdf.getPage(i);
                             const content = await page.getTextContent();
-                            txt += content.items.map((it: any) => ('str' in it ? it.str : '')).join(' ') + '\n';
+                            txt += content.items.map((it) => ('str' in it ? (it as { str: string }).str : '')).join(' ') + '\n';
                         }
                         res(txt);
                     } catch (err) {
@@ -153,6 +165,9 @@ export function AIInput({ onSubmit }: AIInputProps) {
             await onSubmit({
                 text: combined,
                 options,
+                difficulty,
+                flashcardCount,
+                quizCount,
                 turnstile: turnstileToken,
             });
         } catch (err) {
@@ -229,7 +244,7 @@ export function AIInput({ onSubmit }: AIInputProps) {
                         )}
 
                         <div className="flex flex-col gap-3 sm:gap-2">
-                            <Label className="text-sm w-full font-medium text-center">Generate</Label>
+                            <Label className="text-sm w-full font-medium text-center">{t('prompt.options')}</Label>
                             <div className="flex flex-wrap gap-4 sm:gap-6">
                                 {(['summary', 'flashcards', 'quiz'] as const).map((k) => (
                                     <div key={k} className="flex items-center space-x-2">
@@ -238,12 +253,77 @@ export function AIInput({ onSubmit }: AIInputProps) {
                                             checked={options[k]}
                                             onCheckedChange={() => handleOptionChange(k)}
                                         />
-                                        <Label htmlFor={k} className="cursor-pointer capitalize text-sm">
-                                            {k === 'quiz' ? 'Quiz Questions' : k}
+                                        <Label htmlFor={k} className="cursor-pointer text-sm">
+                                            {t(`prompt.include${k.charAt(0).toUpperCase() + k.slice(1)}`)}
                                         </Label>
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Advanced options toggle */}
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
+                            >
+                                {showAdvanced ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                {t('prompt.difficulty')} & {t('prompt.options')}
+                            </button>
+
+                            {/* Advanced options */}
+                            {showAdvanced && (
+                                <div className="space-y-4 pt-2 border-t">
+                                    {/* Difficulty selector */}
+                                    <div>
+                                        <Label className="text-sm mb-2 block">{t('prompt.difficulty')}</Label>
+                                        <div className="flex gap-2">
+                                            {(['beginner', 'standard', 'advanced'] as const).map((d) => (
+                                                <Button
+                                                    key={d}
+                                                    type="button"
+                                                    variant={difficulty === d ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    onClick={() => setDifficulty(d)}
+                                                >
+                                                    {t(`prompt.${d}`)}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Flashcard count */}
+                                    {options.flashcards && (
+                                        <div>
+                                            <Label className="text-sm mb-2 block">
+                                                {t('prompt.flashcardCount')}: {flashcardCount}
+                                            </Label>
+                                            <Slider
+                                                value={[flashcardCount]}
+                                                onValueChange={([v]) => setFlashcardCount(v)}
+                                                min={5}
+                                                max={30}
+                                                step={5}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Quiz count */}
+                                    {options.quiz && (
+                                        <div>
+                                            <Label className="text-sm mb-2 block">
+                                                {t('prompt.quizCount')}: {quizCount}
+                                            </Label>
+                                            <Slider
+                                                value={[quizCount]}
+                                                onValueChange={([v]) => setQuizCount(v)}
+                                                min={3}
+                                                max={15}
+                                                step={1}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <InputGroupButton
@@ -253,8 +333,8 @@ export function AIInput({ onSubmit }: AIInputProps) {
                             className="w-full sm:w-auto ml-auto rounded-full h-12 px-6 text-base flex items-center justify-center gap-2"
                         >
                             {isLoading && <Spinner className="h-4 w-4" />}
-                            Generate
-                            <span className="sr-only">Send</span>
+                            {isLoading ? t('prompt.generating') : t('prompt.generate')}
+                            <span className="sr-only">{t('common.submit')}</span>
                         </InputGroupButton>
                     </InputGroupAddon>
                 </InputGroup>

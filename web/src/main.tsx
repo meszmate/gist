@@ -8,11 +8,18 @@ import "@fontsource/inter/500";
 import "@fontsource/inter/600";
 import "@fontsource/inter/700";
 import DataProvider from './hooks/DataProvider.tsx';
+import { ThemeProvider } from './hooks/useTheme.tsx';
+import { AuthProvider } from './hooks/useAuth.tsx';
+import './lib/i18n';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <DataProvider>
-      <App />
-    </DataProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <DataProvider>
+          <App />
+        </DataProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

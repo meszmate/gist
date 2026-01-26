@@ -1,0 +1,188 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "loginWithGoogle": "Sign in with Google",
+    "loggingIn": "Signing in...",
+    "welcomeBack": "Welcome back!",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "library": "Library",
+    "study": "Study",
+    "analytics": "Analytics"
+  },
+  "hero": {
+    "title": "Study smarter, not harder",
+    "subtitle": "Transform your notes into interactive study materials with AI",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More"
+  },
+  "prompt": {
+    "title": "Create Study Material",
+    "placeholder": "Paste your notes here, or upload a file...",
+    "uploadFile": "Upload File",
+    "dragDrop": "Drag and drop files here, or click to browse",
+    "supportedFormats": "Supported formats: TXT, PDF, DOCX",
+    "options": "Options",
+    "includeSummary": "Summary",
+    "includeFlashcards": "Flashcards",
+    "includeQuiz": "Quiz",
+    "difficulty": "Difficulty",
+    "beginner": "Beginner",
+    "standard": "Standard",
+    "advanced": "Advanced",
+    "flashcardCount": "Number of flashcards",
+    "quizCount": "Number of quiz questions",
+    "generate": "Generate",
+    "generating": "Generating..."
+  },
+  "viewer": {
+    "summary": "Summary",
+    "flashcards": "Flashcards",
+    "quiz": "Quiz",
+    "flipCard": "Click to flip",
+    "question": "Question",
+    "answer": "Answer",
+    "showAnswer": "Show Answer",
+    "hideAnswer": "Hide Answer",
+    "card": "Card",
+    "of": "of",
+    "submitQuiz": "Submit Quiz",
+    "tryAgain": "Try Again",
+    "score": "Score",
+    "correct": "Correct",
+    "incorrect": "Incorrect"
+  },
+  "srs": {
+    "study": "Study",
+    "dueCards": "Due Cards",
+    "noDueCards": "No cards due",
+    "allCaughtUp": "Congratulations! You've reviewed all due cards.",
+    "rating": {
+      "again": "Again",
+      "hard": "Hard",
+      "good": "Good",
+      "easy": "Easy"
+    },
+    "ratingDesc": {
+      "again": "I don't remember, show again",
+      "hard": "I remember, but it was hard",
+      "good": "I remember, it went well",
+      "easy": "It was easy, I know it"
+    },
+    "nextReview": "Next review",
+    "stats": {
+      "totalCards": "Total cards",
+      "dueToday": "Due today",
+      "newCards": "New cards",
+      "learned": "Learned",
+      "mature": "Mature"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "myMaterials": "My Materials",
+    "folders": "Folders",
+    "tags": "Tags",
+    "newFolder": "New Folder",
+    "newTag": "New Tag",
+    "allMaterials": "All Materials",
+    "noMaterials": "You don't have any materials yet",
+    "createFirst": "Create your first study material!"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "todayProgress": "Today's Progress",
+    "cardsReviewed": "Cards Reviewed",
+    "quizzesCompleted": "Quizzes Completed",
+    "studyTime": "Study Time",
+    "currentStreak": "Current Streak",
+    "longestStreak": "Longest Streak",
+    "days": "days",
+    "weeklyProgress": "Weekly Progress",
+    "weakTopics": "Weak Topics",
+    "dueForReview": "Due for Review"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "overview": "Overview",
+    "activity": "Activity",
+    "progress": "Progress",
+    "totalMaterials": "Total Materials",
+    "totalFlashcards": "Total Flashcards",
+    "totalQuizzes": "Total Quizzes",
+    "averageScore": "Average Score"
+  },
+  "chat": {
+    "title": "AI Tutor",
+    "placeholder": "Ask something about the material...",
+    "send": "Send",
+    "clearHistory": "Clear History",
+    "thinking": "Thinking..."
+  },
+  "export": {
+    "title": "Export",
+    "anki": "Export to Anki",
+    "pdf": "Export to PDF",
+    "share": "Share",
+    "copyLink": "Copy Link",
+    "linkCopied": "Link copied!"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "language": "Language",
+    "hungarian": "Magyar",
+    "english": "English"
+  },
+  "timer": {
+    "pomodoro": "Pomodoro",
+    "work": "Work",
+    "break": "Break",
+    "start": "Start",
+    "pause": "Pause",
+    "reset": "Reset",
+    "workDuration": "Work duration",
+    "breakDuration": "Break duration",
+    "minutes": "minutes"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Check your internet connection.",
+    "unauthorized": "You don't have permission for this action.",
+    "notFound": "The requested content was not found.",
+    "rateLimitExceeded": "You've reached the daily limit. Try again tomorrow!",
+    "generationFailed": "Generation failed. Please try again."
+  },
+  "rateLimit": {
+    "generationsRemaining": "generations remaining",
+    "chatMessagesRemaining": "chat messages remaining",
+    "resetAt": "Resets at"
+  }
+}
