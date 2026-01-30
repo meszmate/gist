@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,17 +30,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { materialsApi, foldersApi, tagsApi, Material, Folder as FolderType, Tag as TagType } from '@/lib/api';
 import { formatDate } from '@/lib/i18n';
 import toast from 'react-hot-toast';
+import {
+  useMaterials,
+  useFolders,
+  useTags,
+  useDeleteMaterial,
+  useShareMaterial,
+  useCreateFolder,
+  useCreateTag,
+} from '@/lib/queries';
 
 export function Library() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [folders, setFolders] = useState<FolderType[]>([]);
-  const [tags, setTags] = useState<TagType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(searchParams.get('folder'));
   const [newFolderName, setNewFolderName] = useState('');
@@ -48,29 +52,24 @@ export function Library() {
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [showNewTagDialog, setShowNewTagDialog] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [materialsRes, foldersRes, tagsRes] = await Promise.all([
-          materialsApi.list({
-            folder_id: selectedFolder || undefined,
-            search: searchQuery || undefined,
-          }),
-          foldersApi.list(),
-          tagsApi.list(),
-        ]);
-        setMaterials(materialsRes.data.materials || []);
-        setFolders(foldersRes.data.folders || []);
-        setTags(tagsRes.data.tags || []);
-      } catch (error) {
-        console.error('Failed to fetch library data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // TanStack Query hooks
+  const { data: materialsData, isLoading: isMaterialsLoading } = useMaterials({
+    folder_id: selectedFolder || undefined,
+    search: searchQuery || undefined,
+  });
+  const { data: foldersData, isLoading: isFoldersLoading } = useFolders();
+  const { data: tagsData, isLoading: isTagsLoading } = useTags();
 
-    fetchData();
-  }, [selectedFolder, searchQuery]);
+  // Mutations
+  const deleteMaterial = useDeleteMaterial();
+  const shareMaterial = useShareMaterial();
+  const createFolder = useCreateFolder();
+  const createTag = useCreateTag();
+
+  const materials = materialsData?.materials || [];
+  const folders = foldersData?.folders || [];
+  const tags = tagsData?.tags || [];
+  const isLoading = isMaterialsLoading || isFoldersLoading || isTagsLoading;
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -96,11 +95,10 @@ export function Library() {
     if (!newFolderName.trim()) return;
 
     try {
-      const res = await foldersApi.create({ name: newFolderName });
-      setFolders([...folders, res.data]);
+      await createFolder.mutateAsync({ name: newFolderName });
       setNewFolderName('');
       setShowNewFolderDialog(false);
-      toast.success(t('common.create') + ' ' + t('library.folders').toLowerCase());
+      toast.success(t('toast.folderCreated'));
     } catch {
       toast.error(t('errors.generic'));
     }
@@ -110,11 +108,10 @@ export function Library() {
     if (!newTagName.trim()) return;
 
     try {
-      const res = await tagsApi.create({ name: newTagName });
-      setTags([...tags, res.data]);
+      await createTag.mutateAsync({ name: newTagName });
       setNewTagName('');
       setShowNewTagDialog(false);
-      toast.success(t('common.create') + ' ' + t('library.tags').toLowerCase());
+      toast.success(t('toast.tagCreated'));
     } catch {
       toast.error(t('errors.generic'));
     }
@@ -122,9 +119,8 @@ export function Library() {
 
   const handleDeleteMaterial = async (id: string) => {
     try {
-      await materialsApi.delete(id);
-      setMaterials(materials.filter((m) => m.id !== id));
-      toast.success(t('common.delete'));
+      await deleteMaterial.mutateAsync(id);
+      toast.success(t('toast.deleted'));
     } catch {
       toast.error(t('errors.generic'));
     }
@@ -132,9 +128,9 @@ export function Library() {
 
   const handleShareMaterial = async (id: string) => {
     try {
-      const res = await materialsApi.share(id);
-      await navigator.clipboard.writeText(res.data.share_url);
-      toast.success(t('export.linkCopied'));
+      const result = await shareMaterial.mutateAsync(id);
+      await navigator.clipboard.writeText(result.share_url);
+      toast.success(t('toast.linkCopied'));
     } catch {
       toast.error(t('errors.generic'));
     }
@@ -149,10 +145,10 @@ export function Library() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">{t('library.title')}</h1>
-        <Link to="/">
+        <Link to="/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             {t('common.create')}
@@ -277,7 +273,7 @@ export function Library() {
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">{t('library.noMaterials')}</h3>
                 <p className="text-muted-foreground mb-4">{t('library.createFirst')}</p>
-                <Link to="/">
+                <Link to="/create">
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
                     {t('common.create')}

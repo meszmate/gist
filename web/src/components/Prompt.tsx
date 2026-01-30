@@ -5,23 +5,38 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import * as pdfjs from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import toast from 'react-hot-toast';
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupButton,
     InputGroupTextarea,
 } from './ui/input-group';
-import { FileUpIcon, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileUpIcon, X, ChevronDown, ChevronUp, Folder } from 'lucide-react';
 import { Spinner } from './ui/spinner';
 import { formatBytes } from '@/lib/formatBytes';
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import type { Folder as FolderType } from '@/lib/api';
+import {
+    validateFile,
+    validateTotalSize,
+    validateContentLength,
+    type FileProcessingResult,
+} from '@/lib/fileUtils';
 
 export interface AIInputData {
     text: string;
@@ -30,15 +45,17 @@ export interface AIInputData {
     flashcardCount: number;
     quizCount: number;
     turnstile: string;
+    folderId?: string;
 }
 
 interface AIInputProps {
     onSubmit: (data: AIInputData) => Promise<void>;
+    folders?: FolderType[];
 }
 
 type Difficulty = 'beginner' | 'standard' | 'advanced';
 
-export function AIInput({ onSubmit }: AIInputProps) {
+export function AIInput({ onSubmit, folders = [] }: AIInputProps) {
     const { t } = useTranslation();
     const [inputText, setInputText] = React.useState('');
     const [files, setFiles] = React.useState<FileList | null>(null);
@@ -50,17 +67,27 @@ export function AIInput({ onSubmit }: AIInputProps) {
     const [difficulty, setDifficulty] = React.useState<Difficulty>('standard');
     const [flashcardCount, setFlashcardCount] = React.useState(10);
     const [quizCount, setQuizCount] = React.useState(5);
+    const [selectedFolderId, setSelectedFolderId] = React.useState<string>('');
     const [showAdvanced, setShowAdvanced] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showTurnstile, setShowTurnstile] = React.useState(false);
     const [turnstileToken, setTurnstileToken] = React.useState<string | null>(null);
+    const [processingFiles, setProcessingFiles] = React.useState<string[]>([]);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const turnstileRef = React.useRef<{ reset?: () => void } | null>(null);
+    const turnstileRef = React.useRef<TurnstileInstance | null>(null);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
 
     const handleOptionChange = (opt: keyof typeof options) => {
         setOptions((p) => ({ ...p, [opt]: !p[opt] }));
     };
+
+    // Cleanup abort controller on unmount
+    React.useEffect(() => {
+        return () => {
+            abortControllerRef.current?.abort();
+        };
+    }, []);
 
     const removeFile = (index: number) => {
         if (!files) return;
@@ -69,6 +96,44 @@ export function AIInput({ onSubmit }: AIInputProps) {
             .filter((_, i) => i !== index)
             .forEach((f) => dt.items.add(f));
         setFiles(dt.files);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newFiles = e.target.files;
+        if (!newFiles || newFiles.length === 0) return;
+
+        // Validate each file
+        const validFiles: File[] = [];
+        for (const file of Array.from(newFiles)) {
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                toast.error(`${file.name}: ${t(`files.${validation.error}`)}`);
+            } else {
+                validFiles.push(file);
+            }
+        }
+
+        if (validFiles.length === 0) {
+            e.target.value = '';
+            return;
+        }
+
+        // Combine with existing files and validate total size
+        const existingFiles = files ? Array.from(files) : [];
+        const allFiles = [...existingFiles, ...validFiles];
+        const totalValidation = validateTotalSize(allFiles);
+
+        if (!totalValidation.valid) {
+            toast.error(t(`files.${totalValidation.error}`));
+            e.target.value = '';
+            return;
+        }
+
+        // Create new FileList with all files
+        const dt = new DataTransfer();
+        allFiles.forEach((f) => dt.items.add(f));
+        setFiles(dt.files);
+        e.target.value = '';
     };
 
     const openFilePicker = () => fileInputRef.current?.click();
@@ -129,6 +194,32 @@ export function AIInput({ onSubmit }: AIInputProps) {
         throw new Error(`Unsupported file type: ${file.type}`);
     };
 
+    const processFiles = async (fileList: File[]): Promise<FileProcessingResult[]> => {
+        const results: FileProcessingResult[] = [];
+
+        for (const file of fileList) {
+            // Check if aborted
+            if (abortControllerRef.current?.signal.aborted) {
+                break;
+            }
+
+            setProcessingFiles((prev) => [...prev, file.name]);
+
+            try {
+                const text = await extractTextFromFile(file);
+                results.push({ fileName: file.name, success: true, text });
+            } catch (err) {
+                const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+                results.push({ fileName: file.name, success: false, error: errorMsg });
+                toast.error(`${t('files.extractionFailed')}: ${file.name}`);
+            } finally {
+                setProcessingFiles((prev) => prev.filter((name) => name !== file.name));
+            }
+        }
+
+        return results;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputText.trim() && (!files || files.length === 0)) return;
@@ -139,28 +230,43 @@ export function AIInput({ onSubmit }: AIInputProps) {
             return;
         }
 
+        // Create new abort controller for this submission
+        abortControllerRef.current = new AbortController();
+
         setIsLoading(true);
         try {
             let combined = inputText.trim();
             if (files?.length) {
                 const allowed = Array.from(files).filter((f) => {
-                    const ext = f.name.split('.').pop()?.toLowerCase();
-                    return ['txt', 'pdf', 'docx'].includes(ext ?? '');
+                    const validation = validateFile(f);
+                    return validation.valid;
                 });
-                const texts = await Promise.all(
-                    allowed.map((f) =>
-                        extractTextFromFile(f).catch((err) => {
-                            console.warn('Skip file', f.name, err);
-                            return '';
-                        })
-                    )
-                );
-                const nonEmpty = texts.filter((t) => t.trim());
-                if (nonEmpty.length) {
-                    combined += (combined ? '\n\n---\n\n' : '') + nonEmpty.join('\n\n---\n\n');
+
+                const results = await processFiles(allowed);
+
+                // Report if some files failed
+                const failedCount = results.filter((r) => !r.success).length;
+                if (failedCount > 0 && results.some((r) => r.success)) {
+                    toast.error(t('errors.fileFailed'));
+                }
+
+                const successfulTexts = results
+                    .filter((r) => r.success && r.text?.trim())
+                    .map((r) => r.text!);
+
+                if (successfulTexts.length) {
+                    combined += (combined ? '\n\n---\n\n' : '') + successfulTexts.join('\n\n---\n\n');
                 }
             }
+
             if (!combined.trim()) return;
+
+            // Validate combined content length
+            const contentValidation = validateContentLength(combined);
+            if (!contentValidation.valid) {
+                toast.error(t(`files.${contentValidation.error}`));
+                return;
+            }
 
             await onSubmit({
                 text: combined,
@@ -169,23 +275,26 @@ export function AIInput({ onSubmit }: AIInputProps) {
                 flashcardCount,
                 quizCount,
                 turnstile: turnstileToken,
+                folderId: selectedFolderId || undefined,
             });
         } catch (err) {
             console.error(err);
         } finally {
             setIsLoading(false);
             setTurnstileToken(null);
+            setProcessingFiles([]);
             turnstileRef.current?.reset?.();
+            abortControllerRef.current = null;
         }
     };
 
     return (
         <>
             <form onSubmit={handleSubmit} className="w-full mx-auto p-4 sm:p-6">
-                <InputGroup className="w-full rounded-3xl sm:rounded-4xl p-5 bg-white shadow-sm">
+                <InputGroup className="w-full rounded-3xl sm:rounded-4xl p-5 bg-white dark:bg-neutral-900 shadow-sm">
                     <InputGroupTextarea
                         id="text-input"
-                        placeholder="Paste your text here, or upload files below..."
+                        placeholder={t('prompt.placeholder')}
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         className="min-h-32 resize-none"
@@ -200,7 +309,7 @@ export function AIInput({ onSubmit }: AIInputProps) {
                             type="file"
                             multiple
                             accept=".txt,.pdf,.docx"
-                            onChange={(e) => setFiles(e.target.files)}
+                            onChange={handleFileChange}
                             className="hidden"
                         />
 
@@ -212,14 +321,14 @@ export function AIInput({ onSubmit }: AIInputProps) {
                         >
                             <span>
                                 <FileUpIcon className="h-5 w-5" />
-                                <span className="sr-only">Upload files</span>
+                                <span className="sr-only">{t('files.uploadFiles')}</span>
                             </span>
                         </InputGroupButton>
 
                         {files && files.length > 0 && (
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs text-muted-foreground text-center sm:text-left mb-1">
-                                    {files.length} file{files.length > 1 ? 's' : ''} selected
+                                    {files.length} {t('files.selected')}
                                 </p>
                                 <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 max-h-24 overflow-y-auto">
                                     {Array.from(files).map((f, i) => (
@@ -240,6 +349,12 @@ export function AIInput({ onSubmit }: AIInputProps) {
                                         </div>
                                     ))}
                                 </div>
+                                {processingFiles.length > 0 && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                                        <Spinner className="h-3 w-3" />
+                                        <span>{t('files.processing')}: {processingFiles.join(', ')}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -273,10 +388,53 @@ export function AIInput({ onSubmit }: AIInputProps) {
                             {/* Advanced options */}
                             {showAdvanced && (
                                 <div className="space-y-4 pt-2 border-t">
+                                    {/* Folder selector */}
+                                    {folders.length > 0 && (
+                                        <div>
+                                            <Label className="text-sm mb-2 block">{t('prompt.saveToFolder')}</Label>
+                                            <Select value={selectedFolderId} onValueChange={setSelectedFolderId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={t('prompt.noFolder')}>
+                                                        {selectedFolderId ? (
+                                                            <span className="flex items-center gap-2">
+                                                                <span
+                                                                    className="w-3 h-3 rounded-full"
+                                                                    style={{ backgroundColor: folders.find(f => f.id === selectedFolderId)?.color }}
+                                                                />
+                                                                {folders.find(f => f.id === selectedFolderId)?.name}
+                                                            </span>
+                                                        ) : (
+                                                            t('prompt.noFolder')
+                                                        )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="">
+                                                        <span className="flex items-center gap-2">
+                                                            <Folder className="h-4 w-4 text-muted-foreground" />
+                                                            {t('prompt.noFolder')}
+                                                        </span>
+                                                    </SelectItem>
+                                                    {folders.map((folder) => (
+                                                        <SelectItem key={folder.id} value={folder.id}>
+                                                            <span className="flex items-center gap-2">
+                                                                <span
+                                                                    className="w-3 h-3 rounded-full"
+                                                                    style={{ backgroundColor: folder.color }}
+                                                                />
+                                                                {folder.name}
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+
                                     {/* Difficulty selector */}
                                     <div>
                                         <Label className="text-sm mb-2 block">{t('prompt.difficulty')}</Label>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             {(['beginner', 'standard', 'advanced'] as const).map((d) => (
                                                 <Button
                                                     key={d}
@@ -344,7 +502,7 @@ export function AIInput({ onSubmit }: AIInputProps) {
             <Dialog open={showTurnstile} onOpenChange={setShowTurnstile}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Verify you're human</DialogTitle>
+                        <DialogTitle>{t('turnstile.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex justify-center py-6">
                         <Turnstile
@@ -376,7 +534,7 @@ export function AIInput({ onSubmit }: AIInputProps) {
                                 turnstileRef.current?.reset?.();
                             }}
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </div>
                 </DialogContent>

@@ -1,4 +1,5 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios from 'axios';
+import type { AxiosError, AxiosInstance } from 'axios';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -7,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  timeout: 120000, // 2 minutes default timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,16 +20,23 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config;
 
-    // Handle 401 - try to refresh token
-    if (error.response?.status === 401 && originalRequest && !(originalRequest as { _retry?: boolean })._retry) {
+    // Skip refresh logic for auth check endpoint - 401 is expected for unauthenticated users
+    const isAuthCheck = originalRequest?.url === '/auth/me';
+
+    // Handle 401 - try to refresh token (but not for auth check)
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !isAuthCheck &&
+      !(originalRequest as { _retry?: boolean })._retry
+    ) {
       (originalRequest as { _retry?: boolean })._retry = true;
 
       try {
         await api.post('/auth/refresh');
         return api(originalRequest);
       } catch {
-        // Refresh failed, redirect to login
-        window.location.href = '/login';
+        // Refresh failed - just reject, let the app handle it
         return Promise.reject(error);
       }
     }
@@ -256,4 +265,18 @@ export const exportApi = {
 
 export const sharedApi = {
   get: (token: string) => api.get<Material>(`/shared/${token}`),
+};
+
+export const generateApi = {
+  create: (data: {
+    prompt: string;
+    summary?: boolean;
+    flashcards?: boolean;
+    quiz?: boolean;
+    difficulty?: string;
+    flashcard_count?: number;
+    quiz_count?: number;
+    folder_id?: string;
+    turnstile?: string;
+  }) => api.post<Material>('/generate', data, { timeout: 180000 }), // 3 min for generation
 };

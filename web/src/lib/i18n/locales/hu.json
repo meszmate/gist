@@ -15,7 +15,9 @@
     "close": "Bezárás",
     "confirm": "Megerősítés",
     "yes": "Igen",
-    "no": "Nem"
+    "no": "Nem",
+    "space": "Szóköz",
+    "refresh": "Frissítés"
   },
   "auth": {
     "login": "Bejelentkezés",
@@ -31,7 +33,8 @@
     "dashboard": "Irányítópult",
     "library": "Könyvtár",
     "study": "Tanulás",
-    "analytics": "Statisztikák"
+    "analytics": "Statisztikák",
+    "create": "Létrehozás"
   },
   "hero": {
     "title": "Tanulj okosabban, ne keményebben",
@@ -56,7 +59,9 @@
     "flashcardCount": "Kártyák száma",
     "quizCount": "Kvízkérdések száma",
     "generate": "Generálás",
-    "generating": "Generálás folyamatban..."
+    "generating": "Generálás folyamatban...",
+    "saveToFolder": "Mentés mappába",
+    "noFolder": "Nincs mappa (gyökér)"
   },
   "viewer": {
     "summary": "Összefoglaló",
@@ -178,11 +183,70 @@
     "unauthorized": "Nincs jogosultságod ehhez a művelethez.",
     "notFound": "A keresett tartalom nem található.",
     "rateLimitExceeded": "Elérted a napi limitet. Próbáld újra holnap!",
-    "generationFailed": "A generálás sikertelen. Kérjük, próbáld újra."
+    "generationFailed": "A generálás sikertelen. Kérjük, próbáld újra.",
+    "timeout": "A kérés időtúllépés miatt megszakadt. Próbáld újra.",
+    "fileFailed": "Néhány fájl feldolgozása sikertelen"
   },
   "rateLimit": {
     "generationsRemaining": "generálás maradt",
     "chatMessagesRemaining": "chat üzenet maradt",
     "resetAt": "Újratöltődik"
+  },
+  "landing": {
+    "badge": "AI-alapú Tanulás",
+    "title": "Alakítsd át tananyagaidat",
+    "subtitle": "Töltsd fel jegyzeteidet, tankönyveidet vagy bármilyen tananyagot. Az AI összefoglalókat, tanulókártyákat és kvízkérdéseket készít a hatékonyabb tanuláshoz.",
+    "getStarted": "Kezdjük el",
+    "loginWithGoogle": "Bejelentkezés Google fiókkal",
+    "goToDashboard": "Irányítópult",
+    "createMaterials": "Anyag létrehozása",
+    "features": {
+      "summaries": "AI-generált összefoglalók",
+      "flashcards": "Interaktív tanulókártyák",
+      "quizzes": "Gyakorló kvízek"
+    }
+  },
+  "create": {
+    "title": "Tananyag létrehozása",
+    "subtitle": "Töltsd fel jegyzeteidet vagy másold be a szöveget a tananyag generálásához"
+  },
+  "turnstile": {
+    "title": "Igazold, hogy ember vagy",
+    "verifying": "Ellenőrzés..."
+  },
+  "dataViewer": {
+    "description": "A generált összefoglaló, tanulókártyák és kvíz",
+    "clickToFlip": "Kattints a kártyára a megfordításhoz",
+    "answered": "megválaszolva",
+    "submitQuiz": "Kvíz beküldése",
+    "perfectScore": "Tökéletes pontszám!",
+    "greatJob": "Szép munka!",
+    "keepStudying": "Tanulj tovább!",
+    "yourAnswer": "A válaszod",
+    "correctAnswer": "Helyes",
+    "tryAgain": "Újrapróbálom"
+  },
+  "toast": {
+    "materialReady": "A tananyag elkészült!",
+    "linkCopied": "Link vágólapra másolva!",
+    "folderCreated": "Mappa sikeresen létrehozva",
+    "tagCreated": "Címke sikeresen létrehozva",
+    "deleted": "Sikeresen törölve",
+    "historyCleared": "Chat előzmények törölve"
+  },
+  "processing": {
+    "generating": "Tananyag generálása...",
+    "analyzing": "Tartalom elemzése...",
+    "almostDone": "Mindjárt kész..."
+  },
+  "files": {
+    "selected": "fájl kiválasztva",
+    "uploadFiles": "Fájlok feltöltése",
+    "processing": "Feldolgozás",
+    "fileTooLarge": "A fájl túl nagy (max 10MB)",
+    "totalTooLarge": "Az összes fájl túl nagy (max 25MB)",
+    "extractionFailed": "Nem sikerült a szöveg kinyerése",
+    "unsupportedType": "Nem támogatott fájltípus",
+    "contentTooLong": "A kombinált tartalom meghaladja a limitet"
   }
 }

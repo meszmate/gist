@@ -51,7 +51,7 @@ export function usePomodoro(onSessionComplete?: (type: SessionType, duration: nu
     totalWorkTime: 0,
   });
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<number>(0);
 
   const setSettings = useCallback((newSettings: Partial<PomodoroSettings>) => {

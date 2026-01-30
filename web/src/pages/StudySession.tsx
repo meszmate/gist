@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, RotateCcw, CheckCircle2 } from 'lucide-react';
-import { srsApi, Flashcard, DueCardsResponse } from '@/lib/api';
+import type { Flashcard } from '@/lib/api';
 import { useFlashcardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import toast from 'react-hot-toast';
+import { useDueCards, useReviewCard } from '@/lib/queries';
 
 type Rating = 0 | 1 | 2 | 3;
 
@@ -24,12 +25,16 @@ export function StudySession() {
   const { materialId } = useParams();
   const navigate = useNavigate();
 
-  const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [reviewedCount, setReviewedCount] = useState(0);
-  const [totalDue, setTotalDue] = useState(0);
+
+  // TanStack Query hooks
+  const { data: dueCardsData, isLoading, refetch } = useDueCards(materialId);
+  const reviewCard = useReviewCard();
+
+  const cards: Flashcard[] = dueCardsData?.cards || [];
+  const totalDue = dueCardsData?.total_due || 0;
 
   const ratingOptions: RatingOption[] = [
     {
@@ -62,27 +67,6 @@ export function StudySession() {
     },
   ];
 
-  const fetchCards = useCallback(async () => {
-    try {
-      let response: { data: DueCardsResponse };
-      if (materialId) {
-        response = await srsApi.getDueByMaterial(materialId);
-      } else {
-        response = await srsApi.getDue();
-      }
-      setCards(response.data.cards || []);
-      setTotalDue(response.data.total_due);
-    } catch (error) {
-      console.error('Failed to fetch due cards:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [materialId]);
-
-  useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
-
   const currentCard = cards[currentIndex];
 
   const handleFlip = useCallback(() => {
@@ -94,7 +78,7 @@ export function StudySession() {
       if (!currentCard) return;
 
       try {
-        await srsApi.review(currentCard.id, rating);
+        await reviewCard.mutateAsync({ cardId: currentCard.id, rating });
         setReviewedCount((prev) => prev + 1);
 
         // Move to next card
@@ -109,7 +93,7 @@ export function StudySession() {
         toast.error(t('errors.generic'));
       }
     },
-    [currentCard, currentIndex, cards.length, t]
+    [currentCard, currentIndex, cards.length, t, reviewCard]
   );
 
   const handleNext = useCallback(() => {
@@ -148,7 +132,7 @@ export function StudySession() {
 
   if (cards.length === 0 || currentIndex >= cards.length) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Card className="max-w-lg mx-auto text-center py-12">
           <CardContent>
             <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
@@ -163,7 +147,7 @@ export function StudySession() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('common.back')}
               </Button>
-              <Button onClick={fetchCards}>
+              <Button onClick={() => refetch()}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 {t('common.refresh') || 'Refresh'}
               </Button>
@@ -175,7 +159,7 @@ export function StudySession() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" onClick={() => navigate(-1)}>

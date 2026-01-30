@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -7,13 +8,37 @@ import { useAuth } from '@/hooks/useAuth';
 import { Sun, Moon, Monitor, Globe } from 'lucide-react';
 import { changeLanguage } from '@/lib/i18n';
 
+function ProfileAvatar({ user }: { user: { name: string; avatar_url?: string } }) {
+  const [imgError, setImgError] = useState(false);
+  const showAvatar = user.avatar_url && !imgError;
+
+  if (showAvatar) {
+    return (
+      <img
+        src={user.avatar_url}
+        alt={user.name}
+        className="h-16 w-16 rounded-full object-cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center">
+      <span className="text-xl font-medium text-primary-foreground">
+        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+      </span>
+    </div>
+  );
+}
+
 export function Settings() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <h1 className="text-3xl font-bold mb-8">{t('settings.title')}</h1>
 
       <div className="space-y-6">
@@ -92,13 +117,7 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                {user.avatar_url && (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.name}
-                    className="h-16 w-16 rounded-full"
-                  />
-                )}
+                <ProfileAvatar user={user} />
                 <div>
                   <p className="font-medium">{user.name}</p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
@@ -15,23 +16,27 @@ import { useAuth } from '@/hooks/useAuth';
 export function UserMenu() {
   const { t } = useTranslation();
   const { user, usage, logout } = useAuth();
+  const [imgError, setImgError] = useState(false);
 
   if (!user) return null;
+
+  const showAvatar = user.avatar_url && !imgError;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          {user.avatar_url ? (
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+          {showAvatar ? (
             <img
               src={user.avatar_url}
               alt={user.name}
               className="h-10 w-10 rounded-full object-cover"
+              onError={() => setImgError(true)}
             />
           ) : (
             <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
               <span className="text-sm font-medium text-primary-foreground">
-                {user.name.charAt(0).toUpperCase()}
+                {user.name?.charAt(0)?.toUpperCase() || 'U'}
               </span>
             </div>
           )}

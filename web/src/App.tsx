@@ -1,9 +1,10 @@
 import { Route, BrowserRouter, Routes } from 'react-router-dom'
-import HeroSection from './components/Hero'
 import { DataViewer } from './components/DataViewer'
 import NotFound from './components/NotFound'
 import Layout from './components/Layout'
 import { Toaster } from 'react-hot-toast'
+import { Landing } from './pages/Landing'
+import { Create } from './pages/Create'
 import { Dashboard } from './pages/Dashboard'
 import { Library } from './pages/Library'
 import { StudySession } from './pages/StudySession'
@@ -18,7 +19,12 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Layout />}>
-            <Route index element={<HeroSection />} />
+            <Route index element={<Landing />} />
+            <Route path='create' element={
+              <ProtectedRoute>
+                <Create />
+              </ProtectedRoute>
+            } />
             <Route path='dashboard' element={
               <ProtectedRoute>
                 <Dashboard />
@@ -44,7 +50,7 @@ function App() {
                 <Settings />
               </ProtectedRoute>
             } />
-            <Route path='shared/:token' element={<DataViewer shared />} />
+            <Route path='shared/:token' element={<DataViewer />} />
             <Route path=':id' element={<DataViewer />} />
           </Route>
           <Route path='*' element={<NotFound />} />

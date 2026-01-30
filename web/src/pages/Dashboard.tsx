@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,35 +11,18 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
-import { analyticsApi, srsApi, AnalyticsOverview, SRSStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDuration } from '@/lib/i18n';
+import { useAnalyticsOverview, useSrsStats } from '@/lib/queries';
 
 export function Dashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [srsStats, setSrsStats] = useState<SRSStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [overviewRes, srsRes] = await Promise.all([
-          analyticsApi.getOverview(),
-          srsApi.getStats(),
-        ]);
-        setOverview(overviewRes.data);
-        setSrsStats(srsRes.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const { data: overview, isLoading: isOverviewLoading } = useAnalyticsOverview();
+  const { data: srsStats, isLoading: isSrsLoading } = useSrsStats();
 
-    fetchData();
-  }, []);
+  const isLoading = isOverviewLoading || isSrsLoading;
 
   if (isLoading) {
     return (
@@ -51,7 +33,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">
           {t('dashboard.welcome')}, {user?.name?.split(' ')[0]}!

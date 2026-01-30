@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -10,6 +11,8 @@ interface ProcessingModalProps {
 }
 
 const ProcessingModal: React.FC<ProcessingModalProps> = ({ isOpen }) => {
+    const { t } = useTranslation();
+
     return (
         <Dialog open={isOpen}>
             <DialogContent className="sm:max-w-md">
@@ -17,6 +20,9 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({ isOpen }) => {
                     <div className="relative">
                         <SpinnerEmpty />
                     </div>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                        {t('processing.generating')}
+                    </p>
                 </div>
             </DialogContent>
         </Dialog>

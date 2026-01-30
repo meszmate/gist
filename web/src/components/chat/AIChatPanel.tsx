@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,11 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { MessageCircle, Send, Trash2, Bot, User } from 'lucide-react';
-import { chatApi, ChatMessage } from '@/lib/api';
+import { chatApi } from '@/lib/api';
+import type { ChatMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useChatHistory, useClearChatHistory } from '@/lib/queries';
 
 interface AIChatPanelProps {
   materialId: string;
@@ -23,26 +25,31 @@ interface AIChatPanelProps {
 export function AIChatPanel({ materialId, materialName }: AIChatPanelProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchHistory = useCallback(async () => {
-    try {
-      const response = await chatApi.getHistory(materialId);
-      setMessages(response.data.messages || []);
-    } catch (error) {
-      console.error('Failed to fetch chat history:', error);
-    }
-  }, [materialId]);
+  // TanStack Query hooks
+  const { data: historyData, refetch: refetchHistory } = useChatHistory(materialId);
+  const clearChatHistory = useClearChatHistory();
 
+  // Sync local messages with query data when it changes
+  useEffect(() => {
+    if (historyData?.messages) {
+      setLocalMessages(historyData.messages);
+    }
+  }, [historyData]);
+
+  // Refetch history when panel opens
   useEffect(() => {
     if (isOpen) {
-      fetchHistory();
+      refetchHistory();
     }
-  }, [isOpen, fetchHistory]);
+  }, [isOpen, refetchHistory]);
+
+  const messages = localMessages;
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -68,7 +75,7 @@ export function AIChatPanel({ materialId, materialName }: AIChatPanelProps) {
       content: userMessage,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, tempUserMsg]);
+    setLocalMessages((prev) => [...prev, tempUserMsg]);
 
     try {
       const response = await chatApi.sendMessage(materialId, userMessage);
@@ -107,7 +114,7 @@ export function AIChatPanel({ materialId, materialName }: AIChatPanelProps) {
                 content: fullMessage,
                 created_at: new Date().toISOString(),
               };
-              setMessages((prev) => [...prev, assistantMsg]);
+              setLocalMessages((prev) => [...prev, assistantMsg]);
               setStreamingMessage('');
             } else if (line.startsWith('event: error')) {
               toast.error(t('errors.generic'));
@@ -119,7 +126,7 @@ export function AIChatPanel({ materialId, materialName }: AIChatPanelProps) {
       console.error('Chat error:', error);
       toast.error(t('errors.generic'));
       // Remove the temporary user message on error
-      setMessages((prev) => prev.filter((m) => m.id !== 'temp-user'));
+      setLocalMessages((prev) => prev.filter((m) => m.id !== 'temp-user'));
     } finally {
       setIsLoading(false);
     }
@@ -127,9 +134,9 @@ export function AIChatPanel({ materialId, materialName }: AIChatPanelProps) {
 
   const handleClearHistory = async () => {
     try {
-      await chatApi.clearHistory(materialId);
-      setMessages([]);
-      toast.success(t('chat.clearHistory'));
+      await clearChatHistory.mutateAsync(materialId);
+      setLocalMessages([]);
+      toast.success(t('toast.historyCleared'));
     } catch {
       toast.error(t('errors.generic'));
     }

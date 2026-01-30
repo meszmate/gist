@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Card,
     CardContent,
@@ -41,6 +42,7 @@ export interface Data {
 }
 
 export function DataViewer() {
+    const { t } = useTranslation();
     const { data: allData } = useData();
     const { id } = useParams();
 
@@ -66,22 +68,22 @@ export function DataViewer() {
 
     return (
         <Animate>
-            <div className="w-full max-w-7xl mx-auto p-4 space-y-6 my-10">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
                 <CardHeader className="text-center pb-4">
                     <CardTitle className="text-5xl mb-4 font-bold">{data.title}</CardTitle>
                     <CardDescription className="text-lg">
-                        Your generated summary, flashcards, and quiz
+                        {t('dataViewer.description')}
                     </CardDescription>
                 </CardHeader>
 
                 <Tabs defaultValue="summary" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 rounded-t-lg mb-8">
-                        <TabsTrigger value="summary">Summary</TabsTrigger>
+                        <TabsTrigger value="summary">{t('viewer.summary')}</TabsTrigger>
                         <TabsTrigger value="flashcards">
-                            Flashcards <Badge className="ml-2">{data.flashcards.length}</Badge>
+                            {t('viewer.flashcards')} <Badge className="ml-2">{data.flashcards.length}</Badge>
                         </TabsTrigger>
                         <TabsTrigger value="quiz">
-                            Quiz <Badge className="ml-2">{data.quiz_questions.length}</Badge>
+                            {t('viewer.quiz')} <Badge className="ml-2">{data.quiz_questions.length}</Badge>
                         </TabsTrigger>
                     </TabsList>
 
@@ -120,7 +122,7 @@ export function DataViewer() {
                                 ))}
                             </div>
                             <p className="text-center text-sm text-muted-foreground mt-4 px-4">
-                                Click a card to flip
+                                {t('dataViewer.clickToFlip')}
                             </p>
                         </CardContent>
                     </AnimatedTabsContent>
@@ -163,13 +165,13 @@ export function DataViewer() {
                                     <Separator className="my-6" />
                                     <div className="flex justify-between items-center">
                                         <p className="text-sm text-muted-foreground">
-                                            {Object.keys(quizAnswers).length} / {data.quiz_questions.length} answered
+                                            {Object.keys(quizAnswers).length} / {data.quiz_questions.length} {t('dataViewer.answered')}
                                         </p>
                                         <Button
                                             onClick={() => setShowResults(true)}
                                             disabled={Object.keys(quizAnswers).length !== data.quiz_questions.length}
                                         >
-                                            Submit Quiz
+                                            {t('dataViewer.submitQuiz')}
                                         </Button>
                                     </div>
                                 </div>
@@ -181,10 +183,10 @@ export function DataViewer() {
                                         </div>
                                         <p className="text-lg text-muted-foreground">
                                             {score === data.quiz_questions.length
-                                                ? 'Perfect score!'
+                                                ? t('dataViewer.perfectScore')
                                                 : score >= data.quiz_questions.length * 0.7
-                                                    ? 'Great job!'
-                                                    : 'Keep studying!'}
+                                                    ? t('dataViewer.greatJob')
+                                                    : t('dataViewer.keepStudying')}
                                         </p>
                                     </div>
 
@@ -206,13 +208,13 @@ export function DataViewer() {
                                                         <div className="flex-1">
                                                             <p className="font-medium">{q.question}</p>
                                                             <p className="text-sm mt-1">
-                                                                <span className="text-muted-foreground">Your answer:</span>{' '}
+                                                                <span className="text-muted-foreground">{t('dataViewer.yourAnswer')}:</span>{' '}
                                                                 <span className={cn(isCorrect ? 'text-green-600' : 'text-red-600')}>
                                                                     {userAnswer || '—'}
                                                                 </span>
                                                             </p>
                                                             {!isCorrect && (
-                                                                <p className="text-sm text-green-600">Correct: {q.correct}</p>
+                                                                <p className="text-sm text-green-600">{t('dataViewer.correctAnswer')}: {q.correct}</p>
                                                             )}
                                                         </div>
                                                     </div>
@@ -223,7 +225,7 @@ export function DataViewer() {
 
                                     <Button onClick={resetQuiz} className="w-full" size="lg">
                                         <RotateCw className="mr-2 h-4 w-4" />
-                                        Try Again
+                                        {t('dataViewer.tryAgain')}
                                     </Button>
                                 </div>
                             )}

@@ -15,7 +15,9 @@
     "close": "Close",
     "confirm": "Confirm",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "space": "Space",
+    "refresh": "Refresh"
   },
   "auth": {
     "login": "Login",
@@ -31,7 +33,8 @@
     "dashboard": "Dashboard",
     "library": "Library",
     "study": "Study",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "create": "Create"
   },
   "hero": {
     "title": "Study smarter, not harder",
@@ -56,7 +59,9 @@
     "flashcardCount": "Number of flashcards",
     "quizCount": "Number of quiz questions",
     "generate": "Generate",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "saveToFolder": "Save to folder",
+    "noFolder": "No folder (root)"
   },
   "viewer": {
     "summary": "Summary",
@@ -178,11 +183,70 @@
     "unauthorized": "You don't have permission for this action.",
     "notFound": "The requested content was not found.",
     "rateLimitExceeded": "You've reached the daily limit. Try again tomorrow!",
-    "generationFailed": "Generation failed. Please try again."
+    "generationFailed": "Generation failed. Please try again.",
+    "timeout": "Request timed out. Please try again.",
+    "fileFailed": "Some files could not be processed"
   },
   "rateLimit": {
     "generationsRemaining": "generations remaining",
     "chatMessagesRemaining": "chat messages remaining",
     "resetAt": "Resets at"
+  },
+  "landing": {
+    "badge": "AI-Powered Learning",
+    "title": "Transform Your Study Materials",
+    "subtitle": "Upload your notes, textbooks, or any study material. Our AI will create summaries, flashcards, and quiz questions to supercharge your learning.",
+    "getStarted": "Get Started",
+    "loginWithGoogle": "Sign in with Google",
+    "goToDashboard": "Go to Dashboard",
+    "createMaterials": "Create Materials",
+    "features": {
+      "summaries": "AI-generated summaries",
+      "flashcards": "Interactive flashcards",
+      "quizzes": "Practice quizzes"
+    }
+  },
+  "create": {
+    "title": "Create Study Material",
+    "subtitle": "Upload your notes or paste text to generate study materials"
+  },
+  "turnstile": {
+    "title": "Verify you're human",
+    "verifying": "Verifying..."
+  },
+  "dataViewer": {
+    "description": "Your generated summary, flashcards, and quiz",
+    "clickToFlip": "Click a card to flip",
+    "answered": "answered",
+    "submitQuiz": "Submit Quiz",
+    "perfectScore": "Perfect score!",
+    "greatJob": "Great job!",
+    "keepStudying": "Keep studying!",
+    "yourAnswer": "Your answer",
+    "correctAnswer": "Correct",
+    "tryAgain": "Try Again"
+  },
+  "toast": {
+    "materialReady": "Your study material is ready!",
+    "linkCopied": "Link copied to clipboard!",
+    "folderCreated": "Folder created successfully",
+    "tagCreated": "Tag created successfully",
+    "deleted": "Deleted successfully",
+    "historyCleared": "Chat history cleared"
+  },
+  "processing": {
+    "generating": "Generating your study materials...",
+    "analyzing": "Analyzing your content...",
+    "almostDone": "Almost done..."
+  },
+  "files": {
+    "selected": "file(s) selected",
+    "uploadFiles": "Upload files",
+    "processing": "Processing",
+    "fileTooLarge": "File too large (max 10MB)",
+    "totalTooLarge": "Total files too large (max 25MB)",
+    "extractionFailed": "Failed to extract text from",
+    "unsupportedType": "Unsupported file type",
+    "contentTooLong": "Combined content exceeds limit"
   }
 }
