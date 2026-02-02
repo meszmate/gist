@@ -1,131 +1,52 @@
 # SmartNotes
 
-A full-featured AI-powered learning platform that transforms your notes into interactive study materials with spaced repetition, analytics, AI tutoring, and more.
+An AI-powered study platform built with Next.js. Create flashcards, quizzes, and summaries from your study materials using AI or build them manually.
 
 ## Features
 
-### Core Features
-- **AI-Generated Content** - Upload notes (PDF, TXT, DOCX) or paste text to generate summaries, flashcards, and quizzes
-- **Difficulty Levels** - Choose between Beginner, Standard, and Advanced difficulty
-- **Customizable Output** - Control the number of flashcards (5-30) and quiz questions (3-15)
-
-### Spaced Repetition System (SRS)
-- **SM-2 Algorithm** - Scientifically-proven spaced repetition for optimal retention
-- **Review Ratings** - Rate cards as Again/Hard/Good/Easy to optimize review intervals
-- **Due Cards Tracking** - See which cards need review across all materials
-- **Keyboard Shortcuts** - Space to flip, 1-4 for ratings, arrow keys for navigation
-
-### Organization
-- **Folders** - Organize materials into nested folders with custom colors
-- **Tags** - Add tags to materials for easy filtering
-- **Search** - Full-text search across all your study materials
-- **Library View** - Browse all materials with filters and sorting
-
-### Analytics Dashboard
-- **Study Streak** - Track your daily learning streak
-- **Cards Reviewed** - Monitor daily and total card reviews
-- **Quiz Scores** - Track average quiz performance over time
-- **Study Time** - See total time spent learning
-- **Weak Topics** - Identify materials that need more attention
-
-### AI Tutor Chat
-- **Context-Aware** - AI tutor has full context of your study material
-- **Streaming Responses** - Real-time streaming for natural conversation
-- **Chat History** - Persistent conversation history per material
-- **Rate Limited** - 20 messages per day on free tier
-
-### Additional Features
-- **Pomodoro Timer** - Built-in productivity timer (25min work / 5min break)
-- **Dark Mode** - Full dark theme support with system preference detection
-- **i18n** - Hungarian (primary) and English language support
-- **Export** - Download materials as Anki decks (.apkg) or PDF study guides
-- **Sharing** - Generate public share links for your materials
-
-### Authentication
-- **Google OAuth** - Sign in with Google (no email/password)
-- **JWT Tokens** - Secure token-based authentication with refresh tokens
-- **Per-User Rate Limiting** - Fair usage limits for free service
+- **AI-Powered Content Generation** - Generate flashcards, quizzes, and summaries from uploaded documents or text
+- **Multiple Question Types** - Support for 8 built-in question types:
+  - Multiple Choice
+  - True/False
+  - Text Input
+  - Year Range (with partial credit)
+  - Numeric Range (with tolerance)
+  - Matching
+  - Fill in the Blank
+  - Multi-Select
+- **Custom Question Types** - Create your own question types with custom validation rules
+- **Flexible Grading System** - Percentage, letter grades, pass/fail, or points-based grading
+- **Partial Credit Support** - Configurable tolerance for numeric and year-based questions
+- **Quiz Sharing** - Share quizzes via link with participant tracking
+- **Participant Dashboard** - View scores, grades, time spent, and export results to CSV
+- **Spaced Repetition** - Flashcard study mode with spaced repetition algorithm
+- **Dark Mode** - Full dark mode support
 
 ## Tech Stack
 
-### Backend
-- **Go 1.25** with Gin framework
-- **PostgreSQL** for data persistence
-- **JWT** for authentication
-- **OpenAI GPT-4o Mini** for AI generation
-
-### Frontend
-- **React 19** with TypeScript
-- **Tailwind CSS v4** for styling
-- **shadcn/ui** components
-- **Framer Motion** for animations
-- **i18next** for internationalization
-- **Recharts** for analytics charts
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: NextAuth.js v5 (Auth.js)
+- **AI**: OpenAI GPT-4o-mini
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui + Radix UI
+- **State Management**: TanStack Query (React Query)
 
 ## Getting Started
 
 ### Prerequisites
-- Go 1.25+
-- Node.js 20+ with pnpm
-- PostgreSQL 15+
-- Google OAuth credentials
-- OpenAI API key
 
-### Backend Setup
+- Node.js 18+
+- pnpm (recommended) or npm
+- PostgreSQL database
+
+### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/meszmate/smartnotes.git
-cd smartnotes
-```
-
-2. Create a PostgreSQL database:
-```bash
-createdb smartnotes
-```
-
-3. Create `.env` file in the root directory:
-```env
-# OpenAI
-API_KEY=sk-proj-...
-
-# Cloudflare Turnstile
-TURNSTILE_SECRET=1x0000000000000000000000000000000AA
-
-# Server
-PORT=8080
-OPEN=false
-
-# Database
-DATABASE_URL=postgres://user:password@localhost:5432/smartnotes
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URL=http://localhost:8080/auth/google/callback
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key
-
-# Rate Limits (optional)
-MAX_GENERATIONS_PER_DAY=5
-MAX_TOKENS_PER_DAY=50000
-MAX_CHAT_MESSAGES_PER_DAY=20
-
-# Frontend URL
-FRONTEND_URL=http://localhost:5173
-```
-
-4. Run the backend:
-```bash
-go run cmd/main.go
-```
-
-### Frontend Setup
-
-1. Navigate to the web directory:
-```bash
-cd web
+git clone https://github.com/yourusername/smartnotes.git
+cd smartnotes/smartnotes-next
 ```
 
 2. Install dependencies:
@@ -133,154 +54,163 @@ cd web
 pnpm install
 ```
 
-3. Create `.env` file:
-```env
-VITE_API_URL=http://localhost:8080
-VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
-VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+3. Set up environment variables:
+```bash
+cp .env.example .env
 ```
 
-4. Start the development server:
+4. Configure your `.env` file with:
+   - Database connection string
+   - Auth secret (generate with `openssl rand -base64 32`)
+   - Google OAuth credentials
+   - OpenAI API key
+
+5. Set up the database:
+```bash
+pnpm db:push
+```
+
+6. Run the development server:
 ```bash
 pnpm dev
 ```
 
-5. Open http://localhost:5173 in your browser
+Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `AUTH_SECRET` | NextAuth.js secret key | Yes |
+| `AUTH_URL` | App URL for auth callbacks | Yes |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID | Yes |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret | Yes |
+| `OPENAI_API_KEY` | OpenAI API key for AI features | Yes |
+| `NEXT_PUBLIC_APP_URL` | Public app URL for share links | Yes |
+| `NEXT_PUBLIC_REPOSITORY_URL` | GitHub repository URL (shows in sidebar) | No |
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start development server |
+| `pnpm build` | Build for production |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm db:generate` | Generate Drizzle migrations |
+| `pnpm db:migrate` | Run database migrations |
+| `pnpm db:push` | Push schema to database (dev) |
+| `pnpm db:studio` | Open Drizzle Studio |
 
 ## Project Structure
 
 ```
-smartnotes/
-├── cmd/
-│   └── main.go                 # Application entry point
-├── internal/
-│   ├── api/                    # HTTP handlers
-│   │   ├── router.go
-│   │   ├── middleware/auth.go
-│   │   ├── auth.go
-│   │   ├── materials.go
-│   │   ├── flashcards.go
-│   │   ├── quiz.go
-│   │   ├── srs.go
-│   │   ├── folders.go
-│   │   ├── analytics.go
-│   │   ├── chat.go
-│   │   └── export.go
-│   ├── config/config.go        # Configuration
-│   ├── db/                     # Database layer
-│   │   ├── db.go
-│   │   ├── migrate.go
-│   │   └── migrations/
-│   ├── models/                 # Data models
-│   ├── repository/             # Data access layer
-│   ├── pkg/
-│   │   ├── ai/client.go        # OpenAI client
-│   │   ├── auth/               # OAuth & JWT
-│   │   ├── srs/sm2.go          # SM-2 algorithm
-│   │   ├── export/             # Anki & PDF export
-│   │   └── captcha/            # Turnstile verification
-│   └── errx/                   # Error handling
-└── web/
-    └── src/
-        ├── components/
-        │   ├── auth/
-        │   ├── chat/
-        │   ├── timer/
-        │   ├── settings/
-        │   └── ui/
-        ├── hooks/
-        │   ├── useAuth.tsx
-        │   ├── useTheme.tsx
-        │   ├── useKeyboardShortcuts.tsx
-        │   └── usePomodoro.tsx
-        ├── pages/
-        │   ├── Dashboard.tsx
-        │   ├── Library.tsx
-        │   ├── StudySession.tsx
-        │   └── Settings.tsx
-        └── lib/
-            ├── i18n/
-            │   └── locales/
-            │       ├── hu.json
-            │       └── en.json
-            ├── api.ts
-            └── types.ts
+src/
+├── app/                    # Next.js App Router pages
+│   ├── (auth)/            # Authentication pages
+│   ├── (dashboard)/       # Protected dashboard pages
+│   ├── (public)/          # Public pages
+│   ├── api/               # API routes
+│   └── q/                 # Public quiz taking
+├── components/
+│   ├── quiz/              # Quiz-related components
+│   │   └── question-renderers/  # Question type renderers
+│   ├── shared/            # Shared components
+│   └── ui/                # shadcn/ui components
+└── lib/
+    ├── ai/                # AI integration (OpenAI)
+    ├── auth/              # Authentication config
+    ├── db/                # Database schema & connection
+    ├── quiz/              # Quiz services (grading, validation)
+    └── types/             # TypeScript type definitions
 ```
 
-## API Endpoints
+## Database Schema
 
-### Authentication
-- `GET /auth/google` - Initiate Google OAuth
-- `GET /auth/google/callback` - OAuth callback
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - Logout
-- `GET /auth/me` - Get current user
+Key tables:
+- `users` - User accounts
+- `study_materials` - Quizzes, flashcard sets, notes
+- `quiz_questions` - Questions with flexible type system
+- `quiz_attempts` - Participant attempts and scores
+- `flashcards` - Flashcard front/back content
+- `grading_configs` - Per-quiz grading settings
+- `question_types` - Custom question type definitions
 
-### Materials
-- `GET /materials` - List materials
-- `POST /materials` - Create material (AI generation)
-- `GET /materials/:id` - Get material
-- `PATCH /materials/:id` - Update material
-- `DELETE /materials/:id` - Delete material
-- `POST /materials/:id/share` - Generate share link
+## API Routes
 
-### Flashcards & Quiz
-- `POST /materials/:id/flashcards` - Add flashcard
-- `PATCH /materials/:id/flashcards/:cardId` - Edit flashcard
-- `DELETE /materials/:id/flashcards/:cardId` - Delete flashcard
-- `POST /materials/:id/quiz` - Add quiz question
-- `POST /materials/:id/quiz/submit` - Submit quiz answers
+### Quizzes
+- `GET /api/quizzes` - List user's quizzes
+- `POST /api/quizzes` - Create quiz
+- `GET /api/quizzes/[id]` - Get quiz details
+- `PUT /api/quizzes/[id]` - Update quiz
+- `DELETE /api/quizzes/[id]` - Delete quiz
 
-### SRS
-- `GET /srs/due` - Get due cards
-- `POST /srs/review` - Submit card rating
-- `GET /srs/stats` - Get SRS statistics
+### Questions
+- `GET /api/quizzes/[id]/questions` - List questions
+- `POST /api/quizzes/[id]/questions` - Create question
+- `PATCH /api/quizzes/[id]/questions` - Reorder questions
+- `PUT /api/quizzes/[id]/questions/[qid]` - Update question
+- `DELETE /api/quizzes/[id]/questions/[qid]` - Delete question
 
-### Organization
-- `GET /folders` - List folders
-- `POST /folders` - Create folder
-- `GET /tags` - List tags
-- `POST /tags` - Create tag
+### Attempts & Participants
+- `POST /api/quizzes/[id]/attempt` - Submit quiz attempt
+- `GET /api/quizzes/[id]/participants` - Get participant list & stats
+- `GET /api/quizzes/[id]/participants?format=csv` - Export to CSV
 
-### Analytics
-- `GET /analytics/overview` - Dashboard stats
-- `GET /analytics/streak` - Streak data
-- `GET /analytics/progress` - Progress charts
+### Grading
+- `GET /api/quizzes/[id]/grading` - Get grading config
+- `PUT /api/quizzes/[id]/grading` - Update grading config
 
-### Chat
-- `GET /chat/:materialId` - Get chat history
-- `POST /chat/:materialId` - Send message (SSE stream)
-- `DELETE /chat/:materialId` - Clear history
+### Sharing
+- `GET /api/shared/[token]` - Get shared quiz
+- `POST /api/shared/[token]/attempt` - Submit as guest
 
-### Export
-- `GET /export/anki/:id` - Download Anki deck
-- `GET /export/pdf/:id` - Download PDF
+## Deployment
 
-## Keyboard Shortcuts
+### Vercel (Recommended)
 
-### Study Session
-| Key | Action |
-|-----|--------|
-| `Space` | Flip card |
-| `←` / `→` | Previous / Next card |
-| `1` | Rate: Again |
-| `2` | Rate: Hard |
-| `3` | Rate: Good |
-| `4` | Rate: Easy |
+1. Push to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
 
-### Quiz
-| Key | Action |
-|-----|--------|
-| `1-4` | Select answer option |
-| `Enter` | Submit answer |
+### Docker
 
-### Global
-| Key | Action |
-|-----|--------|
-| `Ctrl+K` | Open search |
-| `Ctrl+N` | New material |
-| `Ctrl+S` | Start study session |
+#### Using Docker Compose (Recommended)
+
+The easiest way to run SmartNotes with Docker:
+
+```bash
+# Copy environment file and configure
+cp .env.example .env
+# Edit .env with your values
+
+# Start the app and database
+docker-compose up -d
+
+# Run database migrations
+docker-compose exec app pnpm db:push
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+#### Building Docker Image Manually
+
+```bash
+# Build the image
+docker build -t smartnotes .
+
+# Run the container
+docker run -p 3000:3000 \
+  -e DATABASE_URL="your-database-url" \
+  -e AUTH_SECRET="your-auth-secret" \
+  -e AUTH_GOOGLE_ID="your-google-id" \
+  -e AUTH_GOOGLE_SECRET="your-google-secret" \
+  -e OPENAI_API_KEY="your-openai-key" \
+  smartnotes
+```
 
 ## License
 
-MIT © 2025
+[MIT](./LICENSE)
