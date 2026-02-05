@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  ArrowLeft,
   BookOpen,
   Brain,
   FileQuestion,
@@ -17,7 +16,6 @@ import {
   ChevronDown,
   Clock,
   Target,
-  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,9 +44,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PageHeader } from "@/components/shared/page-header";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { InlineEditableField } from "@/components/shared/inline-editable-field";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -129,6 +136,25 @@ export default function ResourcePage() {
     },
   });
 
+  const updateResource = useMutation({
+    mutationFn: async (data: { title?: string; description?: string }) => {
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update resource");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
+      toast.success("Resource updated");
+    },
+    onError: () => {
+      toast.error("Failed to update resource");
+    },
+  });
+
   // Keyboard navigation for tabs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -202,16 +228,42 @@ export default function ResourcePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={resource.title}
-        description={resource.description || undefined}
-        breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Library", href: "/library" },
-          { label: resource.title },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+              <BreadcrumbSeparator />
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/library">Library</BreadcrumbLink>
+              <BreadcrumbSeparator />
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <BreadcrumbPage>{resource.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <InlineEditableField
+              value={resource.title}
+              onSave={(title) => updateResource.mutate({ title })}
+              isSaving={updateResource.isPending}
+              className="text-3xl font-bold tracking-tight"
+              inputClassName="text-3xl font-bold tracking-tight h-auto py-1"
+            />
+            <InlineEditableField
+              value={resource.description || ""}
+              onSave={(description) => updateResource.mutate({ description })}
+              isSaving={updateResource.isPending}
+              multiline
+              placeholder="Add a description..."
+              className="text-muted-foreground"
+              inputClassName="text-muted-foreground"
+            />
+          </div>
+          <div className="flex items-center gap-2 animate-fade-in shrink-0">
             <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
               <Share2 className="mr-2 h-4 w-4" />
               Share
@@ -223,8 +275,8 @@ export default function ResourcePage() {
               </Link>
             </Button>
           </div>
-        }
-      />
+        </div>
+      </div>
 
       {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap animate-fade-in">
@@ -320,9 +372,7 @@ export default function ResourcePage() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="pt-0">
-                    <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                      {resource.summary}
-                    </p>
+                    <MarkdownRenderer content={resource.summary} />
                   </CardContent>
                 </CollapsibleContent>
               </Card>

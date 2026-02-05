@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Brain, FileQuestion } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 interface Props {
   params: Promise<{ token: string }>;
@@ -116,7 +117,7 @@ export default async function SharedResourcePage({ params }: Props) {
                     <CardTitle>Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="whitespace-pre-wrap">{resource.summary}</p>
+                    <MarkdownRenderer content={resource.summary} />
                   </CardContent>
                 </Card>
               ) : (

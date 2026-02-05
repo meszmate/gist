@@ -45,8 +45,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, and
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/smartnotes.git
-cd smartnotes/smartnotes-next
+git clone https://github.com/meszmate/smartnotes.git
 ```
 
 2. Install dependencies:
@@ -190,7 +189,7 @@ cp .env.example .env
 docker-compose up -d
 
 # Run database migrations
-docker-compose exec app pnpm db:push
+pnpm db:push
 ```
 
 The app will be available at [http://localhost:3000](http://localhost:3000).

@@ -35,7 +35,19 @@ ENV NODE_ENV=production
 # Build the application
 RUN pnpm build
 
-# Stage 3: Runner
+# Stage 3: Migrator (used by docker-compose migrate service)
+FROM node:20-alpine AS migrator
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml drizzle.config.ts tsconfig.json ./
+COPY src ./src
+
+CMD ["pnpm", "db:push", "--force"]
+
+# Stage 4: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
