@@ -40,6 +40,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { FileUploadDropzone } from "@/components/upload/file-upload-dropzone";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -327,10 +328,35 @@ export default function GeneratePage() {
                   Source Content
                 </CardTitle>
                 <CardDescription>
-                  Paste your study material, notes, or any text you want to learn from
+                  Upload a document or paste your study material directly
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <FileUploadDropzone
+                  onTextExtracted={(text) => {
+                    const current = form.getValues("sourceContent");
+                    if (current.trim()) {
+                      form.setValue("sourceContent", current + "\n\n---\n\n" + text, { shouldValidate: true });
+                    } else {
+                      form.setValue("sourceContent", text, { shouldValidate: true });
+                    }
+                    toast.success("Text extracted successfully");
+                  }}
+                  onError={(message) => toast.error(message)}
+                  disabled={generate.isPending}
+                />
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      or paste text directly
+                    </span>
+                  </div>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="sourceContent"

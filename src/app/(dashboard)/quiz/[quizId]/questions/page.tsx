@@ -11,6 +11,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ import { QuestionBuilder } from "@/components/quiz/question-builder";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
+import { QuizPdfPreview } from "@/components/pdf/quiz-pdf-preview";
 import type {
   QuestionConfig,
   CorrectAnswerData,
@@ -56,10 +58,25 @@ interface Question {
   correctAnswer: number | null;
 }
 
-async function fetchQuestions(quizId: string): Promise<{ questions: Question[] }> {
-  const res = await fetch(`/api/quizzes/${quizId}/questions`);
-  if (!res.ok) throw new Error("Failed to fetch questions");
-  return res.json();
+interface QuizData {
+  questions: Question[];
+  title: string;
+  description?: string;
+}
+
+async function fetchQuizData(quizId: string): Promise<QuizData> {
+  const [questionsRes, quizRes] = await Promise.all([
+    fetch(`/api/quizzes/${quizId}/questions`),
+    fetch(`/api/quizzes/${quizId}`),
+  ]);
+  if (!questionsRes.ok) throw new Error("Failed to fetch questions");
+  const questionsData = await questionsRes.json();
+  const quizData = quizRes.ok ? await quizRes.json() : null;
+  return {
+    questions: questionsData.questions || [],
+    title: quizData?.title || "Quiz",
+    description: quizData?.description,
+  };
 }
 
 const QUESTION_TYPE_LABELS: Record<string, string> = {
@@ -82,10 +99,11 @@ export default function QuestionsEditorPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deleteQuestion, setDeleteQuestion] = useState<Question | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["quiz-questions", quizId],
-    queryFn: () => fetchQuestions(quizId),
+    queryFn: () => fetchQuizData(quizId),
   });
 
   const createMutation = useMutation({
@@ -231,6 +249,14 @@ export default function QuestionsEditorPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Quiz
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPdfPreview(true)}
+              disabled={questions.length === 0}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Preview PDF
             </Button>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -424,6 +450,16 @@ export default function QuestionsEditorPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Preview Modal */}
+      <QuizPdfPreview
+        open={showPdfPreview}
+        onOpenChange={setShowPdfPreview}
+        title={data?.title || "Quiz"}
+        description={data?.description}
+        questions={questions}
+        quizId={quizId}
+      />
     </div>
   );
 }

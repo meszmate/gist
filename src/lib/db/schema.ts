@@ -149,6 +149,7 @@ export const studyMaterials = pgTable(
       .$type<{ flashcards: boolean; summary: boolean; quiz: boolean }>(),
     requireAuthToInteract: boolean("require_auth_to_interact").default(false),
     allowedViewerEmails: text("allowed_viewer_emails").array(),
+    completedAt: timestamp("completed_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

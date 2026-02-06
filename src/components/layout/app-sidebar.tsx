@@ -56,12 +56,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-6 h-14 flex justify-center">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="rounded-lg bg-primary p-1.5">
-            <GistLogo className="h-5 w-5 text-primary-foreground" />
+      <SidebarHeader className="border-b h-14 flex justify-center">
+        <Link href="/dashboard" className="flex items-center gap-2 px-2">
+          <div className="rounded-md bg-primary p-1">
+            <GistLogo className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-lg">
+          <span className="font-semibold text-sm">
             gist
           </span>
         </Link>

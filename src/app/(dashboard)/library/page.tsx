@@ -20,6 +20,7 @@ import {
   SortAsc,
   Lock,
   Users2,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ interface Resource {
   title: string;
   description: string | null;
   difficulty: string | null;
+  completedAt: string | null;
   createdAt: string;
   flashcardCount: number;
   quizQuestionCount: number;
@@ -78,7 +80,7 @@ async function fetchResources(): Promise<Resource[]> {
 
 type ViewMode = "grid" | "list";
 type SortOption = "recent" | "name" | "cards";
-type FilterOption = "all" | "owned" | "shared";
+type FilterOption = "all" | "owned" | "shared" | "completed";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -114,7 +116,8 @@ export default function LibraryPage() {
       const matchesOwner =
         ownerFilter === "all" ||
         (ownerFilter === "owned" && r.isOwned) ||
-        (ownerFilter === "shared" && !r.isOwned);
+        (ownerFilter === "shared" && !r.isOwned) ||
+        (ownerFilter === "completed" && r.completedAt);
       return matchesSearch && matchesFolder && matchesOwner;
     })
     .sort((a, b) => {
@@ -202,19 +205,20 @@ export default function LibraryPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {savedCount > 0 && (
-            <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v as FilterOption)}>
-              <SelectTrigger className="w-[150px]">
-                <Users2 className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All resources</SelectItem>
-                <SelectItem value="owned">My resources</SelectItem>
+          <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v as FilterOption)}>
+            <SelectTrigger className="w-[150px]">
+              <Users2 className="mr-2 h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All resources</SelectItem>
+              <SelectItem value="owned">My resources</SelectItem>
+              {savedCount > 0 && (
                 <SelectItem value="shared">Shared with me</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+              )}
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
 
           {folders.length > 0 && (
             <Select value={folderFilter} onValueChange={setFolderFilter}>
@@ -313,7 +317,8 @@ export default function LibraryPage() {
                 <Card
                   className={cn(
                     "cursor-pointer transition-all duration-200 card-hover animate-scale-in",
-                    selectedIndex === index && "border-primary ring-2 ring-primary ring-offset-2"
+                    selectedIndex === index && "border-primary ring-2 ring-primary ring-offset-2",
+                    resource.completedAt && "border-green-500/30 opacity-80"
                   )}
                   style={{ animationDelay: `${index * 30}ms` }}
                   onClick={() => router.push(`/library/${resource.id}`)}
@@ -367,6 +372,12 @@ export default function LibraryPage() {
                     )}
 
                     <div className="flex items-center gap-2 flex-wrap mb-3">
+                      {resource.completedAt && (
+                        <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Done
+                        </Badge>
+                      )}
                       {!resource.isOwned && (
                         <Badge variant="secondary" className="gap-1 text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400">
                           <Users2 className="h-3 w-3" />
@@ -470,7 +481,8 @@ export default function LibraryPage() {
               key={resource.id}
               className={cn(
                 "cursor-pointer transition-all duration-200 hover:bg-muted/50 animate-slide-up",
-                selectedIndex === index && "border-primary ring-1 ring-primary"
+                selectedIndex === index && "border-primary ring-1 ring-primary",
+                resource.completedAt && "border-green-500/30 opacity-80"
               )}
               style={{ animationDelay: `${index * 30}ms` }}
               onClick={() => router.push(`/library/${resource.id}`)}
@@ -480,6 +492,12 @@ export default function LibraryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium truncate">{resource.title}</h3>
+                    {resource.completedAt && (
+                      <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Done
+                      </Badge>
+                    )}
                     {!resource.isOwned && (
                       <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-blue-500/10 text-blue-700">
                         <Users2 className="h-3 w-3" />

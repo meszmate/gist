@@ -308,7 +308,7 @@ export default function CreateResourcePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Folder</FormLabel>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
@@ -343,7 +343,8 @@ export default function CreateResourcePage() {
                             <Button
                               type="button"
                               variant="outline"
-                              className="h-11 w-11 shrink-0 p-0"
+                              size="icon"
+                              className="h-11 w-11 shrink-0"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
