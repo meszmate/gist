@@ -13,6 +13,15 @@ const updateResourceSchema = z.object({
   summary: z.string().optional(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   folderId: z.string().uuid().nullable().optional(),
+  availableFrom: z.string().nullable().optional(),
+  availableTo: z.string().nullable().optional(),
+  visibleSections: z.object({
+    flashcards: z.boolean(),
+    summary: z.boolean(),
+    quiz: z.boolean(),
+  }).optional(),
+  requireAuthToInteract: z.boolean().optional(),
+  allowedViewerEmails: z.array(z.string()).nullable().optional(),
 });
 
 export async function GET(
@@ -54,9 +63,14 @@ export async function GET(
       .select({
         id: quizQuestions.id,
         question: quizQuestions.question,
+        questionType: quizQuestions.questionType,
+        questionConfig: quizQuestions.questionConfig,
+        correctAnswerData: quizQuestions.correctAnswerData,
+        points: quizQuestions.points,
+        order: quizQuestions.order,
+        explanation: quizQuestions.explanation,
         options: quizQuestions.options,
         correctAnswer: quizQuestions.correctAnswer,
-        explanation: quizQuestions.explanation,
       })
       .from(quizQuestions)
       .where(eq(quizQuestions.studyMaterialId, resourceId));
@@ -103,12 +117,17 @@ export async function PATCH(
       return NextResponse.json({ error: "Resource not found" }, { status: 404 });
     }
 
+    const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() };
+    if (data.availableFrom !== undefined) {
+      updateData.availableFrom = data.availableFrom ? new Date(data.availableFrom) : null;
+    }
+    if (data.availableTo !== undefined) {
+      updateData.availableTo = data.availableTo ? new Date(data.availableTo) : null;
+    }
+
     const [updated] = await db
       .update(studyMaterials)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(studyMaterials.id, resourceId))
       .returning();
 

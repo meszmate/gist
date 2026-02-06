@@ -4,8 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - SmartNotes",
-  description: "Terms of Service for SmartNotes",
+  title: "Terms of Service - gist",
+  description: "Terms of Service for gist",
 };
 
 export default function TermsOfServicePage() {
@@ -28,7 +28,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing or using SmartNotes (&quot;the Service&quot;), you agree to be bound by these Terms of Service.
+              By accessing or using gist (&quot;the Service&quot;), you agree to be bound by these Terms of Service.
               If you do not agree to these terms, please do not use the Service. We reserve the right to
               modify these terms at any time, and your continued use of the Service constitutes acceptance
               of any changes.
@@ -38,7 +38,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              SmartNotes is an AI-powered study platform that allows users to create, manage, and share
+              gist is an AI-powered study platform that allows users to create, manage, and share
               educational content including flashcards, quizzes, and study notes. The Service utilizes
               artificial intelligence to help generate study materials from user-provided content.
             </p>
@@ -106,7 +106,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">8. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The Service, including its original content, features, and functionality, is owned by SmartNotes
+              The Service, including its original content, features, and functionality, is owned by gist
               and is protected by international copyright, trademark, and other intellectual property laws.
               Our trademarks may not be used without prior written consent.
             </p>

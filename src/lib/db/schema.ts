@@ -39,6 +39,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   folders: many(folders),
   contacts: many(contacts),
   contactGroups: many(contactGroups),
+  savedResources: many(savedResources),
 }));
 
 // ============== AUTH (NextAuth.js) ==============
@@ -141,6 +142,13 @@ export const studyMaterials = pgTable(
     difficulty: varchar("difficulty", { length: 50 }),
     shareToken: varchar("share_token", { length: 64 }).unique(),
     isPublic: boolean("is_public").default(false),
+    availableFrom: timestamp("available_from"),
+    availableTo: timestamp("available_to"),
+    visibleSections: jsonb("visible_sections")
+      .default({ flashcards: true, summary: true, quiz: true })
+      .$type<{ flashcards: boolean; summary: boolean; quiz: boolean }>(),
+    requireAuthToInteract: boolean("require_auth_to_interact").default(false),
+    allowedViewerEmails: text("allowed_viewer_emails").array(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -168,6 +176,8 @@ export const studyMaterialsRelations = relations(
     gradingConfig: one(gradingConfigs),
     quizAttempts: many(quizAttempts),
     resourceAccessLogs: many(resourceAccessLogs),
+    savedResources: many(savedResources),
+    flashcardStudyLogs: many(flashcardStudyLogs),
   })
 );
 
@@ -442,6 +452,72 @@ export const resourceAccessLogsRelations = relations(
   })
 );
 
+// ============== SAVED RESOURCES (Add-to-Library References) ==============
+export const savedResources = pgTable(
+  "saved_resources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => studyMaterials.id, { onDelete: "cascade" }),
+    permission: varchar("permission", { length: 20 }).default("read"),
+    savedAt: timestamp("saved_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("saved_resources_user_idx").on(table.userId),
+    index("saved_resources_resource_idx").on(table.resourceId),
+  ]
+);
+
+export const savedResourcesRelations = relations(savedResources, ({ one }) => ({
+  user: one(users, {
+    fields: [savedResources.userId],
+    references: [users.id],
+  }),
+  resource: one(studyMaterials, {
+    fields: [savedResources.resourceId],
+    references: [studyMaterials.id],
+  }),
+}));
+
+// ============== FLASHCARD STUDY LOGS ==============
+export const flashcardStudyLogs = pgTable(
+  "flashcard_study_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => studyMaterials.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    guestEmail: varchar("guest_email", { length: 255 }),
+    cardsStudied: integer("cards_studied").notNull(),
+    cardsCorrect: integer("cards_correct").notNull(),
+    timeSpentSeconds: integer("time_spent_seconds"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("flashcard_study_logs_resource_idx").on(table.resourceId),
+    index("flashcard_study_logs_user_idx").on(table.userId),
+  ]
+);
+
+export const flashcardStudyLogsRelations = relations(
+  flashcardStudyLogs,
+  ({ one }) => ({
+    resource: one(studyMaterials, {
+      fields: [flashcardStudyLogs.resourceId],
+      references: [studyMaterials.id],
+    }),
+    user: one(users, {
+      fields: [flashcardStudyLogs.userId],
+      references: [users.id],
+    }),
+  })
+);
+
 // ============== TYPES ==============
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -475,3 +551,9 @@ export type NewQuestionType = typeof questionTypes.$inferInsert;
 
 export type GradingConfig = typeof gradingConfigs.$inferSelect;
 export type NewGradingConfig = typeof gradingConfigs.$inferInsert;
+
+export type SavedResource = typeof savedResources.$inferSelect;
+export type NewSavedResource = typeof savedResources.$inferInsert;
+
+export type FlashcardStudyLog = typeof flashcardStudyLogs.$inferSelect;
+export type NewFlashcardStudyLog = typeof flashcardStudyLogs.$inferInsert;

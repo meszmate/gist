@@ -14,8 +14,13 @@ import {
   Copy,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock,
   Target,
+  Settings,
+  BarChart3,
+  Pencil,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,20 +35,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -56,9 +52,28 @@ import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { InlineEditableField } from "@/components/shared/inline-editable-field";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
+import { QuestionEditDialog } from "@/components/quiz/question-edit-dialog";
+import { ResourceSettingsDialog } from "@/components/resource/resource-settings-dialog";
+import { AccessControlDialog } from "@/components/resource/access-control-dialog";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import type {
+  QuestionConfig,
+  CorrectAnswerData,
+  MultipleChoiceConfig,
+  MultipleChoiceAnswer,
+  TrueFalseAnswer,
+  TextInputAnswer,
+  YearRangeAnswer,
+  NumericRangeAnswer,
+  MatchingConfig,
+  MatchingAnswer,
+  FillBlankConfig,
+  FillBlankAnswer,
+  MultiSelectConfig,
+  MultiSelectAnswer,
+} from "@/lib/types/quiz";
 
 interface Flashcard {
   id: string;
@@ -69,9 +84,14 @@ interface Flashcard {
 interface QuizQuestion {
   id: string;
   question: string;
-  options: string[];
-  correctAnswer: number;
+  questionType: string;
+  questionConfig: QuestionConfig;
+  correctAnswerData: CorrectAnswerData | null;
+  points: string;
+  order: number | null;
   explanation: string | null;
+  options: string[] | null;
+  correctAnswer: number | null;
 }
 
 interface Resource {
@@ -84,6 +104,11 @@ interface Resource {
   shareToken: string | null;
   isPublic: boolean;
   createdAt: string;
+  availableFrom: string | null;
+  availableTo: string | null;
+  visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean } | null;
+  requireAuthToInteract: boolean;
+  allowedViewerEmails: string[] | null;
   flashcards: Flashcard[];
   quizQuestions: QuizQuestion[];
 }
@@ -92,6 +117,159 @@ async function fetchResource(id: string): Promise<Resource> {
   const res = await fetch(`/api/resources/${id}`);
   if (!res.ok) throw new Error("Failed to fetch resource");
   return res.json();
+}
+
+const questionTypeLabels: Record<string, string> = {
+  multiple_choice: "Multiple Choice",
+  true_false: "True/False",
+  text_input: "Text Input",
+  year_range: "Year",
+  numeric_range: "Numeric",
+  matching: "Matching",
+  fill_blank: "Fill in the Blank",
+  multi_select: "Multi-Select",
+};
+
+function QuestionDetails({ question }: { question: QuizQuestion }) {
+  const type = question.questionType || "multiple_choice";
+  const config = question.questionConfig || {};
+  const answerData = question.correctAnswerData;
+
+  switch (type) {
+    case "multiple_choice": {
+      const opts =
+        (config as MultipleChoiceConfig)?.options || question.options || [];
+      const correctIdx =
+        (answerData as MultipleChoiceAnswer)?.correctIndex ??
+        question.correctAnswer ??
+        0;
+      return (
+        <div className="space-y-1.5">
+          {opts.map((opt, i) => (
+            <div
+              key={i}
+              className={cn(
+                "text-sm px-3 py-1.5 rounded",
+                i === correctIdx
+                  ? "bg-green-500/10 text-green-700 dark:text-green-400 font-medium"
+                  : "bg-muted"
+              )}
+            >
+              {String.fromCharCode(65 + i)}. {opt}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    case "true_false": {
+      const correct = (answerData as TrueFalseAnswer)?.correctValue;
+      return (
+        <p className="text-sm">
+          Correct answer:{" "}
+          <span className="font-medium text-green-700 dark:text-green-400">
+            {correct === true ? "True" : correct === false ? "False" : "N/A"}
+          </span>
+        </p>
+      );
+    }
+    case "text_input": {
+      const accepted = (answerData as TextInputAnswer)?.acceptedAnswers || [];
+      return (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Accepted answers:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {accepted.map((a, i) => (
+              <Badge key={i} variant="secondary">
+                {a}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case "year_range": {
+      const year = (answerData as YearRangeAnswer)?.correctYear;
+      return (
+        <p className="text-sm">
+          Correct year:{" "}
+          <span className="font-medium text-green-700 dark:text-green-400">
+            {year}
+          </span>
+        </p>
+      );
+    }
+    case "numeric_range": {
+      const val = (answerData as NumericRangeAnswer)?.correctValue;
+      return (
+        <p className="text-sm">
+          Correct value:{" "}
+          <span className="font-medium text-green-700 dark:text-green-400">
+            {val}
+          </span>
+        </p>
+      );
+    }
+    case "matching": {
+      const mc = config as MatchingConfig;
+      const pairs = (answerData as MatchingAnswer)?.correctPairs || {};
+      return (
+        <div className="space-y-1">
+          {(mc.leftColumn || []).map((left, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="bg-muted px-2 py-1 rounded">{left}</span>
+              <span className="text-muted-foreground">&rarr;</span>
+              <span className="bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-1 rounded">
+                {pairs[left] || mc.rightColumn?.[i] || ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    case "fill_blank": {
+      const fc = config as FillBlankConfig;
+      return (
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Template:</p>
+          <p className="text-sm font-mono bg-muted px-2 py-1 rounded">
+            {fc.template}
+          </p>
+        </div>
+      );
+    }
+    case "multi_select": {
+      const opts = (config as MultiSelectConfig)?.options || [];
+      const correctIds = (answerData as MultiSelectAnswer)?.correctIndices || [];
+      return (
+        <div className="space-y-1.5">
+          {opts.map((opt, i) => (
+            <div
+              key={i}
+              className={cn(
+                "text-sm px-3 py-1.5 rounded flex items-center gap-2",
+                correctIds.includes(i)
+                  ? "bg-green-500/10 text-green-700 dark:text-green-400 font-medium"
+                  : "bg-muted"
+              )}
+            >
+              {correctIds.includes(i) ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <span className="w-3.5" />
+              )}
+              {opt}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    default:
+      return (
+        <p className="text-sm text-muted-foreground">
+          Unknown question type: {type}
+        </p>
+      );
+  }
 }
 
 export default function ResourcePage() {
@@ -104,6 +282,17 @@ export default function ResourcePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(
+    new Set()
+  );
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(
+    null
+  );
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [accessControlDialogOpen, setAccessControlDialogOpen] = useState(false);
 
   const { data: resource, isLoading } = useQuery({
     queryKey: ["resource", resourceId],
@@ -155,6 +344,68 @@ export default function ResourcePage() {
     },
   });
 
+  const updateQuestion = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await fetch(
+        `/api/quizzes/${resourceId}/questions/${editingQuestion?.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to update question");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
+      setEditDialogOpen(false);
+      setEditingQuestion(null);
+      toast.success("Question updated");
+    },
+    onError: () => {
+      toast.error("Failed to update question");
+    },
+  });
+
+  const createQuestion = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await fetch(`/api/quizzes/${resourceId}/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create question");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
+      setCreateDialogOpen(false);
+      toast.success("Question created");
+    },
+    onError: () => {
+      toast.error("Failed to create question");
+    },
+  });
+
+  const deleteQuestion = useMutation({
+    mutationFn: async (questionId: string) => {
+      const res = await fetch(
+        `/api/quizzes/${resourceId}/questions/${questionId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete question");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
+      setDeleteQuestionId(null);
+      toast.success("Question deleted");
+    },
+    onError: () => {
+      toast.error("Failed to delete question");
+    },
+  });
+
   // Keyboard navigation for tabs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -201,6 +452,15 @@ export default function ResourcePage() {
       default:
         return "bg-muted text-muted-foreground";
     }
+  };
+
+  const toggleQuestion = (id: string) => {
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -264,6 +524,25 @@ export default function ResourcePage() {
             />
           </div>
           <div className="flex items-center gap-2 animate-fade-in shrink-0">
+            <Button variant="outline" size="icon" asChild>
+              <Link href={`/library/${resource.id}/analytics`}>
+                <BarChart3 className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsDialogOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setAccessControlDialogOpen(true)}
+            >
+              <Lock className="h-4 w-4" />
+            </Button>
             <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
               <Share2 className="mr-2 h-4 w-4" />
               Share
@@ -281,7 +560,9 @@ export default function ResourcePage() {
       {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap animate-fade-in">
         {resource.difficulty && (
-          <Badge className={cn("border", getDifficultyColor(resource.difficulty))}>
+          <Badge
+            className={cn("border", getDifficultyColor(resource.difficulty))}
+          >
             {resource.difficulty}
           </Badge>
         )}
@@ -299,7 +580,11 @@ export default function ResourcePage() {
         </Badge>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <BookOpen className="h-4 w-4" />
@@ -322,8 +607,11 @@ export default function ResourcePage() {
         </TabsList>
 
         <div className="text-xs text-muted-foreground">
-          Use <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">h</kbd> and{" "}
-          <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">l</kbd> to switch tabs
+          Use{" "}
+          <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">h</kbd>{" "}
+          and{" "}
+          <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">l</kbd>{" "}
+          to switch tabs
         </div>
 
         <TabsContent value="overview" className="space-y-6 animate-fade-in">
@@ -339,7 +627,7 @@ export default function ResourcePage() {
             <StatCard
               title="Quiz Questions"
               value={resource.quizQuestions.length}
-              description="Multiple choice"
+              description="Total questions"
               icon={<FileQuestion className="h-5 w-5" />}
               onClick={() => setActiveTab("quiz")}
             />
@@ -403,7 +691,11 @@ export default function ResourcePage() {
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               {resource.flashcards.length > 0 && (
-                <Button asChild variant="outline" className="justify-start h-auto py-4">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="justify-start h-auto py-4"
+                >
                   <Link href={`/study?resource=${resource.id}`}>
                     <Brain className="mr-3 h-5 w-5 text-primary" />
                     <div className="text-left">
@@ -416,7 +708,11 @@ export default function ResourcePage() {
                 </Button>
               )}
               {resource.quizQuestions.length > 0 && (
-                <Button asChild variant="outline" className="justify-start h-auto py-4">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="justify-start h-auto py-4"
+                >
                   <Link href={`/quiz/${resource.id}`}>
                     <FileQuestion className="mr-3 h-5 w-5 text-primary" />
                     <div className="text-left">
@@ -428,7 +724,11 @@ export default function ResourcePage() {
                   </Link>
                 </Button>
               )}
-              <Button asChild variant="outline" className="justify-start h-auto py-4">
+              <Button
+                asChild
+                variant="outline"
+                className="justify-start h-auto py-4"
+              >
                 <Link href={`/create/${resource.id}/generate`}>
                   <Sparkles className="mr-3 h-5 w-5 text-primary" />
                   <div className="text-left">
@@ -447,9 +747,7 @@ export default function ResourcePage() {
                 <Trash2 className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <div className="font-medium">Delete Resource</div>
-                  <div className="text-xs opacity-80">
-                    Remove permanently
-                  </div>
+                  <div className="text-xs opacity-80">Remove permanently</div>
                 </div>
               </Button>
             </CardContent>
@@ -472,7 +770,8 @@ export default function ResourcePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {resource.flashcards.length} flashcard{resource.flashcards.length !== 1 ? "s" : ""}
+                  {resource.flashcards.length} flashcard
+                  {resource.flashcards.length !== 1 ? "s" : ""}
                 </p>
                 <Button asChild>
                   <Link href={`/study?resource=${resource.id}`}>
@@ -527,12 +826,21 @@ export default function ResourcePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {resource.quizQuestions.length} question{resource.quizQuestions.length !== 1 ? "s" : ""}
+                  {resource.quizQuestions.length} question
+                  {resource.quizQuestions.length !== 1 ? "s" : ""}
                 </p>
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Question
+                  </Button>
                   <Button asChild variant="outline">
                     <Link href={`/quiz/${resource.id}/settings`}>
-                      Quiz Settings
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
                     </Link>
                   </Button>
                   <Button asChild>
@@ -544,38 +852,88 @@ export default function ResourcePage() {
                 </div>
               </div>
 
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Question</TableHead>
-                      <TableHead className="w-24 text-center">Options</TableHead>
-                      <TableHead className="w-32">Correct</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {resource.quizQuestions.map((question, index) => (
-                      <TableRow key={question.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                        <TableCell className="font-medium text-muted-foreground">
-                          {index + 1}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {question.question}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {question.options.length}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400">
-                            {String.fromCharCode(65 + question.correctAnswer)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
+              <div className="space-y-2">
+                {resource.quizQuestions.map((question, index) => {
+                  const isExpanded = expandedQuestions.has(question.id);
+                  const typeLabel =
+                    questionTypeLabels[
+                      question.questionType || "multiple_choice"
+                    ] || question.questionType;
+                  return (
+                    <Card
+                      key={question.id}
+                      className="animate-slide-up"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <Collapsible
+                        open={isExpanded}
+                        onOpenChange={() => toggleQuestion(question.id)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-medium text-muted-foreground w-8">
+                              #{index + 1}
+                            </span>
+                            <p className="flex-1 text-sm font-medium truncate">
+                              {question.question}
+                            </p>
+                            <Badge variant="secondary" className="text-xs">
+                              {typeLabel}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {parseFloat(question.points || "1")} pts
+                            </Badge>
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            )}
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="px-4 pb-4 pt-0 space-y-4 border-t">
+                            <div className="pt-3">
+                              <QuestionDetails question={question} />
+                            </div>
+                            {question.explanation && (
+                              <div className="text-sm p-3 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+                                <p className="font-medium text-xs uppercase mb-1">
+                                  Explanation
+                                </p>
+                                {question.explanation}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingQuestion(question);
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="mr-1 h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() =>
+                                  setDeleteQuestionId(question.id)
+                                }
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
         </TabsContent>
@@ -593,8 +951,16 @@ export default function ResourcePage() {
           {shareUrl ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Input value={shareUrl} readOnly className="font-mono text-sm" />
-                <Button size="icon" onClick={copyShareLink} className="shrink-0">
+                <Input
+                  value={shareUrl}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button
+                  size="icon"
+                  onClick={copyShareLink}
+                  className="shrink-0"
+                >
                   {copied ? (
                     <Check className="h-4 w-4" />
                   ) : (
@@ -624,7 +990,7 @@ export default function ResourcePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* Delete Resource Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -651,6 +1017,103 @@ export default function ResourcePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Question Dialog */}
+      <Dialog
+        open={!!deleteQuestionId}
+        onOpenChange={(open) => !open && setDeleteQuestionId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Question</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this question? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteQuestionId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteQuestionId && deleteQuestion.mutate(deleteQuestionId)
+              }
+              disabled={deleteQuestion.isPending}
+            >
+              {deleteQuestion.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Question Dialog */}
+      <QuestionEditDialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditingQuestion(null);
+        }}
+        mode="edit"
+        isSaving={updateQuestion.isPending}
+        initialData={
+          editingQuestion
+            ? {
+                question: editingQuestion.question,
+                questionType:
+                  editingQuestion.questionType || "multiple_choice",
+                questionConfig: editingQuestion.questionConfig || {},
+                correctAnswerData: editingQuestion.correctAnswerData,
+                points: parseFloat(editingQuestion.points || "1"),
+                explanation: editingQuestion.explanation,
+                options: editingQuestion.options,
+                correctAnswer: editingQuestion.correctAnswer,
+              }
+            : undefined
+        }
+        onSave={(data) => updateQuestion.mutate(data)}
+      />
+
+      {/* Create Question Dialog */}
+      <QuestionEditDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        mode="create"
+        isSaving={createQuestion.isPending}
+        onSave={(data) => createQuestion.mutate(data)}
+      />
+
+      {/* Resource Settings Dialog */}
+      <ResourceSettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+        resourceId={resource.id}
+        initialSettings={{
+          availableFrom: resource.availableFrom,
+          availableTo: resource.availableTo,
+          visibleSections: resource.visibleSections || {
+            flashcards: true,
+            summary: true,
+            quiz: true,
+          },
+          requireAuthToInteract: resource.requireAuthToInteract,
+        }}
+        onSaved={() =>
+          queryClient.invalidateQueries({ queryKey: ["resource", resourceId] })
+        }
+      />
+
+      {/* Access Control Dialog */}
+      <AccessControlDialog
+        open={accessControlDialogOpen}
+        onOpenChange={setAccessControlDialogOpen}
+        resourceId={resource.id}
+        initialEmails={resource.allowedViewerEmails}
+        onSaved={() =>
+          queryClient.invalidateQueries({ queryKey: ["resource", resourceId] })
+        }
+      />
     </div>
   );
 }

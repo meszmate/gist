@@ -11,7 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Brain, Loader2, BookOpen, Sparkles, Target } from "lucide-react";
+import { Loader2, BookOpen, Sparkles, Target } from "lucide-react";
+import { GistLogo } from "@/components/icons/gist-logo";
 
 const features = [
   {
@@ -82,9 +83,9 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-3 mb-6">
               <div className="rounded-xl bg-primary p-2.5">
-                <Brain className="h-7 w-7 text-primary-foreground" />
+                <GistLogo className="h-7 w-7 text-primary-foreground" />
               </div>
-              <span className="text-2xl font-bold">SmartNotes</span>
+              <span className="text-2xl font-bold">gist</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
               Study smarter,
@@ -136,7 +137,7 @@ export default function LoginPage() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center lg:hidden mb-2">
               <div className="rounded-xl bg-primary p-3">
-                <Brain className="h-8 w-8 text-primary-foreground" />
+                <GistLogo className="h-8 w-8 text-primary-foreground" />
               </div>
             </div>
             <div>

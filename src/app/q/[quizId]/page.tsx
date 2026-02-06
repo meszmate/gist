@@ -10,8 +10,8 @@ import {
   Lock,
   Check,
   X,
-  Brain,
 } from "lucide-react";
+import { GistLogo } from "@/components/icons/gist-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -185,7 +185,7 @@ export default function PublicQuizPage() {
               {(error as Error).message}
             </p>
             <Button asChild>
-              <Link href="/">Go to SmartNotes</Link>
+              <Link href="/">Go to gist</Link>
             </Button>
           </CardContent>
         </Card>
@@ -227,7 +227,7 @@ export default function PublicQuizPage() {
               You are not authorized to take this quiz.
             </p>
             <Button asChild>
-              <Link href="/">Go to SmartNotes</Link>
+              <Link href="/">Go to gist</Link>
             </Button>
           </CardContent>
         </Card>
@@ -240,8 +240,8 @@ export default function PublicQuizPage() {
       <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
         <div className="max-w-3xl mx-auto py-8 space-y-6">
           <div className="flex items-center gap-2 mb-4">
-            <Brain className="h-6 w-6" />
-            <span className="font-semibold">SmartNotes</span>
+            <GistLogo className="h-6 w-6" />
+            <span className="font-semibold">gist</span>
           </div>
 
           <Card>
@@ -307,7 +307,7 @@ export default function PublicQuizPage() {
 
           <div className="text-center">
             <Button asChild>
-              <Link href="/">Go to SmartNotes</Link>
+              <Link href="/">Go to gist</Link>
             </Button>
           </div>
         </div>
@@ -321,8 +321,8 @@ export default function PublicQuizPage() {
         <Card className="max-w-md w-full">
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">
-              <Brain className="h-5 w-5" />
-              <span className="text-sm text-muted-foreground">SmartNotes Quiz</span>
+              <GistLogo className="h-5 w-5" />
+              <span className="text-sm text-muted-foreground">gist Quiz</span>
             </div>
             <CardTitle>{quiz.title}</CardTitle>
             {quiz.description && (
@@ -361,8 +361,8 @@ export default function PublicQuizPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Brain className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">SmartNotes</span>
+              <GistLogo className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">gist</span>
             </div>
             <h1 className="text-xl font-bold">{quiz.title}</h1>
             <p className="text-sm text-muted-foreground">

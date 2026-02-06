@@ -7,7 +7,7 @@ import { z } from "zod";
 import {
   generateSummary,
   generateFlashcards,
-  generateQuizQuestions,
+  generateExtendedQuizQuestions,
 } from "@/lib/ai/openai";
 
 const generateSchema = z.object({
@@ -78,19 +78,30 @@ export async function POST(
       }
 
       case "quiz": {
-        const generatedQuestions = await generateQuizQuestions(
+        const generatedQuestions = await generateExtendedQuizQuestions(
           data.sourceContent,
-          data.count || 5
+          data.count || 5,
+          "mixed"
         );
 
         if (generatedQuestions.length > 0) {
           await db.insert(quizQuestions).values(
-            generatedQuestions.map((q) => ({
+            generatedQuestions.map((q, index) => ({
               studyMaterialId: resourceId,
               question: q.question,
-              options: q.options,
-              correctAnswer: q.correctAnswer,
+              questionType: q.questionType,
+              questionConfig: q.questionConfig,
+              correctAnswerData: q.correctAnswerData,
+              points: String(q.points),
+              order: index,
               explanation: q.explanation,
+              // Legacy fields for backward compatibility
+              options: q.questionType === "multiple_choice" && "options" in q.questionConfig
+                ? (q.questionConfig as { options: string[] }).options
+                : null,
+              correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
+                ? (q.correctAnswerData as { correctIndex: number }).correctIndex
+                : null,
             }))
           );
         }

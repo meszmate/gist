@@ -24,9 +24,15 @@ import {
   Moon,
   Sun,
   Monitor,
+  Check,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import {
+  useColorTheme,
+  COLOR_THEMES,
+  type ColorTheme,
+} from "@/hooks/use-color-theme";
 
 const shortcuts = [
   { keys: ["?"], description: "Show keyboard shortcuts" },
@@ -45,6 +51,7 @@ const shortcuts = [
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+  const { colorTheme, setColorTheme } = useColorTheme();
   const [activeTab, setActiveTab] = useState("profile");
   const user = session?.user;
 
@@ -59,6 +66,15 @@ export default function SettingsPage() {
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
     { value: "system", label: "System", icon: Monitor },
+  ];
+
+  const colorSwatches: { value: ColorTheme; label: string; color: string }[] = [
+    { value: "neutral", label: "Neutral", color: "oklch(0.37 0 0)" },
+    { value: "blue", label: "Blue", color: "oklch(0.55 0.2 250)" },
+    { value: "violet", label: "Violet", color: "oklch(0.55 0.22 290)" },
+    { value: "green", label: "Green", color: "oklch(0.55 0.17 155)" },
+    { value: "rose", label: "Rose", color: "oklch(0.55 0.2 10)" },
+    { value: "orange", label: "Orange", color: "oklch(0.55 0.17 50)" },
   ];
 
   return (
@@ -92,7 +108,7 @@ export default function SettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-6 mt-6 animate-fade-in">
+        <TabsContent value="profile" className="w-full overflow-hidden space-y-6 mt-6 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -136,7 +152,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="appearance" className="space-y-6 mt-6 animate-fade-in">
+        <TabsContent value="appearance" className="w-full overflow-hidden space-y-6 mt-6 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -179,6 +195,53 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Color
+              </CardTitle>
+              <CardDescription>
+                Pick an accent color for the interface
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                {colorSwatches.map((swatch) => (
+                  <button
+                    key={swatch.value}
+                    onClick={() => setColorTheme(swatch.value)}
+                    className="flex flex-col items-center gap-2 group"
+                  >
+                    <div
+                      className={cn(
+                        "relative h-10 w-10 rounded-full transition-all",
+                        colorTheme === swatch.value
+                          ? "ring-2 ring-offset-2 ring-offset-background ring-primary"
+                          : "hover:ring-2 hover:ring-offset-2 hover:ring-offset-background hover:ring-muted-foreground/30"
+                      )}
+                      style={{ backgroundColor: swatch.color }}
+                    >
+                      {colorTheme === swatch.value && (
+                        <Check className="absolute inset-0 m-auto h-5 w-5 text-white" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs",
+                        colorTheme === swatch.value
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {swatch.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Preview</CardTitle>
               <CardDescription>
                 See how the theme looks
@@ -203,7 +266,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="keyboard" className="space-y-6 mt-6 animate-fade-in">
+        <TabsContent value="keyboard" className="w-full overflow-hidden space-y-6 mt-6 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -211,7 +274,7 @@ export default function SettingsPage() {
                 Keyboard Shortcuts
               </CardTitle>
               <CardDescription>
-                SmartNotes uses vim-style navigation for power users
+                gist uses vim-style navigation for power users
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,7 +322,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="data" className="space-y-6 mt-6 animate-fade-in">
+        <TabsContent value="data" className="w-full overflow-hidden space-y-6 mt-6 animate-fade-in">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

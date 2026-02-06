@@ -14,18 +14,17 @@ import {
   Edit,
   Grid3X3,
   List,
-  Filter,
   Clock,
   Brain,
   FileQuestion,
-  ChevronDown,
   SortAsc,
+  Lock,
+  Users2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +65,9 @@ interface Resource {
     name: string;
     color: string | null;
   } | null;
+  isOwned: boolean;
+  permission?: string | null;
+  ownerName?: string | null;
 }
 
 async function fetchResources(): Promise<Resource[]> {
@@ -76,6 +78,7 @@ async function fetchResources(): Promise<Resource[]> {
 
 type ViewMode = "grid" | "list";
 type SortOption = "recent" | "name" | "cards";
+type FilterOption = "all" | "owned" | "shared";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -83,6 +86,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [folderFilter, setFolderFilter] = useState<string>("all");
+  const [ownerFilter, setOwnerFilter] = useState<FilterOption>("all");
   const { searchOpen, setSearchOpen } = useVimContext();
 
   const { data: resources = [], isLoading } = useQuery({
@@ -107,7 +111,11 @@ export default function LibraryPage() {
         r.description?.toLowerCase().includes(search.toLowerCase());
       const matchesFolder =
         folderFilter === "all" || r.folder?.id === folderFilter;
-      return matchesSearch && matchesFolder;
+      const matchesOwner =
+        ownerFilter === "all" ||
+        (ownerFilter === "owned" && r.isOwned) ||
+        (ownerFilter === "shared" && !r.isOwned);
+      return matchesSearch && matchesFolder && matchesOwner;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -157,6 +165,8 @@ export default function LibraryPage() {
     return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
+  const savedCount = resources.filter((r) => !r.isOwned).length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -192,6 +202,20 @@ export default function LibraryPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {savedCount > 0 && (
+            <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v as FilterOption)}>
+              <SelectTrigger className="w-[150px]">
+                <Users2 className="mr-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All resources</SelectItem>
+                <SelectItem value="owned">My resources</SelectItem>
+                <SelectItem value="shared">Shared with me</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           {folders.length > 0 && (
             <Select value={folderFilter} onValueChange={setFolderFilter}>
               <SelectTrigger className="w-[140px]">
@@ -316,18 +340,22 @@ export default function LibraryPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {resource.isOwned && (
+                            <>
+                              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                <Share2 className="mr-2 h-4 w-4" />
+                                Share
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -339,6 +367,18 @@ export default function LibraryPage() {
                     )}
 
                     <div className="flex items-center gap-2 flex-wrap mb-3">
+                      {!resource.isOwned && (
+                        <Badge variant="secondary" className="gap-1 text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                          <Users2 className="h-3 w-3" />
+                          Shared with you
+                        </Badge>
+                      )}
+                      {!resource.isOwned && resource.permission === "read" && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Lock className="h-3 w-3" />
+                          Read only
+                        </Badge>
+                      )}
                       {resource.folder && (
                         <Badge variant="outline" className="gap-1">
                           <Folder className="h-3 w-3" />
@@ -351,6 +391,12 @@ export default function LibraryPage() {
                         </Badge>
                       )}
                     </div>
+
+                    {!resource.isOwned && resource.ownerName && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        by {resource.ownerName}
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <div className="flex items-center gap-3">
@@ -381,6 +427,11 @@ export default function LibraryPage() {
                   {resource.description && (
                     <p className="text-sm text-muted-foreground">
                       {resource.description}
+                    </p>
+                  )}
+                  {!resource.isOwned && resource.ownerName && (
+                    <p className="text-sm text-muted-foreground">
+                      Shared by {resource.ownerName}
                     </p>
                   )}
                   <div className="flex gap-4 text-sm">
@@ -429,6 +480,12 @@ export default function LibraryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium truncate">{resource.title}</h3>
+                    {!resource.isOwned && (
+                      <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-blue-500/10 text-blue-700">
+                        <Users2 className="h-3 w-3" />
+                        Shared
+                      </Badge>
+                    )}
                     {resource.folder && (
                       <Badge variant="outline" className="gap-1 shrink-0">
                         <Folder className="h-3 w-3" />
@@ -441,12 +498,20 @@ export default function LibraryPage() {
                       {resource.description}
                     </p>
                   )}
+                  {!resource.isOwned && resource.ownerName && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      by {resource.ownerName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
                   {resource.difficulty && (
                     <Badge className={getDifficultyColor(resource.difficulty)}>
                       {resource.difficulty}
                     </Badge>
+                  )}
+                  {!resource.isOwned && resource.permission === "read" && (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
                   )}
                   <span className="flex items-center gap-1">
                     <Brain className="h-4 w-4" />
@@ -474,18 +539,22 @@ export default function LibraryPage() {
                       <Edit className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
+                    {resource.isOwned && (
+                      <>
+                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                          <Share2 className="mr-2 h-4 w-4" />
+                          Share
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardContent>

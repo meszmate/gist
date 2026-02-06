@@ -9,7 +9,10 @@ import {
   Users,
   Keyboard,
   ArrowRight,
+  Github,
+  Star,
 } from "lucide-react";
+import { GistLogo } from "@/components/icons/gist-logo";
 
 const features = [
   {
@@ -57,10 +60,23 @@ export default function LandingPage() {
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Brain className="h-6 w-6" />
-            SmartNotes
+            <GistLogo className="h-6 w-6" />
+            gist
           </Link>
           <div className="flex items-center gap-4">
+            {process.env.NEXT_PUBLIC_REPOSITORY_URL && (
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={process.env.NEXT_PUBLIC_REPOSITORY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Github className="h-4 w-4" />
+                  <Star className="h-3 w-3" />
+                  Star
+                </a>
+              </Button>
+            )}
             <Button variant="ghost" asChild>
               <Link href="/login">Sign In</Link>
             </Button>
@@ -104,7 +120,7 @@ export default function LandingPage() {
               Everything you need to learn effectively
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              SmartNotes combines AI content generation with proven learning
+              gist combines AI content generation with proven learning
               techniques to help you master any subject.
             </p>
           </div>
@@ -167,7 +183,7 @@ export default function LandingPage() {
         <div className="container max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to study smarter?</h2>
           <p className="mb-8 opacity-90">
-            Join thousands of students using SmartNotes to learn more efficiently.
+            Join thousands of students using gist to learn more efficiently.
           </p>
           <Button size="lg" variant="secondary" asChild>
             <Link href="/login">
@@ -182,8 +198,8 @@ export default function LandingPage() {
       <footer className="border-t py-8 px-4">
         <div className="container flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Brain className="h-4 w-4" />
-            SmartNotes
+            <GistLogo className="h-4 w-4" />
+            gist
           </div>
           <p className="text-sm text-muted-foreground">
             Built with Next.js, shadcn/ui, and OpenAI

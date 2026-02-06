@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, FileText, Loader2, Sparkles, Check, FolderOpen, GraduationCap } from "lucide-react";
+import { ArrowRight, FileText, Loader2, Sparkles, Check, FolderOpen, GraduationCap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -79,6 +89,10 @@ const difficultyOptions = [
 
 export default function CreateResourcePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState("");
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
 
   const { data: folders = [] } = useQuery<Folder[]>({
     queryKey: ["folders"],
@@ -117,6 +131,37 @@ export default function CreateResourcePage() {
       toast.error("Failed to create resource");
     },
   });
+
+  const createFolder = useMutation({
+    mutationFn: async (data: { name: string; color?: string }) => {
+      const res = await fetch("/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create folder");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+      form.setValue("folderId", data.id);
+      setNewFolderName("");
+      setNewFolderColor("");
+      setFolderDialogOpen(false);
+      toast.success("Folder created");
+    },
+    onError: () => {
+      toast.error("Failed to create folder");
+    },
+  });
+
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return;
+    createFolder.mutate({
+      name: newFolderName.trim(),
+      color: newFolderColor || undefined,
+    });
+  };
 
   const onSubmit = (data: CreateResourceForm) => {
     createResource.mutate(data);
@@ -263,35 +308,104 @@ export default function CreateResourcePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Folder</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select folder" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {folders.length === 0 ? (
-                            <SelectItem value="_none" disabled>
-                              <span className="flex items-center gap-2 text-muted-foreground">
-                                <FolderOpen className="h-4 w-4" />
-                                No folders yet
-                              </span>
-                            </SelectItem>
-                          ) : (
-                            folders.map((folder) => (
-                              <SelectItem key={folder.id} value={folder.id}>
-                                <span className="flex items-center gap-2">
+                      <div className="flex gap-2">
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Select folder" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {folders.length === 0 ? (
+                              <SelectItem value="_none" disabled>
+                                <span className="flex items-center gap-2 text-muted-foreground">
                                   <FolderOpen className="h-4 w-4" />
-                                  {folder.name}
+                                  No folders yet
                                 </span>
                               </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                            ) : (
+                              folders.map((folder) => (
+                                <SelectItem key={folder.id} value={folder.id}>
+                                  <span className="flex items-center gap-2">
+                                    <FolderOpen className="h-4 w-4" />
+                                    {folder.name}
+                                  </span>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-11 w-11 shrink-0 p-0"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Create Folder</DialogTitle>
+                              <DialogDescription>
+                                Add a new folder to organize your resources.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <Input
+                                placeholder="Folder name"
+                                value={newFolderName}
+                                onChange={(e) => setNewFolderName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleCreateFolder();
+                                  }
+                                }}
+                              />
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-2">Color (optional)</p>
+                                <div className="flex gap-2">
+                                  {["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"].map((color) => (
+                                    <button
+                                      key={color}
+                                      type="button"
+                                      className={cn(
+                                        "w-8 h-8 rounded-full border-2 transition-all",
+                                        newFolderColor === color
+                                          ? "border-foreground scale-110"
+                                          : "border-transparent"
+                                      )}
+                                      style={{ backgroundColor: color }}
+                                      onClick={() => setNewFolderColor(newFolderColor === color ? "" : color)}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                disabled={!newFolderName.trim() || createFolder.isPending}
+                                onClick={handleCreateFolder}
+                              >
+                                {createFolder.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Creating...
+                                  </>
+                                ) : (
+                                  "Create Folder"
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       <FormDescription>
                         Organize resources into folders
                       </FormDescription>

@@ -16,11 +16,14 @@ import {
   ChevronUp,
   Flame,
   Zap,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Collapsible,
   CollapsibleContent,
@@ -92,13 +95,32 @@ function StudyContent() {
   const [startTime] = useState(Date.now());
   const [ratings, setRatings] = useState<Rating[]>([]);
 
+  // Practice mode state
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [sessionCards, setSessionCards] = useState<DueCard[]>([]);
+  const [cardRatings, setCardRatings] = useState<Record<string, Rating>>({});
+
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ["due-cards", resourceId],
     queryFn: () => fetchDueCards(resourceId || undefined),
   });
 
+  // Store initial cards for practice mode
+  useEffect(() => {
+    if (cards.length > 0 && sessionCards.length === 0) {
+      setSessionCards(cards);
+    }
+  }, [cards, sessionCards.length]);
+
+  // Use session cards in practice mode, otherwise use fresh cards
+  const activeCards = practiceMode ? sessionCards : cards;
+
   const reviewCard = useMutation({
     mutationFn: async ({ cardId, rating }: { cardId: string; rating: Rating }) => {
+      // In practice mode, skip API call for SRS updates
+      if (practiceMode) {
+        return { success: true };
+      }
       const res = await fetch("/api/srs/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -109,8 +131,9 @@ function StudyContent() {
     },
     onSuccess: (_, variables) => {
       setRatings((prev) => [...prev, variables.rating]);
+      setCardRatings((prev) => ({ ...prev, [variables.cardId]: variables.rating }));
       setReviewedCount((prev) => prev + 1);
-      if (currentIndex < cards.length - 1) {
+      if (currentIndex < activeCards.length - 1) {
         setCurrentIndex((prev) => prev + 1);
         setIsFlipped(false);
       } else {
@@ -119,9 +142,9 @@ function StudyContent() {
     },
   });
 
-  const currentCard = cards[currentIndex];
-  const progress = cards.length > 0 ? (reviewedCount / cards.length) * 100 : 0;
-  const remainingCards = cards.length - currentIndex - 1;
+  const currentCard = activeCards[currentIndex];
+  const progress = activeCards.length > 0 ? (reviewedCount / activeCards.length) * 100 : 0;
+  const remainingCards = activeCards.length - currentIndex - 1;
   const elapsedMinutes = Math.floor((Date.now() - startTime) / 60000);
 
   const flipCard = useCallback(() => {
@@ -162,7 +185,22 @@ function StudyContent() {
     setIsFlipped(false);
     setSessionComplete(false);
     setRatings([]);
-    queryClient.invalidateQueries({ queryKey: ["due-cards", resourceId] });
+
+    if (practiceMode) {
+      // In practice mode, shuffle cards with priority for difficult ones (rated 1-2)
+      const shuffledCards = [...sessionCards].sort((a, b) => {
+        const ratingA = cardRatings[a.id] || 3;
+        const ratingB = cardRatings[b.id] || 3;
+        // Prioritize cards with lower ratings (1-2 go first)
+        if (ratingA <= 2 && ratingB > 2) return -1;
+        if (ratingB <= 2 && ratingA > 2) return 1;
+        // Shuffle within groups
+        return Math.random() - 0.5;
+      });
+      setSessionCards(shuffledCards);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["due-cards", resourceId] });
+    }
   };
 
   const getSessionStats = () => {
@@ -183,7 +221,7 @@ function StudyContent() {
     );
   }
 
-  if (cards.length === 0) {
+  if (activeCards.length === 0) {
     return (
       <div className="max-w-2xl mx-auto">
         <EmptyState
@@ -283,9 +321,26 @@ function StudyContent() {
             </CollapsibleTrigger>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="practice-mode"
+                checked={practiceMode}
+                onCheckedChange={setPracticeMode}
+              />
+              <Label
+                htmlFor="practice-mode"
+                className={cn(
+                  "text-sm cursor-pointer flex items-center gap-1",
+                  practiceMode ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Repeat className="h-3 w-3" />
+                Practice
+              </Label>
+            </div>
             <Badge variant="outline" className="gap-1">
               <Target className="h-3 w-3" />
-              {currentIndex + 1} / {cards.length}
+              {currentIndex + 1} / {activeCards.length}
             </Badge>
           </div>
         </div>
@@ -315,7 +370,7 @@ function StudyContent() {
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{reviewedCount} reviewed</span>
-          <span>{cards.length - reviewedCount} remaining</span>
+          <span>{activeCards.length - reviewedCount} remaining</span>
         </div>
       </div>
 
