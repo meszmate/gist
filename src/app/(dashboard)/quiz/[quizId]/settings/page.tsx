@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Save, Share2, Copy, Check, Clock, Users, Shuffle, Eye, GraduationCap, Settings2, ListOrdered } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Share2, Copy, Check, Clock, Users, Shuffle, Eye, GraduationCap, Settings2, ListOrdered, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useState } from "react";
+import { QuizPdfPreview } from "@/components/pdf/quiz-pdf-preview";
+import type { QuizQuestion } from "@/components/pdf/quiz-pdf-document";
 
 const quizSettingsSchema = z.object({
   timeLimitMinutes: z.number().min(0).max(180).optional(),
@@ -76,20 +78,24 @@ interface GradingConfig {
 interface Quiz {
   id: string;
   title: string;
+  description?: string;
   shareToken: string | null;
   settings: QuizSettings | null;
   gradingConfig?: GradingConfig | null;
+  questions?: QuizQuestion[];
 }
 
 async function fetchQuizSettings(quizId: string): Promise<Quiz> {
-  const [settingsRes, gradingRes] = await Promise.all([
+  const [settingsRes, gradingRes, questionsRes] = await Promise.all([
     fetch(`/api/quizzes/${quizId}/settings`),
     fetch(`/api/quizzes/${quizId}/grading`),
+    fetch(`/api/quizzes/${quizId}/questions`),
   ]);
   if (!settingsRes.ok) throw new Error("Failed to fetch quiz settings");
   const settings = await settingsRes.json();
   const grading = gradingRes.ok ? await gradingRes.json() : null;
-  return { ...settings, gradingConfig: grading };
+  const questionsData = questionsRes.ok ? await questionsRes.json() : null;
+  return { ...settings, gradingConfig: grading, questions: questionsData?.questions || [] };
 }
 
 export default function QuizSettingsPage() {
@@ -98,6 +104,7 @@ export default function QuizSettingsPage() {
   const queryClient = useQueryClient();
   const quizId = params.quizId as string;
   const [copied, setCopied] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const { data: quiz, isLoading } = useQuery({
     queryKey: ["quiz-settings", quizId],
@@ -588,6 +595,16 @@ export default function QuizSettingsPage() {
                   View Participants
                 </Link>
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => setShowPdfPreview(true)}
+                disabled={!quiz.questions?.length}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </Button>
             </CardContent>
           </Card>
 
@@ -658,6 +675,16 @@ export default function QuizSettingsPage() {
           </div>
         </form>
       </Form>
+
+      {/* PDF Preview Modal */}
+      <QuizPdfPreview
+        open={showPdfPreview}
+        onOpenChange={setShowPdfPreview}
+        title={quiz.title}
+        description={quiz.description}
+        questions={quiz.questions || []}
+        quizId={quizId}
+      />
     </div>
   );
 }

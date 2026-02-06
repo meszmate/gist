@@ -21,6 +21,9 @@ import {
   BarChart3,
   Pencil,
   Lock,
+  CheckCircle2,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,6 +104,7 @@ interface Resource {
   summary: string | null;
   sourceContent: string | null;
   difficulty: string | null;
+  completedAt: string | null;
   shareToken: string | null;
   isPublic: boolean;
   createdAt: string;
@@ -344,6 +348,27 @@ export default function ResourcePage() {
     },
   });
 
+  const toggleComplete = useMutation({
+    mutationFn: async (completed: boolean) => {
+      const res = await fetch(`/api/resources/${resourceId}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed }),
+      });
+      if (!res.ok) throw new Error("Failed to update completion status");
+      return res.json();
+    },
+    onSuccess: (_, completed) => {
+      queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      queryClient.invalidateQueries({ queryKey: ["due-cards"] });
+      toast.success(completed ? "Resource marked as done" : "Resource reopened");
+    },
+    onError: () => {
+      toast.error("Failed to update completion status");
+    },
+  });
+
   const updateQuestion = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
       const res = await fetch(
@@ -524,6 +549,35 @@ export default function ResourcePage() {
             />
           </div>
           <div className="flex items-center gap-2 animate-fade-in shrink-0">
+            {resource.completedAt ? (
+              <Button
+                variant="outline"
+                onClick={() => toggleComplete.mutate(false)}
+                disabled={toggleComplete.isPending}
+                className="gap-2"
+              >
+                {toggleComplete.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Reopen
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => toggleComplete.mutate(true)}
+                disabled={toggleComplete.isPending}
+                className="gap-2 border-green-500/50 text-green-700 hover:bg-green-500/10 dark:text-green-400"
+              >
+                {toggleComplete.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Mark as Done
+              </Button>
+            )}
             <Button variant="outline" size="icon" asChild>
               <Link href={`/library/${resource.id}/analytics`}>
                 <BarChart3 className="h-4 w-4" />
@@ -559,6 +613,12 @@ export default function ResourcePage() {
 
       {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap animate-fade-in">
+        {resource.completedAt && (
+          <Badge className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 border">
+            <CheckCircle2 className="h-3 w-3" />
+            Completed {new Date(resource.completedAt).toLocaleDateString()}
+          </Badge>
+        )}
         {resource.difficulty && (
           <Badge
             className={cn("border", getDifficultyColor(resource.difficulty))}

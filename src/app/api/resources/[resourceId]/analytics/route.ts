@@ -232,6 +232,7 @@ export async function GET(
       // Get access logs grouped by day for last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
 
       const logs = await db
         .select({
@@ -242,7 +243,7 @@ export async function GET(
         .where(
           and(
             eq(resourceAccessLogs.resourceId, resourceId),
-            sql`${resourceAccessLogs.createdAt} >= ${thirtyDaysAgo}`
+            sql`${resourceAccessLogs.createdAt} >= ${thirtyDaysAgoISO}::timestamp`
           )
         )
         .groupBy(sql`DATE(${resourceAccessLogs.createdAt})`)
@@ -257,7 +258,7 @@ export async function GET(
         .where(
           and(
             eq(quizAttempts.studyMaterialId, resourceId),
-            sql`${quizAttempts.completedAt} >= ${thirtyDaysAgo}`,
+            sql`${quizAttempts.completedAt} >= ${thirtyDaysAgoISO}::timestamp`,
             sql`${quizAttempts.completedAt} IS NOT NULL`
           )
         )

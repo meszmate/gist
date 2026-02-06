@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import {
@@ -14,9 +14,10 @@ import {
   Clock,
   Target,
   ChevronUp,
-  Flame,
   Zap,
   Repeat,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/collapsible";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface DueCard {
@@ -100,6 +102,11 @@ function StudyContent() {
   const [sessionCards, setSessionCards] = useState<DueCard[]>([]);
   const [cardRatings, setCardRatings] = useState<Record<string, Rating>>({});
 
+  // Continuation round state
+  const [continuationRound, setContinuationRound] = useState(0);
+  const [showContinuationBanner, setShowContinuationBanner] = useState(false);
+  const [markedDone, setMarkedDone] = useState(false);
+
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ["due-cards", resourceId],
     queryFn: () => fetchDueCards(resourceId || undefined),
@@ -114,6 +121,34 @@ function StudyContent() {
 
   // Use session cards in practice mode, otherwise use fresh cards
   const activeCards = practiceMode ? sessionCards : cards;
+
+  // Get the unique resource ID for single-resource sessions
+  const sessionResourceId = useMemo(() => {
+    if (resourceId) return resourceId;
+    const ids = new Set(activeCards.map((c) => c.studyMaterialId));
+    return ids.size === 1 ? activeCards[0]?.studyMaterialId : null;
+  }, [resourceId, activeCards]);
+
+  const markComplete = useMutation({
+    mutationFn: async (resId: string) => {
+      const res = await fetch(`/api/resources/${resId}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: true }),
+      });
+      if (!res.ok) throw new Error("Failed to mark as done");
+      return res.json();
+    },
+    onSuccess: () => {
+      setMarkedDone(true);
+      queryClient.invalidateQueries({ queryKey: ["due-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      toast.success("Resource marked as done!");
+    },
+    onError: () => {
+      toast.error("Failed to mark resource as done");
+    },
+  });
 
   const reviewCard = useMutation({
     mutationFn: async ({ cardId, rating }: { cardId: string; rating: Rating }) => {
@@ -137,7 +172,38 @@ function StudyContent() {
         setCurrentIndex((prev) => prev + 1);
         setIsFlipped(false);
       } else {
-        setSessionComplete(true);
+        // Round complete - check if we should continue with difficult cards
+        const difficultCards = activeCards.filter((card) => {
+          const latestRating = variables.cardId === card.id
+            ? variables.rating
+            : cardRatings[card.id];
+          return latestRating === 1 || latestRating === 2;
+        });
+
+        if (difficultCards.length > 0 && !practiceMode) {
+          // Build continuation deck: all difficult cards + 1-2 random good cards for reinforcement
+          const goodCards = activeCards.filter((card) => {
+            const latestRating = variables.cardId === card.id
+              ? variables.rating
+              : cardRatings[card.id];
+            return latestRating === 3 || latestRating === 4;
+          });
+
+          const reinforcementCards = goodCards
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(2, goodCards.length));
+
+          const nextRoundCards = [...difficultCards, ...reinforcementCards]
+            .sort(() => Math.random() - 0.5);
+
+          setSessionCards(nextRoundCards);
+          setContinuationRound((prev) => prev + 1);
+          setShowContinuationBanner(true);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+        } else {
+          setSessionComplete(true);
+        }
       }
     },
   });
@@ -146,6 +212,14 @@ function StudyContent() {
   const progress = activeCards.length > 0 ? (reviewedCount / activeCards.length) * 100 : 0;
   const remainingCards = activeCards.length - currentIndex - 1;
   const elapsedMinutes = Math.floor((Date.now() - startTime) / 60000);
+
+  // Dismiss continuation banner after a delay
+  useEffect(() => {
+    if (showContinuationBanner) {
+      const timer = setTimeout(() => setShowContinuationBanner(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showContinuationBanner]);
 
   const flipCard = useCallback(() => {
     setIsFlipped((prev) => !prev);
@@ -159,6 +233,11 @@ function StudyContent() {
     },
     [currentCard, isFlipped, reviewCard]
   );
+
+  const finishSession = useCallback(() => {
+    setSessionComplete(true);
+    setShowContinuationBanner(false);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -185,6 +264,9 @@ function StudyContent() {
     setIsFlipped(false);
     setSessionComplete(false);
     setRatings([]);
+    setContinuationRound(0);
+    setShowContinuationBanner(false);
+    setMarkedDone(false);
 
     if (practiceMode) {
       // In practice mode, shuffle cards with priority for difficult ones (rated 1-2)
@@ -199,6 +281,8 @@ function StudyContent() {
       });
       setSessionCards(shuffledCards);
     } else {
+      setSessionCards([]);
+      setCardRatings({});
       queryClient.invalidateQueries({ queryKey: ["due-cards", resourceId] });
     }
   };
@@ -248,11 +332,26 @@ function StudyContent() {
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
             <div className="text-center animate-celebrate">
-              <Trophy className="h-16 w-16 mx-auto text-primary mb-4" />
-              <h2 className="text-3xl font-bold mb-2">Session Complete!</h2>
-              <p className="text-muted-foreground">
-                Great job! You reviewed {reviewedCount} card{reviewedCount !== 1 ? "s" : ""}.
-              </p>
+              {markedDone ? (
+                <>
+                  <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                  <h2 className="text-3xl font-bold mb-2">Resource Complete!</h2>
+                  <p className="text-muted-foreground">
+                    You&apos;ve mastered this resource. It&apos;s been marked as done.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Trophy className="h-16 w-16 mx-auto text-primary mb-4" />
+                  <h2 className="text-3xl font-bold mb-2">Session Complete!</h2>
+                  <p className="text-muted-foreground">
+                    Great job! You reviewed {reviewedCount} card{reviewedCount !== 1 ? "s" : ""}.
+                    {continuationRound > 0 && (
+                      <> ({continuationRound} continuation round{continuationRound !== 1 ? "s" : ""})</>
+                    )}
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <CardContent className="p-6">
@@ -272,11 +371,27 @@ function StudyContent() {
                 <div className="text-sm text-muted-foreground">Minutes</div>
               </div>
             </div>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-3 flex-wrap">
               <Button variant="outline" onClick={restartSession} size="lg">
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Study Again
               </Button>
+              {sessionResourceId && !markedDone && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-green-500/50 text-green-700 hover:bg-green-500/10 dark:text-green-400"
+                  onClick={() => markComplete.mutate(sessionResourceId)}
+                  disabled={markComplete.isPending}
+                >
+                  {markComplete.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                  )}
+                  Mark as Done
+                </Button>
+              )}
               <Button asChild size="lg">
                 <Link href="/dashboard">Back to Dashboard</Link>
               </Button>
@@ -289,6 +404,26 @@ function StudyContent() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Continuation Banner */}
+      {showContinuationBanner && (
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex items-center justify-between animate-slide-up">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <div>
+              <p className="font-medium text-sm">
+                Continuing with {activeCards.length} difficult card{activeCards.length !== 1 ? "s" : ""}...
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Round {continuationRound + 1} — cards rated Again or Hard will keep appearing
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={finishSession}>
+            Finish Session
+          </Button>
+        </div>
+      )}
+
       {/* Collapsible Header */}
       <Collapsible open={!headerCollapsed} onOpenChange={(open) => setHeaderCollapsed(!open)}>
         <div className="flex items-center justify-between">
@@ -304,6 +439,11 @@ function StudyContent() {
                   <h1 className="text-xl font-bold flex items-center gap-2">
                     <Brain className="h-5 w-5 text-primary" />
                     Study Session
+                    {continuationRound > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        Round {continuationRound + 1}
+                      </Badge>
+                    )}
                   </h1>
                   {!headerCollapsed && currentCard?.studyMaterialTitle && (
                     <p className="text-sm text-muted-foreground">
@@ -338,6 +478,11 @@ function StudyContent() {
                 Practice
               </Label>
             </div>
+            {continuationRound > 0 && (
+              <Button variant="outline" size="sm" onClick={finishSession}>
+                Finish
+              </Button>
+            )}
             <Badge variant="outline" className="gap-1">
               <Target className="h-3 w-3" />
               {currentIndex + 1} / {activeCards.length}

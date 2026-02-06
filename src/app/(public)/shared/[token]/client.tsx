@@ -169,20 +169,24 @@ export function SharedResourceClient({
   // Full study mode
   if (studyMode && resource.flashcards.length > 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="container max-w-5xl py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+        <div className="container max-w-3xl py-8 px-4 sm:px-6 lg:px-8 mx-auto flex-1 flex flex-col">
           <Button
             variant="ghost"
-            className="mb-4"
+            className="mb-4 self-start"
             onClick={() => setStudyMode(false)}
           >
             &larr; Back to resource
           </Button>
-          <SharedFlashcardStudy
-            flashcards={resource.flashcards}
-            resourceId={resource.id}
-            token={token}
-          />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full">
+              <SharedFlashcardStudy
+                flashcards={resource.flashcards}
+                resourceId={resource.id}
+                token={token}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -191,25 +195,27 @@ export function SharedResourceClient({
   // Full quiz mode
   if (quizMode && resource.quizQuestions.length > 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="container max-w-5xl py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+        <div className="container max-w-3xl py-8 px-4 sm:px-6 lg:px-8 mx-auto flex-1 flex flex-col">
           <Button
             variant="ghost"
-            className="mb-4"
+            className="mb-4 self-start"
             onClick={() => setQuizMode(false)}
           >
             &larr; Back to resource
           </Button>
-          <SharedQuizTaker
-            questions={resource.quizQuestions}
-            settings={resource.settings ? {
-              timeLimitSeconds: resource.settings.timeLimitSeconds,
-              shuffleQuestions: resource.settings.shuffleQuestions ?? true,
-              showCorrectAnswers: resource.settings.showCorrectAnswers ?? true,
-            } : null}
-            token={token}
-            resourceTitle={resource.title}
-          />
+          <div className="flex-1">
+            <SharedQuizTaker
+              questions={resource.quizQuestions}
+              settings={resource.settings ? {
+                timeLimitSeconds: resource.settings.timeLimitSeconds,
+                shuffleQuestions: resource.settings.shuffleQuestions ?? true,
+                showCorrectAnswers: resource.settings.showCorrectAnswers ?? true,
+              } : null}
+              token={token}
+              resourceTitle={resource.title}
+            />
+          </div>
         </div>
       </div>
     );

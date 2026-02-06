@@ -1,4 +1,4 @@
-# SmartNotes
+# gist
 
 An AI-powered study platform built with Next.js. Create flashcards, quizzes, and summaries from your study materials using AI or build them manually.
 
@@ -45,7 +45,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, and
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/meszmate/smartnotes.git
+git clone https://github.com/meszmate/gist.git
 ```
 
 2. Install dependencies:
@@ -178,7 +178,7 @@ Key tables:
 
 #### Using Docker Compose (Recommended)
 
-The easiest way to run SmartNotes with Docker:
+The easiest way to run gist with Docker:
 
 ```bash
 # Copy environment file and configure
@@ -198,7 +198,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ```bash
 # Build the image
-docker build -t smartnotes .
+docker build -t gist .
 
 # Run the container
 docker run -p 3000:3000 \
@@ -207,7 +207,7 @@ docker run -p 3000:3000 \
   -e AUTH_GOOGLE_ID="your-google-id" \
   -e AUTH_GOOGLE_SECRET="your-google-secret" \
   -e OPENAI_API_KEY="your-openai-key" \
-  smartnotes
+  gist
 ```
 
 ## License

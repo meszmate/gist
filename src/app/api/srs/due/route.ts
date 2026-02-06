@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { flashcards, studyMaterials } from "@/lib/db/schema";
-import { eq, and, lte } from "drizzle-orm";
+import { eq, and, lte, isNull } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
@@ -30,6 +30,7 @@ export async function GET(req: Request) {
         and(
           eq(studyMaterials.userId, session.user.id),
           lte(flashcards.nextReview, now),
+          isNull(studyMaterials.completedAt),
           resourceId ? eq(flashcards.studyMaterialId, resourceId) : undefined
         )
       )

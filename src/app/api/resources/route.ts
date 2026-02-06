@@ -25,6 +25,7 @@ export async function GET() {
         title: studyMaterials.title,
         description: studyMaterials.description,
         difficulty: studyMaterials.difficulty,
+        completedAt: studyMaterials.completedAt,
         createdAt: studyMaterials.createdAt,
         folder: {
           id: folders.id,

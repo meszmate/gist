@@ -80,8 +80,10 @@ matching:
   correctAnswerData: { correctPairs: [[0, 0], [1, 1]] }
 
 fill_blank:
-  questionConfig: { template: "The ___ is the capital of France.", blanks: [{ hint: "city name" }] }
-  correctAnswerData: { answers: [{ correct: "Paris", alternatives: ["paris"] }] }
+  question: "Fill in the blank to complete the sentence:"
+  questionConfig: { template: "The {{blank}} is the capital of France.", blanks: [{ id: "blank_0", acceptedAnswers: ["Paris", "paris"] }], caseSensitive: false }
+  correctAnswerData: { blanks: { "blank_0": ["Paris", "paris"] } }
+  NOTE: Use {{blank}} as placeholder in template, NOT ___ or other formats. The question field should be instructions, template goes in questionConfig.
 
 multi_select:
   questionConfig: { options: ["A", "B", "C", "D"], minSelections: 1, maxSelections: 4 }

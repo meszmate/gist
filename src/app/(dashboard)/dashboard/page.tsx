@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizAttempts } from "@/lib/db/schema";
-import { eq, and, lte, count, sql, gte, desc, gt } from "drizzle-orm";
+import { eq, and, lte, count, sql, gte, desc, gt, isNull } from "drizzle-orm";
 import { DashboardClient } from "./dashboard-client";
 
 interface DashboardStats {
@@ -32,7 +32,8 @@ async function getDashboardStats(userId: string): Promise<DashboardStats> {
     .where(
       and(
         eq(studyMaterials.userId, userId),
-        lte(flashcards.nextReview, new Date())
+        lte(flashcards.nextReview, new Date()),
+        isNull(studyMaterials.completedAt)
       )
     );
 
