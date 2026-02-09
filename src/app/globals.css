@@ -629,3 +629,108 @@ kbd {
 .prose-custom input[type="checkbox"] {
   margin-right: 0.5em;
 }
+
+/* ============== Lesson Player Animations ============== */
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes correct-pulse {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.7 0.18 145 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px oklch(0.7 0.18 145 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.7 0.18 145 / 0);
+  }
+}
+
+@keyframes incorrect-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 50%, 90% { transform: translateX(-4px); }
+  30%, 70% { transform: translateX(4px); }
+}
+
+@keyframes reveal-expand {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+}
+
+@keyframes drag-pickup {
+  from {
+    transform: scale(1);
+    box-shadow: none;
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px -5px oklch(0 0 0 / 0.15);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.35s ease-out;
+}
+
+.animate-correct-pulse {
+  animation: correct-pulse 0.6s ease-out;
+}
+
+.animate-incorrect-shake {
+  animation: incorrect-shake 0.5s ease-out;
+}
+
+.animate-reveal-expand {
+  animation: reveal-expand 0.4s ease-out forwards;
+}
+
+.animate-progress-fill {
+  animation: progress-fill 0.5s ease-out;
+}
+
+.animate-drag-pickup {
+  animation: drag-pickup 0.2s ease-out forwards;
+}
+
+/* Drop zone active state */
+.drop-zone-active {
+  border-style: dashed;
+  border-color: var(--primary);
+  background: oklch(from var(--primary) l c h / 0.05);
+}

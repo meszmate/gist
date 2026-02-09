@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,17 @@ import {
   BookmarkCheck,
   Clock,
   Lock,
+  GraduationCap,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { SharedFlashcardStudy } from "@/components/shared/shared-flashcard-study";
 import { SharedQuizTaker } from "@/components/shared/shared-quiz-taker";
+import { LessonPlayer } from "@/components/lesson/lesson-player";
 import { toast } from "sonner";
 import type { QuestionConfig } from "@/lib/types/quiz";
+import type { LessonWithSteps } from "@/lib/types/lesson";
 
 interface SharedResource {
   accessDenied: false;
@@ -38,12 +42,18 @@ interface SharedResource {
     order: number | null;
     options: string[];
   }>;
+  lessons: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    order: number;
+  }>;
   settings: {
     timeLimitSeconds: number | null;
     shuffleQuestions: boolean | null;
     showCorrectAnswers: boolean | null;
   } | null;
-  visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean };
+  visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean; lessons?: boolean };
   availabilityStatus: "available" | "not_yet" | "closed";
   availableFrom: string | null;
   availableTo: string | null;
@@ -66,6 +76,7 @@ export function SharedResourceClient({
   const [activeTab, setActiveTab] = useState("overview");
   const [studyMode, setStudyMode] = useState(false);
   const [quizMode, setQuizMode] = useState(false);
+  const [lessonMode, setLessonMode] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!resource.isAuthenticated) {
@@ -157,6 +168,16 @@ export function SharedResourceClient({
       icon: <FileQuestion className="mr-2 h-4 w-4" />,
     });
   }
+  if (
+    (resource.visibleSections.lessons ?? true) &&
+    resource.lessons.length > 0
+  ) {
+    tabs.push({
+      value: "learn",
+      label: "Learn",
+      icon: <GraduationCap className="mr-2 h-4 w-4" />,
+    });
+  }
 
   if (tabs.length === 0) {
     tabs.push({
@@ -221,6 +242,17 @@ export function SharedResourceClient({
     );
   }
 
+  // Full lesson mode
+  if (lessonMode) {
+    return (
+      <SharedLessonMode
+        token={token}
+        lessonId={lessonMode}
+        onExit={() => setLessonMode(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       <div className="container max-w-5xl py-8 px-4 sm:px-6 lg:px-8 mx-auto">
@@ -273,6 +305,11 @@ export function SharedResourceClient({
               {resource.quizQuestions.length > 0 && (
                 <Badge variant="outline">
                   {resource.quizQuestions.length} quiz questions
+                </Badge>
+              )}
+              {resource.lessons.length > 0 && (
+                <Badge variant="outline">
+                  {resource.lessons.length} lesson{resource.lessons.length !== 1 ? "s" : ""}
                 </Badge>
               )}
             </div>
@@ -405,6 +442,44 @@ export function SharedResourceClient({
                 </div>
               )}
             </TabsContent>
+            <TabsContent value="learn" className="mt-4">
+              {needsAuth ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      Sign in to take lessons
+                    </p>
+                    <Button asChild>
+                      <Link href="/login">Sign In</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {resource.lessons.map((lesson) => (
+                    <Card key={lesson.id} className="hover:border-primary/30 transition-colors">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <GraduationCap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium">{lesson.title}</h3>
+                          {lesson.description && (
+                            <p className="text-sm text-muted-foreground truncate">
+                              {lesson.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button size="sm" onClick={() => setLessonMode(lesson.id)}>
+                          Start
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
 
           <Card className="bg-primary/5">
@@ -421,4 +496,43 @@ export function SharedResourceClient({
       </div>
     </div>
   );
+}
+
+function SharedLessonMode({
+  token,
+  lessonId,
+  onExit,
+}: {
+  token: string;
+  lessonId: string;
+  onExit: () => void;
+}) {
+  const [lesson, setLesson] = useState<LessonWithSteps | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/shared/${token}/lessons/${lessonId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load lesson");
+        return res.json();
+      })
+      .then((data) => {
+        setLesson(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error("Failed to load lesson");
+        onExit();
+      });
+  }, [token, lessonId, onExit]);
+
+  if (loading || !lesson) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return <LessonPlayer lesson={lesson} onExit={onExit} />;
 }

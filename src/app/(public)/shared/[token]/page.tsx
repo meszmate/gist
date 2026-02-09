@@ -6,6 +6,7 @@ import {
   quizSettings,
   resourceAccessLogs,
   savedResources,
+  lessons,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -60,6 +61,7 @@ async function getSharedResource(token: string, userEmail?: string | null, userI
     flashcards: true,
     summary: true,
     quiz: true,
+    lessons: true,
   };
 
   const resourceFlashcards = visibleSections.flashcards
@@ -92,6 +94,25 @@ async function getSharedResource(token: string, userEmail?: string | null, userI
     })
     .from(quizSettings)
     .where(eq(quizSettings.studyMaterialId, resource.id));
+
+  const showLessons = visibleSections.lessons ?? true;
+  const resourceLessons = showLessons
+    ? await db
+        .select({
+          id: lessons.id,
+          title: lessons.title,
+          description: lessons.description,
+          order: lessons.order,
+        })
+        .from(lessons)
+        .where(
+          and(
+            eq(lessons.studyMaterialId, resource.id),
+            eq(lessons.status, "published"),
+            eq(lessons.isPublic, true)
+          )
+        )
+    : [];
 
   // Check if saved by current user
   let isSaved = false;
@@ -133,6 +154,7 @@ async function getSharedResource(token: string, userEmail?: string | null, userI
       order: q.order,
       options: q.options || [],
     })),
+    lessons: resourceLessons,
     settings: settings || null,
     visibleSections,
     availabilityStatus,

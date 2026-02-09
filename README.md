@@ -1,10 +1,17 @@
 # gist
 
-An AI-powered study platform built with Next.js. Create flashcards, quizzes, and summaries from your study materials using AI or build them manually.
+An AI-powered study platform built with Next.js. Create flashcards, quizzes, interactive lessons, and summaries from your study materials using AI or build them manually.
 
 ## Features
 
-- **AI-Powered Content Generation** - Generate flashcards, quizzes, and summaries from uploaded documents or text
+- **AI-Powered Content Generation** - Generate flashcards, quizzes, lessons, and summaries from uploaded documents or text
+- **Interactive Lessons** - Step-by-step guided learning with 11 step types:
+  - Content steps: Explanation (rich markdown), Concept (highlighted cards), Reveal (progressive disclosure)
+  - Interactive steps: Multiple Choice, True/False, Drag & Sort, Drag & Match, Drag & Categorize, Fill in the Blanks, Type Answer, Select Many
+  - Full-screen focused player with progress bar, immediate feedback, hints, and keyboard navigation
+  - AI-powered lesson generation and per-step improvement
+  - Lesson editor with visual step management, preview mode, and publish controls
+  - Progress tracking with attempts, scores, and time spent
 - **Multiple Question Types** - Support for 8 built-in question types:
   - Multiple Choice
   - True/False
@@ -21,6 +28,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, and
 - **Participant Dashboard** - View scores, grades, time spent, and export results to CSV
 - **Spaced Repetition** - Flashcard study mode with spaced repetition algorithm
 - **Dark Mode** - Full dark mode support
+- **CI/CD** - GitHub Actions pipeline with lint, type-check, and build jobs
 
 ## Tech Stack
 
@@ -113,6 +121,9 @@ src/
 │   ├── api/               # API routes
 │   └── q/                 # Public quiz taking
 ├── components/
+│   ├── lesson/            # Lesson components
+│   │   ├── step-renderers/  # 11 step type renderers (player)
+│   │   └── step-editors/    # 11 step type editors
 │   ├── quiz/              # Quiz-related components
 │   │   └── question-renderers/  # Question type renderers
 │   ├── shared/            # Shared components
@@ -135,6 +146,9 @@ Key tables:
 - `flashcards` - Flashcard front/back content
 - `grading_configs` - Per-quiz grading settings
 - `question_types` - Custom question type definitions
+- `lessons` - Interactive lessons with steps, settings, and publish status
+- `lesson_steps` - Ordered steps within a lesson (11 types)
+- `lesson_attempts` - Student progress tracking with scores and answers
 
 ## API Routes
 
@@ -161,9 +175,27 @@ Key tables:
 - `GET /api/quizzes/[id]/grading` - Get grading config
 - `PUT /api/quizzes/[id]/grading` - Update grading config
 
+### Lessons
+- `GET /api/resources/[id]/lessons` - List lessons
+- `POST /api/resources/[id]/lessons` - Create lesson
+- `POST /api/resources/[id]/lessons/generate` - AI generate lesson
+- `GET /api/resources/[id]/lessons/[lid]` - Get lesson with steps
+- `PATCH /api/resources/[id]/lessons/[lid]` - Update lesson
+- `DELETE /api/resources/[id]/lessons/[lid]` - Delete lesson
+- `POST /api/resources/[id]/lessons/[lid]/steps` - Create step
+- `PATCH /api/resources/[id]/lessons/[lid]/steps/reorder` - Reorder steps
+- `PATCH /api/resources/[id]/lessons/[lid]/steps/[sid]` - Update step
+- `DELETE /api/resources/[id]/lessons/[lid]/steps/[sid]` - Delete step
+- `POST /api/resources/[id]/lessons/[lid]/steps/[sid]/improve` - AI improve step
+- `POST /api/resources/[id]/lessons/[lid]/attempts` - Start attempt
+- `PATCH /api/resources/[id]/lessons/[lid]/attempts/[aid]` - Update progress
+
 ### Sharing
 - `GET /api/shared/[token]` - Get shared quiz
 - `POST /api/shared/[token]/attempt` - Submit as guest
+- `GET /api/shared/[token]/lessons` - Get public lessons
+- `GET /api/shared/[token]/lessons/[lid]` - Get lesson with steps
+- `POST /api/shared/[token]/lessons/[lid]/attempt` - Guest lesson attempt
 
 ## Deployment
 

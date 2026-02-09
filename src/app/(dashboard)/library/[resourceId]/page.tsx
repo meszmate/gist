@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   RotateCcw,
   Loader2,
+  GraduationCap,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,6 +99,15 @@ interface QuizQuestion {
   correctAnswer: number | null;
 }
 
+interface LessonSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  order: number;
+  isPublic: boolean;
+}
+
 interface Resource {
   id: string;
   title: string;
@@ -110,7 +121,7 @@ interface Resource {
   createdAt: string;
   availableFrom: string | null;
   availableTo: string | null;
-  visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean } | null;
+  visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean; lessons?: boolean } | null;
   requireAuthToInteract: boolean;
   allowedViewerEmails: string[] | null;
   flashcards: Flashcard[];
@@ -303,6 +314,16 @@ export default function ResourcePage() {
     queryFn: () => fetchResource(resourceId),
   });
 
+  const { data: lessons = [] } = useQuery<LessonSummary[]>({
+    queryKey: ["lessons", resourceId],
+    queryFn: async () => {
+      const res = await fetch(`/api/resources/${resourceId}/lessons`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!resource,
+  });
+
   const generateShareToken = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/resources/${resourceId}/share`, {
@@ -437,7 +458,7 @@ export default function ResourcePage() {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
-      const tabs = ["overview", "flashcards", "quiz"];
+      const tabs = ["overview", "flashcards", "quiz", "lessons"];
       const currentIndex = tabs.indexOf(activeTab);
 
       if (e.key === "h" && currentIndex > 0) {
@@ -645,7 +666,7 @@ export default function ResourcePage() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <BookOpen className="h-4 w-4" />
             Overview
@@ -663,6 +684,15 @@ export default function ResourcePage() {
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
               {resource.quizQuestions.length}
             </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="lessons" className="gap-2">
+            <GraduationCap className="h-4 w-4" />
+            Lessons
+            {lessons.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {lessons.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -997,6 +1027,80 @@ export default function ResourcePage() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="lessons" className="animate-fade-in">
+          {lessons.length === 0 ? (
+            <EmptyState
+              icon={<GraduationCap className="h-12 w-12" />}
+              title="No lessons yet"
+              description="Create interactive lessons for step-by-step learning"
+              action={{
+                label: "Create Lesson",
+                href: `/library/${resource.id}/lessons`,
+                icon: <Plus className="mr-2 h-4 w-4" />,
+              }}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {lessons.length} lesson{lessons.length !== 1 ? "s" : ""}
+                </p>
+                <Button asChild>
+                  <Link href={`/library/${resource.id}/lessons`}>
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Manage Lessons
+                  </Link>
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {lessons.map((lesson, index) => (
+                  <Card
+                    key={lesson.id}
+                    className="group hover:border-primary/30 transition-colors animate-slide-up"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{lesson.title}</h3>
+                          <Badge
+                            variant={lesson.status === "published" ? "default" : "secondary"}
+                            className="text-xs shrink-0"
+                          >
+                            {lesson.status}
+                          </Badge>
+                        </div>
+                        {lesson.description && (
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">
+                            {lesson.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/library/${resource.id}/lessons/${lesson.id}`}>
+                            <Play className="mr-1.5 h-3.5 w-3.5" />
+                            Play
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/library/${resource.id}/lessons/${lesson.id}/edit`}>
+                            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                            Edit
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Share Dialog */}
@@ -1156,6 +1260,7 @@ export default function ResourcePage() {
             flashcards: true,
             summary: true,
             quiz: true,
+            lessons: true,
           },
           requireAuthToInteract: resource.requireAuthToInteract,
         }}

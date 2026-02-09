@@ -28,7 +28,7 @@ interface ResourceSettingsDialogProps {
   initialSettings: {
     availableFrom: string | null;
     availableTo: string | null;
-    visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean };
+    visibleSections: { flashcards: boolean; summary: boolean; quiz: boolean; lessons?: boolean };
     requireAuthToInteract: boolean;
   };
   onSaved: () => void;
@@ -165,6 +165,15 @@ export function ResourceSettingsDialog({
                   checked={visibleSections.quiz}
                   onCheckedChange={(checked) =>
                     setVisibleSections((s) => ({ ...s, quiz: checked }))
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Show Lessons</Label>
+                <Switch
+                  checked={visibleSections.lessons ?? true}
+                  onCheckedChange={(checked) =>
+                    setVisibleSections((s) => ({ ...s, lessons: checked }))
                   }
                 />
               </div>

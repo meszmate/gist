@@ -4,6 +4,7 @@ import type {
   QuestionConfig,
   CorrectAnswerData,
 } from "@/lib/types/quiz";
+import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
 
 export const openai = new OpenAI();
 
@@ -261,6 +262,137 @@ ${content}`,
   } catch (error) {
     console.error("Failed to parse extended quiz questions:", result, error);
     return [];
+  }
+}
+
+// ============== LESSON GENERATION ==============
+
+export const LESSON_SYSTEM_PROMPT = `You are an expert instructional designer creating interactive lessons.
+Generate a structured lesson with a mix of content and interactive steps.
+
+Step types available:
+- explanation: Rich markdown content. Content: { type: "explanation", markdown: "..." }
+- concept: Key concept highlight. Content: { type: "concept", title: "...", description: "...", highlightStyle: "info"|"warning"|"success"|"default" }
+- multiple_choice: 2-4 options. Content: { type: "multiple_choice", question: "...", options: [{ id: "a", text: "...", explanation: "..." }, ...] }. AnswerData: { correctOptionId: "a" }
+- true_false: Statement. Content: { type: "true_false", statement: "...", trueExplanation: "...", falseExplanation: "..." }. AnswerData: { correctValue: true/false }
+- drag_sort: Order items. Content: { type: "drag_sort", instruction: "...", items: [{ id: "1", text: "..." }, ...] }. AnswerData: { correctOrder: ["1", "2", "3"] }
+- drag_match: Match pairs. Content: { type: "drag_match", instruction: "...", pairs: [{ id: "1", left: "...", right: "..." }, ...] }. AnswerData: { correctPairs: { "1": "right text" } }
+- drag_categorize: Sort into categories. Content: { type: "drag_categorize", instruction: "...", categories: [{ id: "cat1", name: "..." }], items: [{ id: "1", text: "...", categoryId: "cat1" }] }. AnswerData: { correctMapping: { "1": "cat1" } }
+- fill_blanks: Fill blanks in template. Content: { type: "fill_blanks", template: "The {{b1}} is ...", blanks: [{ id: "b1", acceptedAnswers: ["answer"] }] }. AnswerData: { correctBlanks: { "b1": ["answer"] } }
+- type_answer: Free text. Content: { type: "type_answer", question: "..." }. AnswerData: { acceptedAnswers: ["answer1", "answer2"] }
+- select_many: Select all correct. Content: { type: "select_many", question: "...", options: [{ id: "a", text: "..." }, ...] }. AnswerData: { correctOptionIds: ["a", "c"] }
+- reveal: Progressive disclosure. Content: { type: "reveal", title: "...", steps: [{ id: "1", content: "..." }, ...] }. AnswerData: null
+
+Guidelines:
+- Start with an explanation or concept step
+- Alternate between content and interactive steps
+- Build difficulty progressively
+- Use varied question types (at least 4 different types)
+- Provide explanations and hints for interactive steps
+- End with a challenging question or summary concept
+- 40% content steps, 60% interactive steps
+- Generate 12-16 steps total
+
+Return JSON: { "steps": [{ "stepType": "...", "content": {...}, "answerData": {...} or null, "explanation": "..." or null, "hint": "..." or null }] }`;
+
+export const LESSON_IMPROVE_PROMPT = `You are an expert instructional designer. Improve the given lesson step to be more engaging, clear, and educationally effective. Maintain the same step type and structure, but enhance the content quality. Return the improved step in the same JSON format.`;
+
+export interface GeneratedLessonStep {
+  stepType: StepType;
+  content: StepContent;
+  answerData: StepAnswerData;
+  explanation: string | null;
+  hint: string | null;
+}
+
+export async function generateLesson(
+  sourceContent: string,
+  existingFlashcards?: { front: string; back: string }[],
+  existingQuizQuestions?: { question: string; options?: string[] }[],
+  options?: { stepCount?: number; title?: string }
+): Promise<{ title: string; description: string; steps: GeneratedLessonStep[] }> {
+  const stepCount = options?.stepCount || 14;
+
+  let context = `Source material:\n${sourceContent}`;
+  if (existingFlashcards?.length) {
+    context += `\n\nExisting flashcards for reference (use these concepts):\n${existingFlashcards
+      .slice(0, 10)
+      .map((f) => `Q: ${f.front} A: ${f.back}`)
+      .join("\n")}`;
+  }
+  if (existingQuizQuestions?.length) {
+    context += `\n\nExisting quiz questions for reference:\n${existingQuizQuestions
+      .slice(0, 5)
+      .map((q) => q.question)
+      .join("\n")}`;
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: LESSON_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}\n\nAlso provide a title and short description for the lesson.\n\nReturn JSON: { "title": "...", "description": "...", "steps": [...] }\n\n${context}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_tokens: 6000,
+  });
+
+  const result = completion.choices[0].message.content;
+  if (!result) return { title: "Untitled Lesson", description: "", steps: [] };
+
+  try {
+    const parsed = JSON.parse(result);
+    return {
+      title: parsed.title || options?.title || "Untitled Lesson",
+      description: parsed.description || "",
+      steps: (parsed.steps || []).map((s: GeneratedLessonStep) => ({
+        stepType: s.stepType,
+        content: s.content,
+        answerData: s.answerData || null,
+        explanation: s.explanation || null,
+        hint: s.hint || null,
+      })),
+    };
+  } catch {
+    console.error("Failed to parse lesson:", result);
+    return { title: "Untitled Lesson", description: "", steps: [] };
+  }
+}
+
+export async function improveLessonStep(
+  step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
+  sourceContent?: string
+): Promise<GeneratedLessonStep> {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: LESSON_IMPROVE_PROMPT },
+      {
+        role: "user",
+        content: `Improve this lesson step:\n${JSON.stringify(step)}${sourceContent ? `\n\nOriginal source material for context:\n${sourceContent.slice(0, 2000)}` : ""}\n\nReturn the improved step as JSON with the same structure.`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_tokens: 2000,
+  });
+
+  const result = completion.choices[0].message.content;
+  if (!result) return step as GeneratedLessonStep;
+
+  try {
+    const parsed = JSON.parse(result);
+    return {
+      stepType: parsed.stepType || step.stepType,
+      content: parsed.content || step.content,
+      answerData: parsed.answerData ?? step.answerData,
+      explanation: parsed.explanation ?? step.explanation,
+      hint: parsed.hint ?? step.hint,
+    };
+  } catch {
+    return step as GeneratedLessonStep;
   }
 }
 

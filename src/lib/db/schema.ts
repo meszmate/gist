@@ -20,6 +20,13 @@ import type {
   LetterGradeThreshold,
   QuestionTypeSchema,
 } from "@/lib/types/quiz";
+import type {
+  StepContent,
+  StepAnswerData,
+  StepUserAnswer,
+  StepResult,
+  LessonSettings,
+} from "@/lib/types/lesson";
 
 // ============== USERS ==============
 export const users = pgTable("users", {
@@ -145,8 +152,8 @@ export const studyMaterials = pgTable(
     availableFrom: timestamp("available_from"),
     availableTo: timestamp("available_to"),
     visibleSections: jsonb("visible_sections")
-      .default({ flashcards: true, summary: true, quiz: true })
-      .$type<{ flashcards: boolean; summary: boolean; quiz: boolean }>(),
+      .default({ flashcards: true, summary: true, quiz: true, lessons: true })
+      .$type<{ flashcards: boolean; summary: boolean; quiz: boolean; lessons?: boolean }>(),
     requireAuthToInteract: boolean("require_auth_to_interact").default(false),
     allowedViewerEmails: text("allowed_viewer_emails").array(),
     completedAt: timestamp("completed_at"),
@@ -179,6 +186,7 @@ export const studyMaterialsRelations = relations(
     resourceAccessLogs: many(resourceAccessLogs),
     savedResources: many(savedResources),
     flashcardStudyLogs: many(flashcardStudyLogs),
+    lessons: many(lessons),
   })
 );
 
@@ -519,6 +527,108 @@ export const flashcardStudyLogsRelations = relations(
   })
 );
 
+// ============== LESSONS ==============
+export const lessons = pgTable(
+  "lessons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studyMaterialId: uuid("study_material_id")
+      .notNull()
+      .references(() => studyMaterials.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    order: integer("order").default(0).notNull(),
+    settings: jsonb("settings").$type<LessonSettings>(),
+    status: varchar("status", { length: 20 }).default("draft").notNull(),
+    isPublic: boolean("is_public").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("lessons_material_idx").on(table.studyMaterialId),
+    index("lessons_order_idx").on(table.studyMaterialId, table.order),
+  ]
+);
+
+export const lessonsRelations = relations(lessons, ({ one, many }) => ({
+  studyMaterial: one(studyMaterials, {
+    fields: [lessons.studyMaterialId],
+    references: [studyMaterials.id],
+  }),
+  steps: many(lessonSteps),
+  attempts: many(lessonAttempts),
+}));
+
+// ============== LESSON STEPS ==============
+export const lessonSteps = pgTable(
+  "lesson_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lessonId: uuid("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    order: integer("order").default(0).notNull(),
+    stepType: varchar("step_type", { length: 50 }).notNull(),
+    content: jsonb("content").notNull().$type<StepContent>(),
+    answerData: jsonb("answer_data").$type<StepAnswerData>(),
+    explanation: text("explanation"),
+    hint: text("hint"),
+    imageUrl: text("image_url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("lesson_steps_lesson_idx").on(table.lessonId),
+    index("lesson_steps_order_idx").on(table.lessonId, table.order),
+  ]
+);
+
+export const lessonStepsRelations = relations(lessonSteps, ({ one }) => ({
+  lesson: one(lessons, {
+    fields: [lessonSteps.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
+// ============== LESSON ATTEMPTS ==============
+export const lessonAttempts = pgTable(
+  "lesson_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lessonId: uuid("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    guestIdentifier: varchar("guest_identifier", { length: 255 }),
+    currentStepIndex: integer("current_step_index").default(0).notNull(),
+    completedStepIds: jsonb("completed_step_ids").default([]).$type<string[]>(),
+    answers: jsonb("answers").default({}).$type<Record<string, StepUserAnswer>>(),
+    stepResults: jsonb("step_results").default({}).$type<Record<string, StepResult>>(),
+    totalSteps: integer("total_steps").default(0).notNull(),
+    interactiveSteps: integer("interactive_steps").default(0).notNull(),
+    correctCount: integer("correct_count").default(0).notNull(),
+    score: decimal("score", { precision: 5, scale: 2 }),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+    timeSpentSeconds: integer("time_spent_seconds"),
+  },
+  (table) => [
+    index("lesson_attempts_lesson_idx").on(table.lessonId),
+    index("lesson_attempts_user_idx").on(table.userId),
+  ]
+);
+
+export const lessonAttemptsRelations = relations(lessonAttempts, ({ one }) => ({
+  lesson: one(lessons, {
+    fields: [lessonAttempts.lessonId],
+    references: [lessons.id],
+  }),
+  user: one(users, {
+    fields: [lessonAttempts.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============== TYPES ==============
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -558,3 +668,12 @@ export type NewSavedResource = typeof savedResources.$inferInsert;
 
 export type FlashcardStudyLog = typeof flashcardStudyLogs.$inferSelect;
 export type NewFlashcardStudyLog = typeof flashcardStudyLogs.$inferInsert;
+
+export type LessonRow = typeof lessons.$inferSelect;
+export type NewLesson = typeof lessons.$inferInsert;
+
+export type LessonStepRow = typeof lessonSteps.$inferSelect;
+export type NewLessonStep = typeof lessonSteps.$inferInsert;
+
+export type LessonAttemptRow = typeof lessonAttempts.$inferSelect;
+export type NewLessonAttempt = typeof lessonAttempts.$inferInsert;
