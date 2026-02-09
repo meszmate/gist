@@ -2,23 +2,15 @@
 
 import { cn } from "@/lib/utils";
 import { Check, X, Lightbulb } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface LessonPlayerFeedbackProps {
   isCorrect: boolean;
   explanation?: string | null;
-  hint?: string | null;
-  showTryAgain: boolean;
-  onTryAgain: () => void;
-  onContinue: () => void;
 }
 
 export function LessonPlayerFeedback({
   isCorrect,
   explanation,
-  showTryAgain,
-  onTryAgain,
-  onContinue,
 }: LessonPlayerFeedbackProps) {
   return (
     <div
@@ -57,16 +49,6 @@ export function LessonPlayerFeedback({
               <p>{explanation}</p>
             </div>
           )}
-          <div className="flex gap-2 pt-1">
-            {showTryAgain && !isCorrect && (
-              <Button variant="outline" size="sm" onClick={onTryAgain}>
-                Try Again
-              </Button>
-            )}
-            <Button size="sm" onClick={onContinue}>
-              Continue
-            </Button>
-          </div>
         </div>
       </div>
     </div>

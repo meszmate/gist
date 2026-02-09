@@ -16,6 +16,7 @@ import { ActivityTimeline } from "@/components/analytics/activity-timeline";
 import { ViewerTable } from "@/components/analytics/viewer-table";
 import { ScoreDistributionChart } from "@/components/analytics/score-distribution-chart";
 import { QuestionAnalytics } from "@/components/analytics/question-analytics";
+import { LessonAnalytics } from "@/components/analytics/lesson-analytics";
 
 async function fetchAnalytics(resourceId: string, section: string) {
   const res = await fetch(
@@ -54,6 +55,16 @@ export default function AnalyticsPage() {
     queryFn: () => fetchAnalytics(resourceId, "questions"),
   });
 
+  const { data: lessonData } = useQuery({
+    queryKey: ["analytics", resourceId, "lessons"],
+    queryFn: () => fetchAnalytics(resourceId, "lessons"),
+  });
+
+  const { data: lessonScores } = useQuery({
+    queryKey: ["analytics", resourceId, "lesson-scores"],
+    queryFn: () => fetchAnalytics(resourceId, "lesson-scores"),
+  });
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -88,8 +99,8 @@ export default function AnalyticsPage() {
       </div>
 
       {loadingOverview ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
@@ -101,6 +112,7 @@ export default function AnalyticsPage() {
         <ActivityTimeline
           views={timeline.views || []}
           attempts={timeline.attempts || []}
+          lessonAttempts={timeline.lessonAttempts || []}
         />
       )}
 
@@ -109,6 +121,18 @@ export default function AnalyticsPage() {
           <ScoreDistributionChart distribution={scores.distribution || []} />
         )}
         {viewers && <ViewerTable viewers={viewers.viewers || []} />}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {lessonScores && (
+          <ScoreDistributionChart
+            distribution={lessonScores.distribution || []}
+            title="Lesson Score Distribution"
+          />
+        )}
+        {lessonData && (
+          <LessonAnalytics lessons={lessonData.lessons || []} />
+        )}
       </div>
 
       {questions && (

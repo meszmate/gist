@@ -7,8 +7,10 @@ import {
   quizAttempts,
   flashcardStudyLogs,
   quizQuestions,
+  lessonAttempts,
+  lessons,
 } from "@/lib/db/schema";
-import { eq, and, count, avg, sql, desc } from "drizzle-orm";
+import { eq, and, count, sql, desc } from "drizzle-orm";
 
 export async function GET(
   req: Request,
@@ -92,6 +94,40 @@ export async function GET(
         .from(flashcardStudyLogs)
         .where(eq(flashcardStudyLogs.resourceId, resourceId));
 
+      // Lesson attempts
+      const resourceLessons = await db
+        .select({ id: lessons.id })
+        .from(lessons)
+        .where(eq(lessons.studyMaterialId, resourceId));
+
+      const lessonIds = resourceLessons.map((l) => l.id);
+
+      let lessonAttemptCount = 0;
+      let avgLessonScore = 0;
+
+      if (lessonIds.length > 0) {
+        const completedLessonAttempts = await db
+          .select({
+            score: lessonAttempts.score,
+          })
+          .from(lessonAttempts)
+          .where(
+            and(
+              sql`${lessonAttempts.lessonId} IN (${sql.join(lessonIds.map((id) => sql`${id}`), sql`, `)})`,
+              sql`${lessonAttempts.completedAt} IS NOT NULL`
+            )
+          );
+
+        lessonAttemptCount = completedLessonAttempts.length;
+        avgLessonScore =
+          completedLessonAttempts.length > 0
+            ? completedLessonAttempts.reduce(
+                (sum, a) => sum + parseFloat(a.score || "0"),
+                0
+              ) / completedLessonAttempts.length
+            : 0;
+      }
+
       return NextResponse.json({
         totalViews: viewCount?.count || 0,
         uniqueViewers: uniqueViewers.length,
@@ -99,6 +135,8 @@ export async function GET(
         averageScore: Math.round(avgScore * 10) / 10,
         averageTimeSeconds: Math.round(avgTime),
         flashcardStudySessions: studyLogCount?.count || 0,
+        lessonAttempts: lessonAttemptCount,
+        averageLessonScore: Math.round(avgLessonScore * 10) / 10,
       });
     }
 
@@ -106,6 +144,7 @@ export async function GET(
       const viewers = await db
         .select({
           email: resourceAccessLogs.email,
+          userId: resourceAccessLogs.userId,
           accessType: resourceAccessLogs.accessType,
           createdAt: resourceAccessLogs.createdAt,
         })
@@ -122,7 +161,7 @@ export async function GET(
       // Group by email
       const viewerMap = new Map<
         string,
-        { email: string; lastViewed: Date; viewCount: number; types: Set<string> }
+        { email: string; userId: string | null; lastViewed: Date; viewCount: number; types: Set<string> }
       >();
       for (const v of viewers) {
         if (!v.email) continue;
@@ -130,12 +169,14 @@ export async function GET(
         if (existing) {
           existing.viewCount++;
           existing.types.add(v.accessType);
+          if (!existing.userId && v.userId) existing.userId = v.userId;
           if (v.createdAt > existing.lastViewed) {
             existing.lastViewed = v.createdAt;
           }
         } else {
           viewerMap.set(v.email, {
             email: v.email,
+            userId: v.userId,
             lastViewed: v.createdAt,
             viewCount: 1,
             types: new Set([v.accessType]),
@@ -143,7 +184,14 @@ export async function GET(
         }
       }
 
-      // Get quiz scores for each viewer
+      // Get lesson IDs for this resource
+      const resourceLessons = await db
+        .select({ id: lessons.id })
+        .from(lessons)
+        .where(eq(lessons.studyMaterialId, resourceId));
+      const lessonIds = resourceLessons.map((l) => l.id);
+
+      // Get quiz + lesson scores for each viewer
       const viewerList = await Promise.all(
         Array.from(viewerMap.values()).map(async (viewer) => {
           const [attempt] = await db
@@ -161,12 +209,30 @@ export async function GET(
             .orderBy(desc(quizAttempts.completedAt))
             .limit(1);
 
+          let lessonScore: number | null = null;
+          if (lessonIds.length > 0 && viewer.userId) {
+            const [la] = await db
+              .select({ score: lessonAttempts.score })
+              .from(lessonAttempts)
+              .where(
+                and(
+                  sql`${lessonAttempts.lessonId} IN (${sql.join(lessonIds.map((id) => sql`${id}`), sql`, `)})`,
+                  eq(lessonAttempts.userId, viewer.userId),
+                  sql`${lessonAttempts.completedAt} IS NOT NULL`
+                )
+              )
+              .orderBy(desc(lessonAttempts.completedAt))
+              .limit(1);
+            if (la) lessonScore = parseFloat(la.score || "0");
+          }
+
           return {
             email: viewer.email,
             lastViewed: viewer.lastViewed,
             viewCount: viewer.viewCount,
             quizScore: attempt ? parseFloat(attempt.score || "0") : null,
             timeSpent: attempt?.timeSpentSeconds || null,
+            lessonScore,
           };
         })
       );
@@ -228,6 +294,101 @@ export async function GET(
       return NextResponse.json({ questions: questionStats });
     }
 
+    if (section === "lessons") {
+      const resourceLessons = await db
+        .select({
+          id: lessons.id,
+          title: lessons.title,
+        })
+        .from(lessons)
+        .where(eq(lessons.studyMaterialId, resourceId));
+
+      const lessonStats = await Promise.all(
+        resourceLessons.map(async (lesson) => {
+          const allAttempts = await db
+            .select({
+              score: lessonAttempts.score,
+              completedAt: lessonAttempts.completedAt,
+              timeSpentSeconds: lessonAttempts.timeSpentSeconds,
+            })
+            .from(lessonAttempts)
+            .where(eq(lessonAttempts.lessonId, lesson.id));
+
+          const completed = allAttempts.filter((a) => a.completedAt !== null);
+          const avgScore =
+            completed.length > 0
+              ? completed.reduce((sum, a) => sum + parseFloat(a.score || "0"), 0) /
+                completed.length
+              : 0;
+          const avgTime =
+            completed.length > 0
+              ? completed.reduce((sum, a) => sum + (a.timeSpentSeconds || 0), 0) /
+                completed.length
+              : 0;
+
+          return {
+            id: lesson.id,
+            title: lesson.title,
+            totalAttempts: allAttempts.length,
+            completedCount: completed.length,
+            averageScore: Math.round(avgScore * 10) / 10,
+            averageTime: Math.round(avgTime),
+            completionRate:
+              allAttempts.length > 0
+                ? Math.round((completed.length / allAttempts.length) * 100)
+                : 0,
+          };
+        })
+      );
+
+      return NextResponse.json({ lessons: lessonStats });
+    }
+
+    if (section === "lesson-scores") {
+      const resourceLessons = await db
+        .select({ id: lessons.id })
+        .from(lessons)
+        .where(eq(lessons.studyMaterialId, resourceId));
+      const lessonIds = resourceLessons.map((l) => l.id);
+
+      const ranges = [
+        { range: "0-20%", min: 0, max: 20, count: 0 },
+        { range: "21-40%", min: 21, max: 40, count: 0 },
+        { range: "41-60%", min: 41, max: 60, count: 0 },
+        { range: "61-80%", min: 61, max: 80, count: 0 },
+        { range: "81-100%", min: 81, max: 100, count: 0 },
+      ];
+
+      if (lessonIds.length > 0) {
+        const completedAttempts = await db
+          .select({ score: lessonAttempts.score })
+          .from(lessonAttempts)
+          .where(
+            and(
+              sql`${lessonAttempts.lessonId} IN (${sql.join(lessonIds.map((id) => sql`${id}`), sql`, `)})`,
+              sql`${lessonAttempts.completedAt} IS NOT NULL`
+            )
+          );
+
+        for (const a of completedAttempts) {
+          const score = parseFloat(a.score || "0");
+          for (const range of ranges) {
+            if (score >= range.min && score <= range.max) {
+              range.count++;
+              break;
+            }
+          }
+        }
+      }
+
+      return NextResponse.json({
+        distribution: ranges.map((r) => ({
+          range: r.range,
+          count: r.count,
+        })),
+      });
+    }
+
     if (section === "timeline") {
       // Get access logs grouped by day for last 30 days
       const thirtyDaysAgo = new Date();
@@ -265,9 +426,36 @@ export async function GET(
         .groupBy(sql`DATE(${quizAttempts.completedAt})`)
         .orderBy(sql`DATE(${quizAttempts.completedAt})`);
 
+      // Lesson attempts by day
+      const resourceLessons = await db
+        .select({ id: lessons.id })
+        .from(lessons)
+        .where(eq(lessons.studyMaterialId, resourceId));
+      const lessonIds = resourceLessons.map((l) => l.id);
+
+      let lessonAttemptsByDay: Array<{ date: string; count: number }> = [];
+      if (lessonIds.length > 0) {
+        lessonAttemptsByDay = await db
+          .select({
+            date: sql<string>`DATE(${lessonAttempts.completedAt})`.as("date"),
+            count: count(),
+          })
+          .from(lessonAttempts)
+          .where(
+            and(
+              sql`${lessonAttempts.lessonId} IN (${sql.join(lessonIds.map((id) => sql`${id}`), sql`, `)})`,
+              sql`${lessonAttempts.completedAt} >= ${thirtyDaysAgoISO}::timestamp`,
+              sql`${lessonAttempts.completedAt} IS NOT NULL`
+            )
+          )
+          .groupBy(sql`DATE(${lessonAttempts.completedAt})`)
+          .orderBy(sql`DATE(${lessonAttempts.completedAt})`);
+      }
+
       return NextResponse.json({
         views: logs,
         attempts: attemptsByDay,
+        lessonAttempts: lessonAttemptsByDay,
       });
     }
 

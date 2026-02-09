@@ -14,10 +14,12 @@ import {
 
 interface ScoreDistributionChartProps {
   distribution: Array<{ range: string; count: number }>;
+  title?: string;
 }
 
 export function ScoreDistributionChart({
   distribution,
+  title = "Quiz Score Distribution",
 }: ScoreDistributionChartProps) {
   const hasData = distribution.some((d) => d.count > 0);
 
@@ -26,7 +28,7 @@ export function ScoreDistributionChart({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
-          Score Distribution
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent>

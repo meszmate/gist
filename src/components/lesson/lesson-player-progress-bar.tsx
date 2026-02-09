@@ -13,10 +13,7 @@ export function LessonPlayerProgressBar({ current, total, className }: LessonPla
 
   return (
     <div className={cn("w-full", className)}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-muted-foreground">
-          Step {Math.min(current + 1, total)} of {total}
-        </span>
+      <div className="flex items-center justify-end mb-1">
         <span className="text-xs font-medium">{percentage}%</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">

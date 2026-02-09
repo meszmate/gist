@@ -16,17 +16,19 @@ import {
 interface ActivityTimelineProps {
   views: Array<{ date: string; count: number }>;
   attempts: Array<{ date: string; count: number }>;
+  lessonAttempts?: Array<{ date: string; count: number }>;
 }
 
-export function ActivityTimeline({ views, attempts }: ActivityTimelineProps) {
-  // Merge both datasets by date
-  const dateMap = new Map<string, { date: string; views: number; attempts: number }>();
+export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: ActivityTimelineProps) {
+  // Merge all datasets by date
+  const dateMap = new Map<string, { date: string; views: number; attempts: number; lessonAttempts: number }>();
 
   for (const v of views) {
     dateMap.set(v.date, {
       date: v.date,
       views: v.count,
       attempts: 0,
+      lessonAttempts: 0,
     });
   }
 
@@ -39,6 +41,21 @@ export function ActivityTimeline({ views, attempts }: ActivityTimelineProps) {
         date: a.date,
         views: 0,
         attempts: a.count,
+        lessonAttempts: 0,
+      });
+    }
+  }
+
+  for (const la of lessonAttempts) {
+    const existing = dateMap.get(la.date);
+    if (existing) {
+      existing.lessonAttempts = la.count;
+    } else {
+      dateMap.set(la.date, {
+        date: la.date,
+        views: 0,
+        attempts: 0,
+        lessonAttempts: la.count,
       });
     }
   }
@@ -106,6 +123,14 @@ export function ActivityTimeline({ views, attempts }: ActivityTimelineProps) {
                 strokeWidth={2}
                 dot={false}
                 name="Quiz Attempts"
+              />
+              <Line
+                type="monotone"
+                dataKey="lessonAttempts"
+                stroke="hsl(142 71% 45%)"
+                strokeWidth={2}
+                dot={false}
+                name="Lesson Attempts"
               />
             </LineChart>
           </ResponsiveContainer>

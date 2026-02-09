@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, ArrowRight, Lightbulb } from "lucide-react";
+import { X, ArrowRight, RotateCcw, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   LessonWithSteps,
@@ -325,27 +325,43 @@ export function LessonPlayer({
             <LessonPlayerFeedback
               isCorrect={isCorrect}
               explanation={currentStep?.explanation}
-              hint={currentStep?.hint}
-              showTryAgain={attemptCount <= 1 && !isCorrect}
-              onTryAgain={handleTryAgain}
-              onContinue={handleContinue}
             />
           </div>
         )}
       </div>
 
-      {/* Bottom actions */}
-      {!isChecked && (
-        <div className="border-t p-4">
-          <div className="container max-w-2xl mx-auto flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              {isInteractive ? (
-                <>Press <kbd>Enter</kbd> to check</>
+      {/* Bottom actions — always visible */}
+      <div className="border-t p-4">
+        <div className="container max-w-2xl mx-auto flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">
+              Step {stepIndex + 1} of {steps.length}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {isChecked ? (
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to continue</>
+              ) : isInteractive ? (
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to check</>
               ) : (
-                <>Press <kbd>Enter</kbd> to continue</>
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to continue</>
               )}
             </div>
-            {isInteractive ? (
+          </div>
+          <div className="flex gap-2">
+            {isChecked ? (
+              <>
+                {!isCorrect && attemptCount <= 1 && (
+                  <Button variant="outline" onClick={handleTryAgain} className="gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+                )}
+                <Button onClick={handleContinue} className="gap-2">
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </>
+            ) : isInteractive ? (
               <Button
                 onClick={handleCheck}
                 disabled={!userAnswer}
@@ -361,7 +377,7 @@ export function LessonPlayer({
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

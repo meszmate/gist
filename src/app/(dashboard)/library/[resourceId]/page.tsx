@@ -533,7 +533,7 @@ export default function ResourcePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <div className="space-y-2">
         <Breadcrumb>
           <BreadcrumbList>

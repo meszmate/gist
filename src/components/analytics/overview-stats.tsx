@@ -1,7 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/shared/stat-card";
-import { Eye, Users, Target, Clock, Brain, FileQuestion } from "lucide-react";
+import { Eye, Users, Target, Clock, Brain, FileQuestion, GraduationCap } from "lucide-react";
 
 interface OverviewStatsProps {
   totalViews: number;
@@ -10,6 +10,8 @@ interface OverviewStatsProps {
   averageScore: number;
   averageTimeSeconds: number;
   flashcardStudySessions: number;
+  lessonAttempts?: number;
+  averageLessonScore?: number;
 }
 
 export function OverviewStats({
@@ -19,6 +21,8 @@ export function OverviewStats({
   averageScore,
   averageTimeSeconds,
   flashcardStudySessions,
+  lessonAttempts = 0,
+  averageLessonScore = 0,
 }: OverviewStatsProps) {
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -28,7 +32,7 @@ export function OverviewStats({
   };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Total Views"
         value={totalViews}
@@ -53,7 +57,7 @@ export function OverviewStats({
       <StatCard
         title="Average Score"
         value={`${averageScore}%`}
-        description="Across all attempts"
+        description="Across all quiz attempts"
         icon={<Target className="h-5 w-5" />}
         delay={150}
       />
@@ -70,6 +74,20 @@ export function OverviewStats({
         description="Flashcard reviews"
         icon={<Brain className="h-5 w-5" />}
         delay={250}
+      />
+      <StatCard
+        title="Lesson Attempts"
+        value={lessonAttempts}
+        description="Completed lessons"
+        icon={<GraduationCap className="h-5 w-5" />}
+        delay={300}
+      />
+      <StatCard
+        title="Avg Lesson Score"
+        value={`${averageLessonScore}%`}
+        description="Across all lesson attempts"
+        icon={<Target className="h-5 w-5" />}
+        delay={350}
       />
     </div>
   );
