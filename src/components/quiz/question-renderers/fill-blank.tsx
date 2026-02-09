@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +64,7 @@ export function FillBlankRenderer({
 }: QuestionRendererProps) {
   const fillConfig = config as FillBlankConfig;
   const template = fillConfig.template || '';
-  const blanks = fillConfig.blanks || [];
+  const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
   const correctBlanks = (correctAnswerData as FillBlankAnswer)?.blanks || {};
 
   const parsedTemplate = useMemo(
@@ -73,11 +73,14 @@ export function FillBlankRenderer({
   );
 
   const currentValues = (userAnswer as FillBlankUserAnswer)?.blanks || {};
+  const currentValuesKey = JSON.stringify(currentValues);
+  const [prevValuesKey, setPrevValuesKey] = useState(currentValuesKey);
   const [values, setValues] = useState<Record<string, string>>(currentValues);
 
-  useEffect(() => {
+  if (currentValuesKey !== prevValuesKey) {
+    setPrevValuesKey(currentValuesKey);
     setValues(currentValues);
-  }, [JSON.stringify(currentValues)]);
+  }
 
   const handleChange = (blankId: string, value: string) => {
     if (disabled) return;
@@ -158,7 +161,7 @@ export function FillBlankResultRenderer({
 }: ResultRendererProps) {
   const fillConfig = config as FillBlankConfig;
   const template = fillConfig.template || '';
-  const blanks = fillConfig.blanks || [];
+  const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
   const correctBlanks = (correctAnswerData as FillBlankAnswer)?.blanks || {};
   const userBlanks = (userAnswer as FillBlankUserAnswer)?.blanks || {};
 

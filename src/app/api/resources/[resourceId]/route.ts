@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizQuestions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { v4 as uuid } from "uuid";
 
 const updateResourceSchema = z.object({
   title: z.string().min(1).max(255).optional(),

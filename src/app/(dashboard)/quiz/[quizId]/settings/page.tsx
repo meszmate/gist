@@ -1,11 +1,11 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Save, Share2, Copy, Check, Clock, Users, Shuffle, Eye, GraduationCap, Settings2, ListOrdered, FileText } from "lucide-react";
+import { Loader2, Save, Share2, Copy, Check, Clock, Users, Shuffle, Eye, GraduationCap, Settings2, ListOrdered, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,7 +100,6 @@ async function fetchQuizSettings(quizId: string): Promise<Quiz> {
 
 export default function QuizSettingsPage() {
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const quizId = params.quizId as string;
   const [copied, setCopied] = useState(false);
@@ -217,9 +216,6 @@ export default function QuizSettingsPage() {
       toast.success("Link copied to clipboard");
     }
   };
-
-  const timeLimitValue = form.watch("timeLimitMinutes") || 0;
-  const maxAttemptsValue = form.watch("maxAttempts") || 0;
 
   if (isLoading) {
     return (

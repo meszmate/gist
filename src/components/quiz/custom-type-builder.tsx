@@ -14,9 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface SchemaField {
   id: string;
@@ -54,7 +52,7 @@ function fieldsToSchema(fields: SchemaField[]): Record<string, unknown> {
   const required: string[] = [];
 
   for (const field of fields) {
-    let fieldSchema: Record<string, unknown> = {
+    const fieldSchema: Record<string, unknown> = {
       type: field.type,
     };
 

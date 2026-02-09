@@ -7,7 +7,7 @@ import {
   quizSettings,
   quizAttempts,
 } from "@/lib/db/schema";
-import { eq, count, desc, sql } from "drizzle-orm";
+import { eq, count, desc } from "drizzle-orm";
 
 export async function GET() {
   try {

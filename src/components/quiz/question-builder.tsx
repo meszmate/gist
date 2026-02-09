@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -15,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   QuestionTypeSlug,
@@ -93,7 +92,8 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
   const [textAcceptedAnswers, setTextAcceptedAnswers] = useState<string[]>(
     (initialData?.correctAnswerData as TextInputAnswer)?.acceptedAnswers || ['']
   );
-  const [textKeywords, setTextKeywords] = useState<string[]>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [textKeywords, _setTextKeywords] = useState<string[]>(
     (initialData?.correctAnswerData as TextInputAnswer)?.keywords || []
   );
   const [textCaseSensitive, setTextCaseSensitive] = useState(

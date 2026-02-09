@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
@@ -30,7 +29,6 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import {
   useColorTheme,
-  COLOR_THEMES,
   type ColorTheme,
 } from "@/hooks/use-color-theme";
 

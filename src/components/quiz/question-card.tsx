@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Flag, AlertCircle } from "lucide-react";
-import { getQuestionRenderer } from "./question-renderers";
+import { questionRenderers } from "./question-renderers";
 import type {
   QuestionTypeSlug,
   QuestionConfig,
@@ -68,7 +68,7 @@ export function QuestionCard({
   showFlagButton = false,
   className,
 }: QuestionCardProps) {
-  const Renderer = getQuestionRenderer(questionType);
+  const Renderer = questionRenderers[questionType];
 
   const typeLabel = questionTypeLabels[questionType] || questionType;
 

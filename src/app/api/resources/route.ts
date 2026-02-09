@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizQuestions, folders, savedResources, users } from "@/lib/db/schema";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { z } from "zod";
 
 const createResourceSchema = z.object({

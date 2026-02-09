@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    let query = db
+    const query = db
       .select({
         id: flashcards.id,
         front: flashcards.front,

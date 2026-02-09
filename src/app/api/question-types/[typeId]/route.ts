@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { questionTypes } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { BUILT_IN_QUESTION_TYPES, type QuestionTypeSchema } from "@/lib/types/quiz";
 

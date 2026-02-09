@@ -38,7 +38,7 @@ export function SharedFlashcardStudy({
   const [isFlipped, setIsFlipped] = useState(false);
   const [results, setResults] = useState<Record<string, "correct" | "review">>({});
   const [isComplete, setIsComplete] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   const currentCard = cards[currentIndex];
   const progress = ((currentIndex + 1) / cards.length) * 100;
@@ -73,10 +73,10 @@ export function SharedFlashcardStudy({
     }
   }, [currentIndex]);
 
-  const markCard = (result: "correct" | "review") => {
+  const markCard = useCallback((result: "correct" | "review") => {
     setResults((prev) => ({ ...prev, [currentCard.id]: result }));
     goToNext();
-  };
+  }, [currentCard.id, goToNext]);
 
   const shuffleCards = () => {
     const shuffled = [...cards].sort(() => Math.random() - 0.5);
@@ -122,7 +122,7 @@ export function SharedFlashcardStudy({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isComplete, isFlipped, goToNext, goToPrev]);
+  }, [isComplete, isFlipped, goToNext, goToPrev, markCard]);
 
   if (isComplete) {
     return (

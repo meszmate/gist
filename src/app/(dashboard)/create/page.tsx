@@ -167,6 +167,7 @@ export default function CreateResourcePage() {
     createResource.mutate(data);
   };
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const titleValue = form.watch("title");
 
   return (

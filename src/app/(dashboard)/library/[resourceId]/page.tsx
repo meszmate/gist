@@ -75,7 +75,6 @@ import type {
   MatchingConfig,
   MatchingAnswer,
   FillBlankConfig,
-  FillBlankAnswer,
   MultiSelectConfig,
   MultiSelectAnswer,
 } from "@/lib/types/quiz";

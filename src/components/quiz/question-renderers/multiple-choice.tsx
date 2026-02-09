@@ -90,7 +90,6 @@ export function MultipleChoiceResultRenderer({
   config,
   correctAnswerData,
   userAnswer,
-  isCorrect,
   explanation,
 }: ResultRendererProps) {
   const mcConfig = config as MultipleChoiceConfig;

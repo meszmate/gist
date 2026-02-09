@@ -94,8 +94,9 @@ function StudyContent() {
   const [reviewedCount, setReviewedCount] = useState(0);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
   const [ratings, setRatings] = useState<Rating[]>([]);
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   // Practice mode state
   const [practiceMode, setPracticeMode] = useState(false);
@@ -112,15 +113,16 @@ function StudyContent() {
     queryFn: () => fetchDueCards(resourceId || undefined),
   });
 
-  // Store initial cards for practice mode
+  // Update elapsed time every 30 seconds
   useEffect(() => {
-    if (cards.length > 0 && sessionCards.length === 0) {
-      setSessionCards(cards);
-    }
-  }, [cards, sessionCards.length]);
+    const interval = setInterval(() => {
+      setElapsedMinutes(Math.floor((Date.now() - startTime) / 60000));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [startTime]);
 
-  // Use session cards in practice mode, otherwise use fresh cards
-  const activeCards = practiceMode ? sessionCards : cards;
+  // Use session cards when available (practice mode or continuation rounds), otherwise use fresh cards
+  const activeCards = sessionCards.length > 0 ? sessionCards : cards;
 
   // Get the unique resource ID for single-resource sessions
   const sessionResourceId = useMemo(() => {
@@ -211,7 +213,6 @@ function StudyContent() {
   const currentCard = activeCards[currentIndex];
   const progress = activeCards.length > 0 ? (reviewedCount / activeCards.length) * 100 : 0;
   const remainingCards = activeCards.length - currentIndex - 1;
-  const elapsedMinutes = Math.floor((Date.now() - startTime) / 60000);
 
   // Dismiss continuation banner after a delay
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +23,13 @@ export function YearRangeRenderer({
     ? userAnswer
     : (userAnswer as YearRangeUserAnswer)?.year;
 
+  const [prevCurrentValue, setPrevCurrentValue] = useState(currentValue);
   const [inputValue, setInputValue] = useState(currentValue?.toString() || '');
 
-  useEffect(() => {
+  if (currentValue !== prevCurrentValue) {
+    setPrevCurrentValue(currentValue);
     setInputValue(currentValue?.toString() || '');
-  }, [currentValue]);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

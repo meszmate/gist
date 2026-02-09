@@ -51,7 +51,7 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
   const runCommand = useCallback((command: () => void) => {
     setOpen(false);
     command();
-  }, []);
+  }, [setOpen]);
 
   const navigationItems = [
     { icon: Home, label: "Dashboard", href: "/dashboard", shortcut: "G D" },

@@ -7,12 +7,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  ArrowLeft,
   BookOpen,
   Brain,
   FileQuestion,
   FileText,
-  Loader2,
   Sparkles,
   Check,
   GraduationCap,
@@ -217,6 +215,7 @@ export default function GeneratePage() {
     generate.mutate(data);
   };
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const contentLength = form.watch("sourceContent")?.length || 0;
 
   if (isLoading) {

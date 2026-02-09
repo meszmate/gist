@@ -129,12 +129,11 @@ export function useVimNavigation({
     onEscape,
   ]);
 
-  // Reset selection when item count changes
-  useEffect(() => {
-    if (selectedIndex >= itemCount) {
-      setSelectedIndex(Math.max(0, itemCount - 1));
-    }
-  }, [itemCount, selectedIndex]);
+  // Clamp selection when item count changes (computed during render)
+  const clampedIndex = selectedIndex >= itemCount ? Math.max(0, itemCount - 1) : selectedIndex;
+  if (clampedIndex !== selectedIndex) {
+    setSelectedIndex(clampedIndex);
+  }
 
   return {
     selectedIndex,

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -12,13 +12,12 @@ import {
   Flag,
   ChevronLeft,
   ChevronRight,
-  Trophy,
   Target,
   RotateCcw,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -143,7 +142,6 @@ function CircularProgress({ value, size = 80, strokeWidth = 8 }: { value: number
 
 export default function QuizPage() {
   const params = useParams();
-  const router = useRouter();
   const quizId = params.quizId as string;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -152,7 +150,6 @@ export default function QuizPage() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [reviewOpen, setReviewOpen] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
 
@@ -160,6 +157,13 @@ export default function QuizPage() {
     queryKey: ["quiz", quizId],
     queryFn: () => fetchQuiz(quizId),
   });
+
+  const questions = useMemo<QuizQuestion[]>(() => {
+    if (!quiz) return [];
+    return quiz.settings?.shuffleQuestions
+      ? shuffleArray(quiz.questions)
+      : quiz.questions;
+  }, [quiz]);
 
   const submitQuiz = useMutation({
     mutationFn: async (submitAnswers: Record<string, UserAnswer>) => {
@@ -179,16 +183,6 @@ export default function QuizPage() {
       setResult(data);
     },
   });
-
-  // Initialize questions when quiz loads
-  useEffect(() => {
-    if (quiz && !quizStarted) {
-      const orderedQuestions = quiz.settings?.shuffleQuestions
-        ? shuffleArray(quiz.questions)
-        : quiz.questions;
-      setQuestions(orderedQuestions);
-    }
-  }, [quiz, quizStarted]);
 
   // Timer
   useEffect(() => {
@@ -248,9 +242,9 @@ export default function QuizPage() {
     setCurrentIndex(index);
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     submitQuiz.mutate(answers);
-  };
+  }, [submitQuiz, answers]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -292,7 +286,7 @@ export default function QuizPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [quizStarted, result, currentIndex, questions, selectAnswer, nextQuestion, prevQuestion, toggleFlag]);
+  }, [quizStarted, result, currentIndex, questions, selectAnswer, nextQuestion, prevQuestion, toggleFlag, handleSubmit]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

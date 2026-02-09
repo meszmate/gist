@@ -7,9 +7,7 @@ import type {
   MultipleChoiceAnswer,
   TrueFalseConfig,
   TrueFalseAnswer,
-  TextInputConfig,
   TextInputAnswer,
-  YearRangeConfig,
   YearRangeAnswer,
   NumericRangeConfig,
   NumericRangeAnswer,
@@ -92,11 +90,9 @@ function TrueFalsePdfRenderer({
 
 // Text Input
 function TextInputPdfRenderer({
-  config,
   correctAnswerData,
   showAnswerKey,
 }: PdfQuestionRendererProps) {
-  const tiConfig = config as TextInputConfig;
   const answer = showAnswerKey
     ? (correctAnswerData as TextInputAnswer)?.acceptedAnswers?.[0]
     : undefined;
@@ -118,11 +114,9 @@ function TextInputPdfRenderer({
 
 // Year Range
 function YearRangePdfRenderer({
-  config,
   correctAnswerData,
   showAnswerKey,
 }: PdfQuestionRendererProps) {
-  const yrConfig = config as YearRangeConfig;
   const answer = showAnswerKey
     ? (correctAnswerData as YearRangeAnswer)?.correctYear
     : undefined;
@@ -285,7 +279,7 @@ function FillBlankPdfRenderer({
   return (
     <View style={pdfStyles.fillBlankText}>
       <Text>
-        {parts.map((part, index) => {
+        {parts.map((part) => {
           if (part.type === "text") {
             return part.content;
           }
@@ -415,7 +409,7 @@ export function getAnswerText(
       const fbAnswer = correctAnswerData as FillBlankAnswer;
       const blanks = fbAnswer.blanks || {};
       return Object.entries(blanks)
-        .map(([_, answers], i) => `Blank ${i + 1}: ${answers[0]}`)
+        .map(([, answers], i) => `Blank ${i + 1}: ${answers[0]}`)
         .join("; ");
     }
     case "multi_select": {

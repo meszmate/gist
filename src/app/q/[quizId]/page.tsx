@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { signIn, useSession } from "next-auth/react";
@@ -83,7 +83,6 @@ export default function PublicQuizPage() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
 
   const { data: quiz, isLoading, error } = useQuery({
     queryKey: ["public-quiz", quizId],
@@ -105,15 +104,13 @@ export default function PublicQuizPage() {
     },
   });
 
-  // Initialize questions when quiz loads
-  useEffect(() => {
-    if (quiz && !quizStarted && quiz.questions) {
-      const orderedQuestions = quiz.settings?.shuffleQuestions
-        ? shuffleArray(quiz.questions)
-        : quiz.questions;
-      setQuestions(orderedQuestions);
-    }
-  }, [quiz, quizStarted]);
+  // Initialize questions when quiz loads (stable due to useMemo caching)
+  const questions = useMemo(() => {
+    if (!quiz?.questions) return [];
+    return quiz.settings?.shuffleQuestions
+      ? shuffleArray(quiz.questions)
+      : quiz.questions;
+  }, [quiz]);
 
   // Timer
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
 

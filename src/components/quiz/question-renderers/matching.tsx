@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, ArrowRight } from "lucide-react";
@@ -36,7 +36,7 @@ export function MatchingRenderer({
 }: QuestionRendererProps) {
   const matchingConfig = config as MatchingConfig;
   const leftColumn = matchingConfig.leftColumn || [];
-  const rightColumn = matchingConfig.rightColumn || [];
+  const rightColumn = useMemo(() => matchingConfig.rightColumn || [], [matchingConfig.rightColumn]);
 
   // Shuffle right column options if enabled
   const shuffledRight = useMemo(() => {
@@ -51,11 +51,14 @@ export function MatchingRenderer({
   const currentPairs = (userAnswer as MatchingUserAnswer)?.pairs || {};
   const correctPairs = (correctAnswerData as MatchingAnswer)?.correctPairs || {};
 
+  const currentPairsKey = JSON.stringify(currentPairs);
+  const [prevPairsKey, setPrevPairsKey] = useState(currentPairsKey);
   const [pairs, setPairs] = useState<Record<string, string>>(currentPairs);
 
-  useEffect(() => {
+  if (currentPairsKey !== prevPairsKey) {
+    setPrevPairsKey(currentPairsKey);
     setPairs(currentPairs);
-  }, [JSON.stringify(currentPairs)]);
+  }
 
   const handleMatch = (leftItem: string, rightItem: string) => {
     if (disabled) return;

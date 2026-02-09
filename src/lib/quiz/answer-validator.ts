@@ -3,7 +3,6 @@ import type {
   QuestionConfig,
   CorrectAnswerData,
   UserAnswer,
-  MultipleChoiceConfig,
   MultipleChoiceAnswer,
   MultipleChoiceUserAnswer,
   TrueFalseAnswer,
@@ -23,7 +22,6 @@ import type {
   FillBlankConfig,
   FillBlankAnswer,
   FillBlankUserAnswer,
-  MultiSelectConfig,
   MultiSelectAnswer,
   MultiSelectUserAnswer,
 } from '@/lib/types/quiz';
@@ -71,6 +69,7 @@ function isMultiSelectUserAnswer(answer: UserAnswer): answer is MultiSelectUserA
 function validateMultipleChoice(
   userAnswer: UserAnswer,
   correctAnswerData: CorrectAnswerData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _config: QuestionConfig
 ): ValidationResult {
   const correctAnswer = correctAnswerData as MultipleChoiceAnswer;
@@ -95,6 +94,7 @@ function validateMultipleChoice(
 function validateTrueFalse(
   userAnswer: UserAnswer,
   correctAnswerData: CorrectAnswerData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _config: QuestionConfig
 ): ValidationResult {
   const correctAnswer = correctAnswerData as TrueFalseAnswer;
@@ -419,6 +419,7 @@ function validateFillBlank(
 function validateMultiSelect(
   userAnswer: UserAnswer,
   correctAnswerData: CorrectAnswerData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _config: QuestionConfig
 ): ValidationResult {
   const correctAnswer = correctAnswerData as MultiSelectAnswer;

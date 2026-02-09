@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Download, Loader2, FileText, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,12 +62,11 @@ export function QuizPdfPreview({
     paperSize: "letter",
   });
 
-  const [isClient, setIsClient] = useState(false);
-
   // Ensure we're on client side before rendering PDF components
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const emptySubscribe = useCallback(() => () => {}, []);
+  const getClientSnapshot = useCallback(() => true, []);
+  const getServerSnapshot = useCallback(() => false, []);
+  const isClient = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
 
   const updateOption = useCallback(
     <K extends keyof PdfExportOptions>(key: K, value: PdfExportOptions[K]) => {

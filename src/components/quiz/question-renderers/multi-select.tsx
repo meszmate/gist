@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,15 +20,18 @@ export function MultiSelectRenderer({
   const options = msConfig.options || [];
 
   const currentSelected = (userAnswer as MultiSelectUserAnswer)?.selectedIndices || [];
+  const currentSelectedKey = JSON.stringify(currentSelected);
+  const [prevSelectedKey, setPrevSelectedKey] = useState(currentSelectedKey);
   const [selected, setSelected] = useState<number[]>(currentSelected);
 
   const correctIndices = showResult
     ? new Set((correctAnswerData as MultiSelectAnswer)?.correctIndices || [])
     : new Set<number>();
 
-  useEffect(() => {
+  if (currentSelectedKey !== prevSelectedKey) {
+    setPrevSelectedKey(currentSelectedKey);
     setSelected(currentSelected);
-  }, [JSON.stringify(currentSelected)]);
+  }
 
   const handleToggle = (index: number) => {
     if (disabled) return;

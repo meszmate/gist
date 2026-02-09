@@ -13,7 +13,6 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
-  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,13 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
@@ -105,16 +97,27 @@ function formatDate(dateString: string): string {
   });
 }
 
+type SortColumn = "name" | "score" | "date" | "time";
+
+function SortIcon({ column, sortBy, sortOrder }: { column: SortColumn; sortBy: SortColumn; sortOrder: "asc" | "desc" }) {
+  if (sortBy !== column) return null;
+  return sortOrder === "asc" ? (
+    <ChevronUp className="h-4 w-4" />
+  ) : (
+    <ChevronDown className="h-4 w-4" />
+  );
+}
+
 export default function ParticipantsPage() {
   const params = useParams();
   const quizId = params.quizId as string;
 
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "score" | "date" | "time">("date");
+  const [sortBy, setSortBy] = useState<SortColumn>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["participants", quizId, search, sortBy, sortOrder, page],
     queryFn: () =>
       fetchParticipants(quizId, {
@@ -144,15 +147,6 @@ export default function ParticipantsPage() {
       setSortBy(column);
       setSortOrder("desc");
     }
-  };
-
-  const SortIcon = ({ column }: { column: typeof sortBy }) => {
-    if (sortBy !== column) return null;
-    return sortOrder === "asc" ? (
-      <ChevronUp className="h-4 w-4" />
-    ) : (
-      <ChevronDown className="h-4 w-4" />
-    );
   };
 
   if (isLoading) {
@@ -335,7 +329,7 @@ export default function ParticipantsPage() {
                 >
                   <div className="flex items-center gap-1">
                     Participant
-                    <SortIcon column="name" />
+                    <SortIcon column="name" sortBy={sortBy} sortOrder={sortOrder} />
                   </div>
                 </TableHead>
                 <TableHead
@@ -344,7 +338,7 @@ export default function ParticipantsPage() {
                 >
                   <div className="flex items-center gap-1">
                     Score
-                    <SortIcon column="score" />
+                    <SortIcon column="score" sortBy={sortBy} sortOrder={sortOrder} />
                   </div>
                 </TableHead>
                 <TableHead>Grade</TableHead>
@@ -355,7 +349,7 @@ export default function ParticipantsPage() {
                 >
                   <div className="flex items-center gap-1">
                     Time
-                    <SortIcon column="time" />
+                    <SortIcon column="time" sortBy={sortBy} sortOrder={sortOrder} />
                   </div>
                 </TableHead>
                 <TableHead
@@ -364,7 +358,7 @@ export default function ParticipantsPage() {
                 >
                   <div className="flex items-center gap-1">
                     Completed
-                    <SortIcon column="date" />
+                    <SortIcon column="date" sortBy={sortBy} sortOrder={sortOrder} />
                   </div>
                 </TableHead>
               </TableRow>
