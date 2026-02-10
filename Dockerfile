@@ -1,5 +1,5 @@
 # ============================================
-# SmartNotes Dockerfile
+# Gist Dockerfile
 # Multi-stage build for optimized production image
 # ============================================
 
@@ -43,11 +43,24 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml drizzle.config.ts tsconfig.json ./
-COPY src ./src
+COPY lib ./lib
 
 CMD ["pnpm", "db:push", "--force"]
 
-# Stage 4: Runner
+# Stage 4: Seeder (used by docker-compose seed service)
+FROM node:20-alpine AS seeder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml tsconfig.json ./
+COPY lib ./lib
+COPY scripts ./scripts
+
+CMD ["pnpm", "db:seed"]
+
+# Stage 5: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 

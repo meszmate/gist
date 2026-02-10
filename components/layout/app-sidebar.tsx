@@ -6,6 +6,7 @@ import {
   BookOpen,
   Brain,
   FolderPlus,
+  GraduationCap,
   LayoutDashboard,
   Settings,
   Users,
@@ -40,6 +41,7 @@ const navGroups = [
     items: [
       { title: "Study", href: "/study", icon: Brain },
       { title: "Quizzes", href: "/quiz", icon: FileQuestion },
+      { title: "Lessons", href: "/lessons", icon: GraduationCap },
     ],
   },
   {
