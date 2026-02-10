@@ -1,0 +1,79 @@
+"use client";
+
+import type { StepEditorProps } from "./types";
+import type { FillBlanksContent, FillBlanksAnswerData } from "@/lib/types/lesson";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
+
+export function FillBlanksEditor({ content, answerData, onChange }: StepEditorProps) {
+  const c = content as FillBlanksContent;
+  const ad = (answerData as FillBlanksAnswerData) || { correctBlanks: {} };
+
+  const updateBlanks = (blanks: FillBlanksContent["blanks"]) => {
+    const correctBlanks: Record<string, string[]> = {};
+    blanks.forEach((b) => { correctBlanks[b.id] = b.acceptedAnswers; });
+    onChange({ ...c, blanks }, { correctBlanks });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Template</Label>
+        <Textarea
+          value={c.template}
+          onChange={(e) => onChange({ ...c, template: e.target.value }, ad)}
+          placeholder='Use {{blank_id}} for blanks. E.g. "The {{b1}} is the capital of {{b2}}"'
+          rows={3}
+          className="mt-1.5 font-mono text-sm"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Use {"{{blank_id}}"} syntax for blanks. Each blank ID must match a blank definition below.
+        </p>
+      </div>
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label>Blanks</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const id = `b${c.blanks.length + 1}`;
+              updateBlanks([...c.blanks, { id, acceptedAnswers: [""] }]);
+            }}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add Blank
+          </Button>
+        </div>
+        {c.blanks.map((blank, i) => (
+          <div key={blank.id} className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-mono text-muted-foreground w-12">{`{{${blank.id}}}`}</span>
+            <Input
+              value={blank.acceptedAnswers.join(", ")}
+              onChange={(e) => {
+                const blanks = [...c.blanks];
+                blanks[i] = {
+                  ...blanks[i],
+                  acceptedAnswers: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                };
+                updateBlanks(blanks);
+              }}
+              placeholder="Accepted answers (comma-separated)"
+              className="flex-1"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => updateBlanks(c.blanks.filter((_, j) => j !== i))}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

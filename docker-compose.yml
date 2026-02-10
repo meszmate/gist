@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       target: migrator
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/smartnotes
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gist
     depends_on:
       db:
         condition: service_healthy
@@ -17,7 +17,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/smartnotes
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gist
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_URL=${AUTH_URL:-http://localhost:3000}
       - AUTH_TRUST_HOST=true
@@ -33,12 +33,27 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: seeder
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gist
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    profiles:
+      - seed
+
   db:
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=smartnotes
+      - POSTGRES_DB=gist
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
