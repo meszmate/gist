@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 interface InlineEditableFieldProps {
   value: string;
@@ -22,10 +23,12 @@ export function InlineEditableField({
   onSave,
   isSaving = false,
   multiline = false,
-  placeholder = "Click to edit...",
+  placeholder,
   className,
   inputClassName,
 }: InlineEditableFieldProps) {
+  const { t } = useLocale();
+  const resolvedPlaceholder = placeholder ?? t("inlineEdit.clickToEdit");
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -91,7 +94,7 @@ export function InlineEditableField({
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isSaving}
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
               className={cn(
                 "border-0 shadow-none focus-visible:ring-0 resize-none min-h-[80px]",
                 inputClassName
@@ -106,7 +109,7 @@ export function InlineEditableField({
               disabled={isSaving}
             >
               <Check className="mr-1 h-3.5 w-3.5" />
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? t("common.saving") : t("common.save")}
             </Button>
             <Button
               size="sm"
@@ -115,7 +118,7 @@ export function InlineEditableField({
               disabled={isSaving}
             >
               <X className="mr-1 h-3.5 w-3.5" />
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </div>
@@ -130,7 +133,7 @@ export function InlineEditableField({
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
         disabled={isSaving}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className={cn(
           "transition-all duration-200",
           inputClassName
@@ -154,7 +157,7 @@ export function InlineEditableField({
         "transition-colors",
         value ? "" : "text-muted-foreground italic"
       )}>
-        {value || placeholder}
+        {value || resolvedPlaceholder}
       </span>
       <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
     </button>

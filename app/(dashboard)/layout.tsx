@@ -4,6 +4,7 @@ import { VimNavigationProvider } from "@/components/keyboard/vim-navigation-prov
 import { ShortcutHelpDialog } from "@/components/keyboard/shortcut-help-dialog";
 import { CommandMenu, CommandMenuTrigger } from "@/components/shared/command-menu";
 import { Separator } from "@/components/ui/separator";
+import { ShortcutHint } from "@/components/layout/shortcut-hint";
 
 export default function DashboardLayout({
   children,
@@ -21,9 +22,7 @@ export default function DashboardLayout({
             <div className="flex-1">
               <CommandMenuTrigger />
             </div>
-            <kbd className="hidden sm:inline-flex px-2 py-1 text-xs font-mono text-muted-foreground bg-muted rounded border">
-              ? for shortcuts
-            </kbd>
+            <ShortcutHint />
           </header>
           <main className="flex-1 p-6">{children}</main>
         </SidebarInset>

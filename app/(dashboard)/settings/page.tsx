@@ -24,6 +24,7 @@ import {
   Sun,
   Monitor,
   Check,
+  Globe,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -31,25 +32,14 @@ import {
   useColorTheme,
   type ColorTheme,
 } from "@/hooks/use-color-theme";
-
-const shortcuts = [
-  { keys: ["?"], description: "Show keyboard shortcuts" },
-  { keys: ["j"], description: "Navigate down in lists" },
-  { keys: ["k"], description: "Navigate up in lists" },
-  { keys: ["Enter"], description: "Select item / confirm" },
-  { keys: ["/"], description: "Open search" },
-  { keys: ["Esc"], description: "Close dialogs / cancel" },
-  { keys: ["h"], description: "Previous tab" },
-  { keys: ["l"], description: "Next tab" },
-  { keys: ["Space"], description: "Flip flashcard" },
-  { keys: ["1", "2", "3", "4"], description: "Rate flashcard" },
-  { keys: ["⌘", "K"], description: "Open command menu" },
-];
+import { useLocale } from "@/hooks/use-locale";
+import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/types";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
+  const { t, locale, setLocale } = useLocale();
   const [activeTab, setActiveTab] = useState("profile");
   const user = session?.user;
 
@@ -60,29 +50,43 @@ export default function SettingsPage() {
     .toUpperCase()
     .slice(0, 2);
 
+  const shortcuts = [
+    { keys: ["?"], description: t("keyboard.showShortcuts") },
+    { keys: ["j"], description: t("keyboard.navigateDown") },
+    { keys: ["k"], description: t("keyboard.navigateUp") },
+    { keys: ["Enter"], description: t("keyboard.selectConfirm") },
+    { keys: ["/"], description: t("keyboard.openSearch") },
+    { keys: ["Esc"], description: t("keyboard.closeDialogs") },
+    { keys: ["h"], description: t("keyboard.previousTab") },
+    { keys: ["l"], description: t("keyboard.nextTab") },
+    { keys: ["Space"], description: t("keyboard.flipFlashcard") },
+    { keys: ["1", "2", "3", "4"], description: t("keyboard.rateFlashcard") },
+    { keys: ["\u2318", "K"], description: t("keyboard.openCommandMenu") },
+  ];
+
   const themeOptions = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
+    { value: "light", label: t("settings.light"), icon: Sun },
+    { value: "dark", label: t("settings.dark"), icon: Moon },
+    { value: "system", label: t("settings.system"), icon: Monitor },
   ];
 
   const colorSwatches: { value: ColorTheme; label: string; color: string }[] = [
-    { value: "neutral", label: "Neutral", color: "oklch(0.37 0 0)" },
-    { value: "blue", label: "Blue", color: "oklch(0.55 0.2 250)" },
-    { value: "violet", label: "Violet", color: "oklch(0.55 0.22 290)" },
-    { value: "green", label: "Green", color: "oklch(0.55 0.17 155)" },
-    { value: "rose", label: "Rose", color: "oklch(0.55 0.2 10)" },
-    { value: "orange", label: "Orange", color: "oklch(0.55 0.17 50)" },
+    { value: "neutral", label: t("settings.neutral"), color: "oklch(0.37 0 0)" },
+    { value: "blue", label: t("settings.blue"), color: "oklch(0.55 0.2 250)" },
+    { value: "violet", label: t("settings.violet"), color: "oklch(0.55 0.22 290)" },
+    { value: "green", label: t("settings.green"), color: "oklch(0.55 0.17 155)" },
+    { value: "rose", label: t("settings.rose"), color: "oklch(0.55 0.2 10)" },
+    { value: "orange", label: t("settings.orange"), color: "oklch(0.55 0.17 50)" },
   ];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader
-        title="Settings"
-        description="Manage your account and preferences"
+        title={t("settings.title")}
+        description={t("settings.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Settings" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("settings.title") },
         ]}
       />
 
@@ -90,19 +94,19 @@ export default function SettingsPage() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Profile</span>
+            <span className="hidden sm:inline">{t("settings.profile")}</span>
           </TabsTrigger>
           <TabsTrigger value="appearance" className="gap-2">
             <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Appearance</span>
+            <span className="hidden sm:inline">{t("settings.appearance")}</span>
           </TabsTrigger>
           <TabsTrigger value="keyboard" className="gap-2">
             <Keyboard className="h-4 w-4" />
-            <span className="hidden sm:inline">Keyboard</span>
+            <span className="hidden sm:inline">{t("settings.keyboard")}</span>
           </TabsTrigger>
           <TabsTrigger value="data" className="gap-2">
             <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Data</span>
+            <span className="hidden sm:inline">{t("settings.data")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -111,9 +115,9 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                Account
+                {t("settings.account")}
               </CardTitle>
-              <CardDescription>Your account information</CardDescription>
+              <CardDescription>{t("settings.accountDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6">
@@ -125,7 +129,7 @@ export default function SettingsPage() {
                   <h3 className="text-xl font-semibold">{user?.name}</h3>
                   <p className="text-muted-foreground">{user?.email}</p>
                   <Badge variant="secondary" className="mt-2">
-                    Google Account
+                    {t("settings.googleAccount")}
                   </Badge>
                 </div>
               </div>
@@ -134,8 +138,8 @@ export default function SettingsPage() {
 
           <Card className="border-destructive/50">
             <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>Irreversible actions</CardDescription>
+              <CardTitle className="text-destructive">{t("settings.dangerZone")}</CardTitle>
+              <CardDescription>{t("settings.irreversibleActions")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Button
@@ -144,7 +148,7 @@ export default function SettingsPage() {
                 size="lg"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                {t("settings.signOut")}
               </Button>
             </CardContent>
           </Card>
@@ -154,11 +158,44 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5 text-primary" />
-                Theme
+                <Globe className="h-5 w-5 text-primary" />
+                {t("settings.language")}
               </CardTitle>
               <CardDescription>
-                Choose your preferred color scheme
+                {t("settings.languageDescription")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                {LOCALES.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => setLocale(loc)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all hover:border-primary/50",
+                      locale === loc
+                        ? "border-primary bg-primary/5"
+                        : "border-muted"
+                    )}
+                  >
+                    <span className="font-medium">{LOCALE_LABELS[loc]}</span>
+                    {locale === loc && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                {t("settings.theme")}
+              </CardTitle>
+              <CardDescription>
+                {t("settings.themeDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -195,10 +232,10 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5 text-primary" />
-                Color
+                {t("settings.color")}
               </CardTitle>
               <CardDescription>
-                Pick an accent color for the interface
+                {t("settings.colorDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -240,24 +277,24 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Preview</CardTitle>
+              <CardTitle>{t("settings.previewTitle")}</CardTitle>
               <CardDescription>
-                See how the theme looks
+                {t("settings.previewDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex gap-4">
-                  <Button>Primary</Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="destructive">Destructive</Button>
+                  <Button>{t("settings.primary")}</Button>
+                  <Button variant="secondary">{t("settings.secondary")}</Button>
+                  <Button variant="outline">{t("settings.outline")}</Button>
+                  <Button variant="destructive">{t("settings.destructive")}</Button>
                 </div>
                 <div className="flex gap-2">
-                  <Badge>Default</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
-                  <Badge variant="outline">Outline</Badge>
-                  <Badge variant="destructive">Destructive</Badge>
+                  <Badge>{t("settings.default")}</Badge>
+                  <Badge variant="secondary">{t("settings.secondary")}</Badge>
+                  <Badge variant="outline">{t("settings.outline")}</Badge>
+                  <Badge variant="destructive">{t("settings.destructive")}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -269,10 +306,10 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Keyboard className="h-5 w-5 text-primary" />
-                Keyboard Shortcuts
+                {t("settings.keyboardShortcuts")}
               </CardTitle>
               <CardDescription>
-                gist uses vim-style navigation for power users
+                {t("keyboard.vimDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -309,10 +346,9 @@ export default function SettingsPage() {
                   <Keyboard className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Pro tip</h3>
+                  <h3 className="font-semibold mb-1">{t("common.proTip")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Press <kbd className="px-1.5 py-0.5 text-xs bg-background rounded border mx-1">?</kbd>
-                    anywhere in the app to see the keyboard shortcuts dialog.
+                    {t("keyboard.pressAnywhere", { key: "?" })}
                   </p>
                 </div>
               </div>
@@ -325,33 +361,33 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5 text-primary" />
-                Your Data
+                {t("settings.yourData")}
               </CardTitle>
               <CardDescription>
-                Manage your study data and exports
+                {t("settings.yourDataDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
-                  <h4 className="font-medium">Export Data</h4>
+                  <h4 className="font-medium">{t("settings.exportData")}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Download all your study materials, flashcards, and quiz data
+                    {t("settings.exportDataDescription")}
                   </p>
                 </div>
                 <Button variant="outline" disabled>
-                  Coming Soon
+                  {t("common.comingSoon")}
                 </Button>
               </div>
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
-                  <h4 className="font-medium">Import Data</h4>
+                  <h4 className="font-medium">{t("settings.importData")}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Import flashcards from Anki, Quizlet, or CSV files
+                    {t("settings.importDataDescription")}
                   </p>
                 </div>
                 <Button variant="outline" disabled>
-                  Coming Soon
+                  {t("common.comingSoon")}
                 </Button>
               </div>
             </CardContent>
@@ -359,14 +395,14 @@ export default function SettingsPage() {
 
           <Card className="border-destructive/30">
             <CardHeader>
-              <CardTitle className="text-destructive">Delete Account</CardTitle>
+              <CardTitle className="text-destructive">{t("settings.deleteAccount")}</CardTitle>
               <CardDescription>
-                Permanently delete your account and all associated data
+                {t("settings.deleteAccountDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="outline" className="text-destructive hover:bg-destructive/10" disabled>
-                Delete Account (Coming Soon)
+                {t("settings.deleteAccountButton")}
               </Button>
             </CardContent>
           </Card>

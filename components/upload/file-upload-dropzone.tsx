@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
+import { useLocale } from "@/hooks/use-locale";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -22,6 +23,7 @@ export function FileUploadDropzone({
   onError,
   disabled,
 }: FileUploadDropzoneProps) {
+  const { t } = useLocale();
   const [state, setState] = useState<UploadState>("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -36,13 +38,13 @@ export function FileUploadDropzone({
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
-      return "File size exceeds 10MB limit";
+      return t("upload.fileSizeExceeds");
     }
     const ext = file.name.lastIndexOf(".") !== -1
       ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase()
       : "";
     if (!ACCEPTED_EXTENSIONS.includes(ext as typeof ACCEPTED_EXTENSIONS[number])) {
-      return `Unsupported file type. Accepted: ${ACCEPTED_EXTENSIONS.join(", ")}`;
+      return t("upload.unsupportedType", { types: ACCEPTED_EXTENSIONS.join(", ") });
     }
     return null;
   };
@@ -155,7 +157,7 @@ export function FileUploadDropzone({
       {state === "uploading" && (
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">Extracting text from {fileName}...</p>
+          <p className="text-sm font-medium">{t("upload.extractingText", { fileName: fileName ?? "" })}</p>
         </div>
       )}
 
@@ -163,7 +165,7 @@ export function FileUploadDropzone({
         <div className="flex flex-col items-center gap-2">
           <CheckCircle2 className="h-8 w-8 text-green-600" />
           <p className="text-sm font-medium text-green-600">
-            Text extracted from {fileName}
+            {t("upload.textExtracted", { fileName: fileName ?? "" })}
           </p>
           <button
             type="button"
@@ -173,7 +175,7 @@ export function FileUploadDropzone({
             }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
-            Upload another file
+            {t("upload.uploadAnother")}
           </button>
         </div>
       )}
@@ -190,7 +192,7 @@ export function FileUploadDropzone({
             }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
-            Try again
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -202,10 +204,10 @@ export function FileUploadDropzone({
           </div>
           <div>
             <p className="text-sm font-medium">
-              {state === "dragging" ? "Drop file here" : "Drop a file here or click to browse"}
+              {state === "dragging" ? t("upload.dropFileHere") : t("upload.dropOrBrowse")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              PDF, DOCX, PPTX, TXT, MD, CSV (max 10MB)
+              {t("upload.acceptedFormats")}
             </p>
           </div>
         </div>

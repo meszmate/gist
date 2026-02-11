@@ -37,6 +37,7 @@ import {
 import { STEP_EDITORS } from "./step-editors";
 import { LessonStepTypePicker } from "./lesson-step-type-picker";
 import { LessonPlayer } from "./lesson-player";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonEditorProps {
   lesson: LessonWithSteps;
@@ -44,6 +45,7 @@ interface LessonEditorProps {
 }
 
 export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditorProps) {
+  const { t } = useLocale();
   const queryClient = useQueryClient();
   const [lesson, setLesson] = useState(initialLesson);
   const [steps, setSteps] = useState(initialLesson.steps);
@@ -101,10 +103,10 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
     onSuccess: () => {
       setIsDirty(false);
       queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
-      toast.success("Lesson saved");
+      toast.success(t("lessonEditor.lessonSaved"));
     },
     onError: () => {
-      toast.error("Failed to save lesson");
+      toast.error(t("lessonEditor.failedToSave"));
     },
   });
 
@@ -165,7 +167,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
         prev.map((s) => (s.id === improved.id ? improved : s))
       );
       setIsDirty(true);
-      toast.success("Step improved with AI");
+      toast.success(t("lessonEditor.stepImproved"));
     },
   });
 
@@ -224,11 +226,11 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
             className="text-lg font-semibold border-none shadow-none h-auto py-1 px-2 focus-visible:ring-1 max-w-sm"
           />
           <Badge variant={lesson.status === "published" ? "default" : "secondary"}>
-            {lesson.status}
+            {lesson.status === "published" ? t("common.published") : t("common.draft")}
           </Badge>
           {isDirty && (
             <Badge variant="outline" className="text-xs">
-              Unsaved changes
+              {t("common.unsavedChanges")}
             </Badge>
           )}
         </div>
@@ -240,7 +242,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
             disabled={steps.length === 0}
           >
             <Eye className="mr-1.5 h-3.5 w-3.5" />
-            Preview
+            {t("common.preview")}
           </Button>
           <Button
             variant="outline"
@@ -254,7 +256,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
               setIsDirty(true);
             }}
           >
-            {lesson.status === "published" ? "Unpublish" : "Publish"}
+            {lesson.status === "published" ? t("lessonEditor.unpublish") : t("lessonEditor.publish")}
           </Button>
           <Button
             size="sm"
@@ -266,7 +268,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
             ) : (
               <Save className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Save
+            {t("common.save")}
           </Button>
         </div>
       </div>
@@ -275,14 +277,14 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
         {/* Sidebar */}
         <div className="w-64 border-r bg-muted/30 flex flex-col shrink-0">
           <div className="p-3 border-b flex items-center justify-between">
-            <span className="text-sm font-medium">Steps ({steps.length})</span>
+            <span className="text-sm font-medium">{t("lessonEditor.stepsCount", { count: steps.length })}</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setTypePickerOpen(true)}
             >
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Add
+              {t("lessonEditor.add")}
             </Button>
           </div>
           <ScrollArea className="flex-1">
@@ -329,7 +331,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     {STEP_TYPE_META[selectedStep.stepType as StepType]?.label || selectedStep.stepType}
                   </Badge>
                   {isInteractiveStep(selectedStep.stepType as StepType) && (
-                    <Badge variant="secondary" className="text-xs">Interactive</Badge>
+                    <Badge variant="secondary" className="text-xs">{t("lessonEditor.interactiveLabel")}</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
@@ -339,7 +341,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     onClick={() => moveStep(selectedStepIndex!, "up")}
                     disabled={selectedStepIndex === 0}
                   >
-                    Move Up
+                    {t("lessonEditor.moveUp")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -347,7 +349,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     onClick={() => moveStep(selectedStepIndex!, "down")}
                     disabled={selectedStepIndex === steps.length - 1}
                   >
-                    Move Down
+                    {t("lessonEditor.moveDown")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -360,7 +362,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     ) : (
                       <Sparkles className="mr-1 h-3.5 w-3.5" />
                     )}
-                    AI Improve
+                    {t("lessonEditor.aiImprove")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -370,7 +372,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     disabled={deleteStepMutation.isPending}
                   >
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </div>
               </div>
@@ -391,7 +393,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
               {isInteractiveStep(selectedStep.stepType as StepType) && (
                 <div className="space-y-4">
                   <div>
-                    <Label>Explanation (shown after answering)</Label>
+                    <Label>{t("lessonEditor.explanationLabel")}</Label>
                     <Textarea
                       value={selectedStep.explanation || ""}
                       onChange={(e) => {
@@ -411,7 +413,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     />
                   </div>
                   <div>
-                    <Label>Hint (optional)</Label>
+                    <Label>{t("lessonEditor.hintLabel")}</Label>
                     <Input
                       value={selectedStep.hint || ""}
                       onChange={(e) => {
@@ -435,13 +437,13 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center space-y-2">
-                <p>No step selected</p>
+                <p>{t("lessonEditor.noStepSelected")}</p>
                 <Button
                   variant="outline"
                   onClick={() => setTypePickerOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add a Step
+                  {t("lessonEditor.addStep")}
                 </Button>
               </div>
             </div>

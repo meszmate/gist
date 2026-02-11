@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { MultiSelectConfig, MultiSelectAnswer, MultiSelectUserAnswer } from "@/lib/types/quiz";
 
@@ -16,6 +17,7 @@ export function MultiSelectRenderer({
   showResult,
   correctAnswerData,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const msConfig = config as MultiSelectConfig;
   const options = msConfig.options || [];
 
@@ -54,7 +56,7 @@ export function MultiSelectRenderer({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Select all that apply
+        {t("quizRenderer.selectAll")}
         {msConfig.minSelections && ` (minimum ${msConfig.minSelections})`}
         {msConfig.maxSelections && ` (maximum ${msConfig.maxSelections})`}
       </p>
@@ -91,13 +93,13 @@ export function MultiSelectRenderer({
             />
             <span className="flex-1">{option}</span>
             {showResult && isCorrectOption && isSelected && (
-              <Badge className="bg-green-500">Correct</Badge>
+              <Badge className="bg-green-500">{t("quizRenderer.correct")}</Badge>
             )}
             {showResult && isWrongSelection && (
-              <Badge variant="destructive">Wrong</Badge>
+              <Badge variant="destructive">{t("quizRenderer.wrong")}</Badge>
             )}
             {showResult && isMissedCorrect && (
-              <Badge variant="outline" className="text-amber-600 border-amber-400">Missed</Badge>
+              <Badge variant="outline" className="text-amber-600 border-amber-400">{t("quizRenderer.missed")}</Badge>
             )}
           </button>
         );
@@ -105,7 +107,7 @@ export function MultiSelectRenderer({
 
       {showResult && (
         <div className="text-sm text-muted-foreground">
-          {selected.filter(i => correctIndices.has(i)).length} of {correctIndices.size} correct options selected
+          {t("quizRenderer.correctOptions", { count: selected.filter(i => correctIndices.has(i)).length, total: correctIndices.size })}
         </div>
       )}
     </div>
@@ -120,6 +122,7 @@ export function MultiSelectResultRenderer({
   feedback,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const msConfig = config as MultiSelectConfig;
   const options = msConfig.options || [];
 
@@ -153,13 +156,13 @@ export function MultiSelectResultRenderer({
             <span className="flex-1">{option}</span>
 
             {isCorrectOption && isSelected && (
-              <Badge className="bg-green-500">Correct</Badge>
+              <Badge className="bg-green-500">{t("quizRenderer.correct")}</Badge>
             )}
             {isWrongSelection && (
-              <Badge variant="destructive">Wrong selection</Badge>
+              <Badge variant="destructive">{t("quizRenderer.wrongSelection")}</Badge>
             )}
             {isMissedCorrect && (
-              <Badge variant="outline" className="text-amber-600 border-amber-400">Should have selected</Badge>
+              <Badge variant="outline" className="text-amber-600 border-amber-400">{t("quizRenderer.shouldHaveSelected")}</Badge>
             )}
           </div>
         );
@@ -167,7 +170,7 @@ export function MultiSelectResultRenderer({
 
       <div className="flex items-center gap-4 pt-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Score:</span>
+          <span className="text-sm text-muted-foreground">{t("quizRenderer.score")}</span>
           <Badge variant={creditPercent === 100 ? "default" : "secondary"}>
             {creditPercent.toFixed(0)}%
           </Badge>
@@ -179,7 +182,7 @@ export function MultiSelectResultRenderer({
 
       {explanation && (
         <p className="text-sm text-muted-foreground pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

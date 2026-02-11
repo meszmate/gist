@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Eye } from "lucide-react";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
+import { useLocale } from "@/hooks/use-locale";
 
 export function RevealRenderer({ step }: StepRendererProps) {
+  const { t } = useLocale();
   const content = step.content as RevealContent;
   const [revealedCount, setRevealedCount] = useState(0);
 
@@ -41,11 +43,11 @@ export function RevealRenderer({ step }: StepRendererProps) {
       {revealedCount < content.steps.length && (
         <Button onClick={revealNext} variant="outline" className="gap-2">
           <Eye className="h-4 w-4" />
-          Reveal Next ({revealedCount + 1}/{content.steps.length})
+          {t("stepRenderer.revealNext", { current: revealedCount + 1, total: content.steps.length })}
         </Button>
       )}
       {revealedCount === content.steps.length && content.steps.length > 0 && (
-        <p className="text-sm text-muted-foreground">All content revealed.</p>
+        <p className="text-sm text-muted-foreground">{t("stepRenderer.allRevealed")}</p>
       )}
     </div>
   );

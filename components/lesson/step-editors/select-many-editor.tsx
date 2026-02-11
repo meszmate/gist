@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function SelectManyEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as SelectManyContent;
   const ad = (answerData as SelectManyAnswerData) || { correctOptionIds: [] };
 
@@ -22,17 +24,17 @@ export function SelectManyEditor({ content, answerData, onChange }: StepEditorPr
   return (
     <div className="space-y-4">
       <div>
-        <Label>Question</Label>
+        <Label>{t("stepEditor.question")}</Label>
         <Input
           value={c.question}
           onChange={(e) => onChange({ ...c, question: e.target.value }, ad)}
-          placeholder="Select all that apply..."
+          placeholder={t("stepEditor.selectAllThatApplyPlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Options (check correct answers)</Label>
+          <Label>{t("stepEditor.optionsCheckCorrect")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -42,7 +44,7 @@ export function SelectManyEditor({ content, answerData, onChange }: StepEditorPr
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Option
+            {t("stepEditor.addOption")}
           </Button>
         </div>
         {c.options.map((option, i) => (
@@ -58,7 +60,7 @@ export function SelectManyEditor({ content, answerData, onChange }: StepEditorPr
                 opts[i] = { ...opts[i], text: e.target.value };
                 onChange({ ...c, options: opts }, ad);
               }}
-              placeholder={`Option ${option.id.toUpperCase()}`}
+              placeholder={`${t("stepEditor.option")} ${option.id.toUpperCase()}`}
               className="flex-1"
             />
             <Button

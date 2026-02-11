@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ActivityTimelineProps {
   views: Array<{ date: string; count: number }>;
@@ -20,6 +21,8 @@ interface ActivityTimelineProps {
 }
 
 export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: ActivityTimelineProps) {
+  const { t } = useLocale();
+
   // Merge all datasets by date
   const dateMap = new Map<string, { date: string; views: number; attempts: number; lessonAttempts: number }>();
 
@@ -76,13 +79,13 @@ export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: Activ
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Activity Timeline (Last 30 Days)
+          {t("analytics.activityTimeline")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!hasData ? (
           <p className="text-center text-muted-foreground py-8">
-            No activity data yet
+            {t("analytics.noActivityData")}
           </p>
         ) : (
           <ResponsiveContainer width="100%" height={250}>
@@ -114,7 +117,7 @@ export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: Activ
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
-                name="Views"
+                name={t("analytics.viewsLabel")}
               />
               <Line
                 type="monotone"
@@ -122,7 +125,7 @@ export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: Activ
                 stroke="hsl(var(--chart-2, 220 70% 50%))"
                 strokeWidth={2}
                 dot={false}
-                name="Quiz Attempts"
+                name={t("analytics.quizAttemptsLabel")}
               />
               <Line
                 type="monotone"
@@ -130,7 +133,7 @@ export function ActivityTimeline({ views, attempts, lessonAttempts = [] }: Activ
                 stroke="hsl(142 71% 45%)"
                 strokeWidth={2}
                 dot={false}
-                name="Lesson Attempts"
+                name={t("analytics.lessonAttemptsLabel")}
               />
             </LineChart>
           </ResponsiveContainer>

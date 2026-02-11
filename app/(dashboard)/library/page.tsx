@@ -51,6 +51,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useVimNavigation } from "@/lib/hooks/use-vim-navigation";
 import { useVimContext } from "@/components/keyboard/vim-navigation-provider";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import Link from "next/link";
 
 interface Resource {
@@ -84,6 +85,7 @@ type FilterOption = "all" | "owned" | "shared" | "completed";
 
 export default function LibraryPage() {
   const router = useRouter();
+  const { t, formatDate: formatDateLocale } = useLocale();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
@@ -156,16 +158,29 @@ export default function LibraryPage() {
     }
   };
 
+  const getDifficultyLabel = (difficulty: string | null) => {
+    switch (difficulty) {
+      case "beginner":
+        return t("common.difficulty.beginner");
+      case "intermediate":
+        return t("common.difficulty.intermediate");
+      case "advanced":
+        return t("common.difficulty.advanced");
+      default:
+        return difficulty;
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (diffDays === 0) return t("common.today");
+    if (diffDays === 1) return t("common.yesterday");
+    if (diffDays < 7) return t("common.daysAgo", { count: diffDays });
+    return formatDateLocale(date, { month: "short", day: "numeric" });
   };
 
   const savedCount = resources.filter((r) => !r.isOwned).length;
@@ -173,17 +188,17 @@ export default function LibraryPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Library"
-        description="Your study materials and resources"
+        title={t("library.title")}
+        description={t("library.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Library" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.library") },
         ]}
         actions={
           <Button asChild>
             <Link href="/create">
               <Plus className="mr-2 h-4 w-4" />
-              Create Resource
+              {t("library.createResource")}
             </Link>
           </Button>
         }
@@ -194,7 +209,7 @@ export default function LibraryPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search resources... (press /)"
+            placeholder={t("library.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -211,12 +226,12 @@ export default function LibraryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All resources</SelectItem>
-              <SelectItem value="owned">My resources</SelectItem>
+              <SelectItem value="all">{t("library.allResources")}</SelectItem>
+              <SelectItem value="owned">{t("library.myResources")}</SelectItem>
               {savedCount > 0 && (
-                <SelectItem value="shared">Shared with me</SelectItem>
+                <SelectItem value="shared">{t("library.sharedWithMe")}</SelectItem>
               )}
-              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="completed">{t("library.completed")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -224,10 +239,10 @@ export default function LibraryPage() {
             <Select value={folderFilter} onValueChange={setFolderFilter}>
               <SelectTrigger className="w-[140px]">
                 <Folder className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="All folders" />
+                <SelectValue placeholder={t("library.allFolders")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All folders</SelectItem>
+                <SelectItem value="all">{t("library.allFolders")}</SelectItem>
                 {folders.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id}>
                     {folder.name}
@@ -243,9 +258,9 @@ export default function LibraryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="recent">Most recent</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="cards">Most cards</SelectItem>
+              <SelectItem value="recent">{t("library.mostRecent")}</SelectItem>
+              <SelectItem value="name">{t("library.name")}</SelectItem>
+              <SelectItem value="cards">{t("library.mostCards")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -254,10 +269,10 @@ export default function LibraryPage() {
             value={viewMode}
             onValueChange={(v) => v && setViewMode(v as ViewMode)}
           >
-            <ToggleGroupItem value="grid" aria-label="Grid view">
+            <ToggleGroupItem value="grid" aria-label={t("library.gridView")}>
               <Grid3X3 className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view">
+            <ToggleGroupItem value="list" aria-label={t("library.listView")}>
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
@@ -267,8 +282,8 @@ export default function LibraryPage() {
       {/* Results count */}
       {!isLoading && filteredResources.length > 0 && (
         <p className="text-sm text-muted-foreground">
-          Showing {filteredResources.length} resource{filteredResources.length !== 1 ? "s" : ""}
-          {search && ` matching "${search}"`}
+          {t("library.showingResults", { count: filteredResources.length })}
+          {search && ` ${t("library.matchingSearch", { search })}`}
         </p>
       )}
 
@@ -293,16 +308,16 @@ export default function LibraryPage() {
       ) : filteredResources.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="h-12 w-12" />}
-          title="No resources found"
+          title={t("library.noResourcesFound")}
           description={
             search
-              ? "Try adjusting your search terms or filters"
-              : "Get started by creating your first study resource"
+              ? t("library.adjustSearch")
+              : t("library.getStarted")
           }
           action={
             !search
               ? {
-                  label: "Create Resource",
+                  label: t("library.createResource"),
                   href: "/create",
                   icon: <Plus className="mr-2 h-4 w-4" />,
                 }
@@ -343,13 +358,13 @@ export default function LibraryPage() {
                             }}
                           >
                             <Edit className="mr-2 h-4 w-4" />
-                            View Details
+                            {t("common.viewDetails")}
                           </DropdownMenuItem>
                           {resource.isOwned && (
                             <>
                               <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                                 <Share2 className="mr-2 h-4 w-4" />
-                                Share
+                                {t("common.share")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -357,7 +372,7 @@ export default function LibraryPage() {
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                {t("common.delete")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -375,19 +390,19 @@ export default function LibraryPage() {
                       {resource.completedAt && (
                         <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-700 dark:text-green-400">
                           <CheckCircle2 className="h-3 w-3" />
-                          Done
+                          {t("common.done")}
                         </Badge>
                       )}
                       {!resource.isOwned && (
                         <Badge variant="secondary" className="gap-1 text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400">
                           <Users2 className="h-3 w-3" />
-                          Shared with you
+                          {t("common.sharedWithYou")}
                         </Badge>
                       )}
                       {!resource.isOwned && resource.permission === "read" && (
                         <Badge variant="outline" className="gap-1 text-xs">
                           <Lock className="h-3 w-3" />
-                          Read only
+                          {t("common.readOnly")}
                         </Badge>
                       )}
                       {resource.folder && (
@@ -398,14 +413,14 @@ export default function LibraryPage() {
                       )}
                       {resource.difficulty && (
                         <Badge className={getDifficultyColor(resource.difficulty)}>
-                          {resource.difficulty}
+                          {getDifficultyLabel(resource.difficulty)}
                         </Badge>
                       )}
                     </div>
 
                     {!resource.isOwned && resource.ownerName && (
                       <p className="text-xs text-muted-foreground mb-2">
-                        by {resource.ownerName}
+                        {t("common.by", { name: resource.ownerName })}
                       </p>
                     )}
 
@@ -442,30 +457,30 @@ export default function LibraryPage() {
                   )}
                   {!resource.isOwned && resource.ownerName && (
                     <p className="text-sm text-muted-foreground">
-                      Shared by {resource.ownerName}
+                      {t("common.sharedBy", { name: resource.ownerName })}
                     </p>
                   )}
                   <div className="flex gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Flashcards</p>
+                      <p className="text-muted-foreground">{t("library.flashcards")}</p>
                       <p className="font-medium">{resource.flashcardCount}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Questions</p>
+                      <p className="text-muted-foreground">{t("library.questions")}</p>
                       <p className="font-medium">{resource.quizQuestionCount}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Created</p>
+                      <p className="text-muted-foreground">{t("library.created")}</p>
                       <p className="font-medium">{formatDate(resource.createdAt)}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" asChild className="flex-1">
-                      <Link href={`/library/${resource.id}`}>View</Link>
+                      <Link href={`/library/${resource.id}`}>{t("common.view")}</Link>
                     </Button>
                     {resource.flashcardCount > 0 && (
                       <Button size="sm" variant="outline" asChild className="flex-1">
-                        <Link href={`/study?resource=${resource.id}`}>Study</Link>
+                        <Link href={`/study?resource=${resource.id}`}>{t("nav.study")}</Link>
                       </Button>
                     )}
                   </div>
@@ -495,13 +510,13 @@ export default function LibraryPage() {
                     {resource.completedAt && (
                       <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-green-500/10 text-green-700 dark:text-green-400">
                         <CheckCircle2 className="h-3 w-3" />
-                        Done
+                        {t("common.done")}
                       </Badge>
                     )}
                     {!resource.isOwned && (
                       <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-blue-500/10 text-blue-700">
                         <Users2 className="h-3 w-3" />
-                        Shared
+                        {t("common.shared")}
                       </Badge>
                     )}
                     {resource.folder && (
@@ -518,14 +533,14 @@ export default function LibraryPage() {
                   )}
                   {!resource.isOwned && resource.ownerName && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      by {resource.ownerName}
+                      {t("common.by", { name: resource.ownerName })}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
                   {resource.difficulty && (
                     <Badge className={getDifficultyColor(resource.difficulty)}>
-                      {resource.difficulty}
+                      {getDifficultyLabel(resource.difficulty)}
                     </Badge>
                   )}
                   {!resource.isOwned && resource.permission === "read" && (
@@ -555,13 +570,13 @@ export default function LibraryPage() {
                       }}
                     >
                       <Edit className="mr-2 h-4 w-4" />
-                      View Details
+                      {t("common.viewDetails")}
                     </DropdownMenuItem>
                     {resource.isOwned && (
                       <>
                         <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                           <Share2 className="mr-2 h-4 w-4" />
-                          Share
+                          {t("common.share")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -569,7 +584,7 @@ export default function LibraryPage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </>
                     )}

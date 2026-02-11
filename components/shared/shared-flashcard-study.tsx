@@ -15,6 +15,7 @@ import {
   Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Flashcard {
   id: string;
@@ -33,6 +34,7 @@ export function SharedFlashcardStudy({
   resourceId,
   token,
 }: SharedFlashcardStudyProps) {
+  const { t } = useLocale();
   const [cards, setCards] = useState(flashcards);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -131,29 +133,29 @@ export function SharedFlashcardStudy({
           <Brain className="h-10 w-10 text-primary" />
         </div>
         <div>
-          <h3 className="text-2xl font-bold">Study Complete!</h3>
+          <h3 className="text-2xl font-bold">{t("flashcard.studyComplete")}</h3>
           <p className="text-muted-foreground mt-2">
-            You studied {cards.length} cards
+            {t("flashcard.studiedCards", { count: cards.length })}
           </p>
         </div>
         <div className="flex justify-center gap-6">
           <div className="text-center">
             <p className="text-3xl font-bold text-green-600">{correctCount}</p>
-            <p className="text-sm text-muted-foreground">Got it</p>
+            <p className="text-sm text-muted-foreground">{t("flashcard.gotIt")}</p>
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-amber-600">{reviewCount}</p>
-            <p className="text-sm text-muted-foreground">Needs review</p>
+            <p className="text-sm text-muted-foreground">{t("flashcard.needsReview")}</p>
           </div>
         </div>
         <div className="flex justify-center gap-3">
           <Button onClick={restart} variant="outline">
             <RotateCcw className="mr-2 h-4 w-4" />
-            Study Again
+            {t("flashcard.studyAgain")}
           </Button>
           <Button onClick={shuffleCards}>
             <Shuffle className="mr-2 h-4 w-4" />
-            Shuffle & Restart
+            {t("flashcard.shuffleRestart")}
           </Button>
         </div>
       </div>
@@ -166,7 +168,7 @@ export function SharedFlashcardStudy({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            Card {currentIndex + 1} of {cards.length}
+            {t("flashcard.cardOf", { current: currentIndex + 1, total: cards.length })}
           </span>
           <div className="flex items-center gap-3">
             {correctCount > 0 && (
@@ -215,11 +217,11 @@ export function SharedFlashcardStudy({
             <CardContent className="flex items-center justify-center min-h-[250px] p-8">
               <div className="text-center space-y-3">
                 <Badge variant="secondary" className="mb-4">
-                  Question
+                  {t("flashcard.question")}
                 </Badge>
                 <p className="text-xl font-medium">{currentCard.front}</p>
                 <p className="text-sm text-muted-foreground">
-                  Click or press Space to flip
+                  {t("flashcard.clickToFlip")}
                 </p>
               </div>
             </CardContent>
@@ -239,7 +241,7 @@ export function SharedFlashcardStudy({
                   variant="secondary"
                   className="mb-4 bg-primary/10 text-primary"
                 >
-                  Answer
+                  {t("flashcard.answer")}
                 </Badge>
                 <p className="text-xl">{currentCard.back}</p>
               </div>
@@ -256,7 +258,7 @@ export function SharedFlashcardStudy({
           disabled={currentIndex === 0}
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Previous
+          {t("flashcard.previous")}
         </Button>
 
         {isFlipped ? (
@@ -267,7 +269,7 @@ export function SharedFlashcardStudy({
               onClick={() => markCard("correct")}
             >
               <Check className="mr-1 h-4 w-4" />
-              Got it
+              {t("flashcard.gotIt")}
             </Button>
             <Button
               variant="outline"
@@ -275,17 +277,17 @@ export function SharedFlashcardStudy({
               onClick={() => markCard("review")}
             >
               <X className="mr-1 h-4 w-4" />
-              Needs review
+              {t("flashcard.needsReview")}
             </Button>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Tap card to reveal answer
+            {t("flashcard.tapToReveal")}
           </p>
         )}
 
         <Button variant="outline" onClick={goToNext}>
-          {currentIndex === cards.length - 1 ? "Finish" : "Next"}
+          {currentIndex === cards.length - 1 ? t("flashcard.finish") : t("quiz.next")}
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>

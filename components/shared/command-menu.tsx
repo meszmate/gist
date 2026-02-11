@@ -21,6 +21,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Resource {
   id: string;
@@ -35,6 +36,7 @@ interface CommandMenuProps {
 export function CommandMenu({ resources = [] }: CommandMenuProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { t } = useLocale();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -54,26 +56,26 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
   }, [setOpen]);
 
   const navigationItems = [
-    { icon: Home, label: "Dashboard", href: "/dashboard", shortcut: "G D" },
-    { icon: BookOpen, label: "Library", href: "/library", shortcut: "G L" },
-    { icon: Brain, label: "Study", href: "/study", shortcut: "G S" },
-    { icon: FileQuestion, label: "Quizzes", href: "/quiz", shortcut: "G Q" },
-    { icon: Users, label: "Contacts", href: "/contacts", shortcut: "G C" },
-    { icon: Settings, label: "Settings", href: "/settings", shortcut: "G ," },
+    { icon: Home, label: t("command.dashboard"), href: "/dashboard", shortcut: "G D" },
+    { icon: BookOpen, label: t("command.library"), href: "/library", shortcut: "G L" },
+    { icon: Brain, label: t("command.study"), href: "/study", shortcut: "G S" },
+    { icon: FileQuestion, label: t("command.quizzes"), href: "/quiz", shortcut: "G Q" },
+    { icon: Users, label: t("command.contacts"), href: "/contacts", shortcut: "G C" },
+    { icon: Settings, label: t("command.settings"), href: "/settings", shortcut: "G ," },
   ];
 
   const actionItems = [
-    { icon: Plus, label: "Create Resource", href: "/create", shortcut: "C R" },
-    { icon: Brain, label: "Start Study Session", href: "/study", shortcut: "S S" },
+    { icon: Plus, label: t("command.createResource"), href: "/create", shortcut: "C R" },
+    { icon: Brain, label: t("command.startStudySession"), href: "/study", shortcut: "S S" },
   ];
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput placeholder={t("command.placeholder")} />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>{t("common.noResults")}</CommandEmpty>
 
-        <CommandGroup heading="Navigation">
+        <CommandGroup heading={t("command.navigation")}>
           {navigationItems.map((item) => (
             <CommandItem
               key={item.href}
@@ -93,7 +95,7 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Actions">
+        <CommandGroup heading={t("command.actions")}>
           {actionItems.map((item) => (
             <CommandItem
               key={item.label}
@@ -114,7 +116,7 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
         {resources.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Resources">
+            <CommandGroup heading={t("command.resources")}>
               {resources.slice(0, 5).map((resource) => (
                 <CommandItem
                   key={resource.id}
@@ -141,6 +143,8 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
 }
 
 export function CommandMenuTrigger() {
+  const { t } = useLocale();
+
   return (
     <button
       className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -153,7 +157,7 @@ export function CommandMenuTrigger() {
       }}
     >
       <Search className="h-4 w-4" />
-      <span className="hidden sm:inline">Search...</span>
+      <span className="hidden sm:inline">{t("command.searchTrigger")}</span>
       <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
         <span className="text-xs">⌘</span>K
       </kbd>

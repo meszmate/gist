@@ -36,6 +36,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { QuestionBuilder } from "@/components/quiz/question-builder";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 import { QuizPdfPreview } from "@/components/pdf/quiz-pdf-preview";
 import type {
   QuestionConfig,
@@ -77,21 +78,14 @@ async function fetchQuizData(quizId: string): Promise<QuizData> {
   };
 }
 
-const QUESTION_TYPE_LABELS: Record<string, string> = {
-  multiple_choice: "Multiple Choice",
-  true_false: "True/False",
-  text_input: "Text Input",
-  year_range: "Year",
-  numeric_range: "Numeric",
-  matching: "Matching",
-  fill_blank: "Fill Blank",
-  multi_select: "Multi-Select",
-};
-
 export default function QuestionsEditorPage() {
   const params = useParams();
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const quizId = params.quizId as string;
+
+  const getQuestionTypeLabel = (type: string) =>
+    t(`quiz.questionTypes.${type}`) || type;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -124,10 +118,10 @@ export default function QuestionsEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-questions", quizId] });
       setIsCreateOpen(false);
-      toast.success("Question created successfully");
+      toast.success(t("questionsEditor.questionCreated"));
     },
     onError: () => {
-      toast.error("Failed to create question");
+      toast.error(t("questionsEditor.questionCreateFailed"));
     },
   });
 
@@ -157,10 +151,10 @@ export default function QuestionsEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-questions", quizId] });
       setEditingQuestion(null);
-      toast.success("Question updated successfully");
+      toast.success(t("questionsEditor.questionUpdated"));
     },
     onError: () => {
-      toast.error("Failed to update question");
+      toast.error(t("questionsEditor.questionUpdateFailed"));
     },
   });
 
@@ -175,10 +169,10 @@ export default function QuestionsEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-questions", quizId] });
       setDeleteQuestion(null);
-      toast.success("Question deleted successfully");
+      toast.success(t("questionsEditor.questionDeleted"));
     },
     onError: () => {
-      toast.error("Failed to delete question");
+      toast.error(t("questionsEditor.questionDeleteFailed"));
     },
   });
 
@@ -232,20 +226,20 @@ export default function QuestionsEditorPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <PageHeader
-        title="Edit Questions"
-        description="Add, edit, reorder, or remove quiz questions"
+        title={t("questionsEditor.editQuestions")}
+        description={t("questionsEditor.editQuestionsDescription")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Quizzes", href: "/quiz" },
-          { label: "Quiz", href: `/quiz/${quizId}` },
-          { label: "Edit Questions" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.quizzes"), href: "/quiz" },
+          { label: t("questionsEditor.quiz"), href: `/quiz/${quizId}` },
+          { label: t("questionsEditor.editQuestions") },
         ]}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
               <Link href={`/quiz/${quizId}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Quiz
+                {t("questionsEditor.backToQuiz")}
               </Link>
             </Button>
             <Button
@@ -254,11 +248,11 @@ export default function QuestionsEditorPage() {
               disabled={questions.length === 0}
             >
               <Printer className="h-4 w-4 mr-2" />
-              Preview PDF
+              {t("questionsEditor.previewPdf")}
             </Button>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Question
+              {t("questionsEditor.addQuestion")}
             </Button>
           </div>
         }
@@ -267,10 +261,10 @@ export default function QuestionsEditorPage() {
       {questions.length === 0 ? (
         <EmptyState
           icon={<Plus className="h-12 w-12" />}
-          title="No questions yet"
-          description="Add your first question to get started"
+          title={t("questionsEditor.noQuestions")}
+          description={t("questionsEditor.addFirstQuestion")}
           action={{
-            label: "Add Question",
+            label: t("questionsEditor.addQuestion"),
             onClick: () => setIsCreateOpen(true),
           }}
         />
@@ -319,8 +313,7 @@ export default function QuestionsEditorPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className="text-xs">
-                      {QUESTION_TYPE_LABELS[question.questionType] ||
-                        question.questionType}
+                      {getQuestionTypeLabel(question.questionType)}
                     </Badge>
                     <Badge variant="secondary" className="text-xs">
                       {parseFloat(question.points || "1")} pts
@@ -358,14 +351,14 @@ export default function QuestionsEditorPage() {
                   <div className="pt-4 space-y-2 text-sm">
                     {question.explanation && (
                       <div>
-                        <span className="font-medium">Explanation: </span>
+                        <span className="font-medium">{t("questionsEditor.explanation")}: </span>
                         <span className="text-muted-foreground">
                           {question.explanation}
                         </span>
                       </div>
                     )}
                     <div>
-                      <span className="font-medium">Config: </span>
+                      <span className="font-medium">{t("questionsEditor.config")}: </span>
                       <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto">
                         {JSON.stringify(question.questionConfig, null, 2)}
                       </pre>
@@ -382,7 +375,7 @@ export default function QuestionsEditorPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Question</DialogTitle>
+            <DialogTitle>{t("questionsEditor.addNewQuestion")}</DialogTitle>
           </DialogHeader>
           <QuestionBuilder
             onSave={(data) => createMutation.mutate(data)}
@@ -398,7 +391,7 @@ export default function QuestionsEditorPage() {
       >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Question</DialogTitle>
+            <DialogTitle>{t("questionsEditor.editQuestion")}</DialogTitle>
           </DialogHeader>
           {editingQuestion && (
             <QuestionBuilder
@@ -429,21 +422,20 @@ export default function QuestionsEditorPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Question</AlertDialogTitle>
+            <AlertDialogTitle>{t("questionsEditor.deleteQuestion")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this question? This action cannot be
-              undone.
+              {t("questionsEditor.deleteConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 deleteQuestion && deleteMutation.mutate(deleteQuestion.id)
               }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

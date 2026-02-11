@@ -72,21 +72,26 @@ import { toast } from "sonner";
 import { useVimNavigation } from "@/lib/hooks/use-vim-navigation";
 import { useVimContext } from "@/components/keyboard/vim-navigation-provider";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
-const addContactSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  name: z.string().optional(),
-  groupId: z.string().optional(),
-  notes: z.string().optional(),
-});
+type AddContactForm = z.infer<ReturnType<typeof createAddContactSchema>>;
+type AddGroupForm = z.infer<ReturnType<typeof createAddGroupSchema>>;
 
-const addGroupSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  color: z.string().optional(),
-});
+function createAddContactSchema(t: (key: string) => string) {
+  return z.object({
+    email: z.string().email(t("contacts.invalidEmail")),
+    name: z.string().optional(),
+    groupId: z.string().optional(),
+    notes: z.string().optional(),
+  });
+}
 
-type AddContactForm = z.infer<typeof addContactSchema>;
-type AddGroupForm = z.infer<typeof addGroupSchema>;
+function createAddGroupSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(1, t("contacts.nameRequired")).max(100),
+    color: z.string().optional(),
+  });
+}
 
 interface Contact {
   id: string;
@@ -120,15 +125,6 @@ async function fetchGroups(): Promise<ContactGroup[]> {
   return res.json();
 }
 
-const colorOptions = [
-  { value: "red", label: "Red", class: "bg-red-500" },
-  { value: "orange", label: "Orange", class: "bg-orange-500" },
-  { value: "yellow", label: "Yellow", class: "bg-yellow-500" },
-  { value: "green", label: "Green", class: "bg-green-500" },
-  { value: "blue", label: "Blue", class: "bg-blue-500" },
-  { value: "purple", label: "Purple", class: "bg-purple-500" },
-];
-
 export default function ContactsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -137,6 +133,16 @@ export default function ContactsPage() {
   const [groupsOpen, setGroupsOpen] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const { searchOpen, setSearchOpen } = useVimContext();
+  const { t } = useLocale();
+
+  const colorOptions = [
+    { value: "red", label: t("settings.rose"), class: "bg-red-500" },
+    { value: "orange", label: t("settings.orange"), class: "bg-orange-500" },
+    { value: "yellow", label: t("settings.orange"), class: "bg-yellow-500" },
+    { value: "green", label: t("settings.green"), class: "bg-green-500" },
+    { value: "blue", label: t("settings.blue"), class: "bg-blue-500" },
+    { value: "purple", label: t("settings.violet"), class: "bg-purple-500" },
+  ];
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts"],
@@ -162,7 +168,7 @@ export default function ContactsPage() {
   });
 
   const addContactForm = useForm<AddContactForm>({
-    resolver: zodResolver(addContactSchema),
+    resolver: zodResolver(createAddContactSchema(t)),
     defaultValues: {
       email: "",
       name: "",
@@ -172,7 +178,7 @@ export default function ContactsPage() {
   });
 
   const addGroupForm = useForm<AddGroupForm>({
-    resolver: zodResolver(addGroupSchema),
+    resolver: zodResolver(createAddGroupSchema(t)),
     defaultValues: {
       name: "",
       color: "",
@@ -193,10 +199,10 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       setAddContactOpen(false);
       addContactForm.reset();
-      toast.success("Contact added");
+      toast.success(t("contacts.contactAdded"));
     },
     onError: () => {
-      toast.error("Failed to add contact");
+      toast.error(t("contacts.failedAddContact"));
     },
   });
 
@@ -214,10 +220,10 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ["contact-groups"] });
       setAddGroupOpen(false);
       addGroupForm.reset();
-      toast.success("Group created");
+      toast.success(t("contacts.groupCreated"));
     },
     onError: () => {
-      toast.error("Failed to create group");
+      toast.error(t("contacts.failedCreateGroup"));
     },
   });
 
@@ -230,21 +236,21 @@ export default function ContactsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      toast.success("Contact deleted");
+      toast.success(t("contacts.contactDeleted"));
     },
     onError: () => {
-      toast.error("Failed to delete contact");
+      toast.error(t("contacts.failedDeleteContact"));
     },
   });
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Contacts"
-        description="Manage your students and contacts"
+        title={t("contacts.title")}
+        description={t("contacts.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Contacts" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("contacts.title") },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -252,14 +258,14 @@ export default function ContactsPage() {
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Group
+                  {t("contacts.newGroup")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create Group</DialogTitle>
+                  <DialogTitle>{t("contacts.createGroup")}</DialogTitle>
                   <DialogDescription>
-                    Create a new group to organize your contacts
+                    {t("contacts.createGroupDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...addGroupForm}>
@@ -274,9 +280,9 @@ export default function ContactsPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Name</FormLabel>
+                          <FormLabel>{t("contacts.groupName")}</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Class 10A" {...field} />
+                            <Input placeholder={t("contacts.groupNamePlaceholder")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -287,7 +293,7 @@ export default function ContactsPage() {
                       name="color"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Color (optional)</FormLabel>
+                          <FormLabel>{t("contacts.colorOptional")}</FormLabel>
                           <div className="flex gap-2">
                             {colorOptions.map((color) => (
                               <button
@@ -312,7 +318,7 @@ export default function ContactsPage() {
                         {addGroup.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        Create Group
+                        {t("contacts.createGroup")}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -324,14 +330,14 @@ export default function ContactsPage() {
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Contact
+                  {t("contacts.addContact")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Add Contact</DialogTitle>
+                  <DialogTitle>{t("contacts.addContact")}</DialogTitle>
                   <DialogDescription>
-                    Add a student or contact to your list
+                    {t("contacts.addContactDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...addContactForm}>
@@ -346,11 +352,11 @@ export default function ContactsPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t("contacts.email")}</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="student@school.edu"
+                              placeholder={t("contacts.emailPlaceholder")}
                               {...field}
                             />
                           </FormControl>
@@ -363,9 +369,9 @@ export default function ContactsPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Name (optional)</FormLabel>
+                          <FormLabel>{t("contacts.nameOptional")}</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder={t("contacts.namePlaceholder")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -376,14 +382,14 @@ export default function ContactsPage() {
                       name="groupId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Group (optional)</FormLabel>
+                          <FormLabel>{t("contacts.groupOptional")}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a group" />
+                                <SelectValue placeholder={t("contacts.groupPlaceholder")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -403,10 +409,10 @@ export default function ContactsPage() {
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notes (optional)</FormLabel>
+                          <FormLabel>{t("contacts.notesOptional")}</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Any notes about this contact..."
+                              placeholder={t("contacts.notesPlaceholder")}
                               {...field}
                             />
                           </FormControl>
@@ -419,7 +425,7 @@ export default function ContactsPage() {
                         {addContact.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        Add Contact
+                        {t("contacts.addContact")}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -437,7 +443,7 @@ export default function ContactsPage() {
             <Button variant="ghost" className="w-full justify-between p-4 h-auto">
               <span className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4" />
-                Groups ({groups.length})
+                {t("contacts.groups")} ({groups.length})
               </span>
               <ChevronDown
                 className={cn(
@@ -454,7 +460,7 @@ export default function ContactsPage() {
                 className="cursor-pointer transition-colors"
                 onClick={() => setSelectedGroup(null)}
               >
-                All ({contacts.length})
+                {t("contacts.all")} ({contacts.length})
               </Badge>
               {groups.map((group) => (
                 <Badge
@@ -488,7 +494,7 @@ export default function ContactsPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search contacts... (press /)"
+            placeholder={t("contacts.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -504,10 +510,10 @@ export default function ContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("contacts.contact")}</TableHead>
+                <TableHead>{t("contacts.email")}</TableHead>
+                <TableHead>{t("contacts.group")}</TableHead>
+                <TableHead>{t("contacts.status")}</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -535,16 +541,16 @@ export default function ContactsPage() {
       ) : filteredContacts.length === 0 ? (
         <EmptyState
           icon={<Users className="h-12 w-12" />}
-          title="No contacts found"
+          title={t("contacts.noContactsFound")}
           description={
             search
-              ? "Try adjusting your search terms"
-              : "Add your first contact to get started"
+              ? t("contacts.adjustSearchTerms")
+              : t("contacts.addFirstContact")
           }
           action={
             !search
               ? {
-                  label: "Add Contact",
+                  label: t("contacts.addContact"),
                   onClick: () => setAddContactOpen(true),
                   icon: <Plus className="mr-2 h-4 w-4" />,
                 }
@@ -556,10 +562,10 @@ export default function ContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("contacts.contact")}</TableHead>
+                <TableHead>{t("contacts.email")}</TableHead>
+                <TableHead>{t("contacts.group")}</TableHead>
+                <TableHead>{t("contacts.status")}</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -620,12 +626,12 @@ export default function ContactsPage() {
                     {contact.hasAccount ? (
                       <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 gap-1">
                         <UserCheck className="h-3 w-3" />
-                        Active
+                        {t("common.active")}
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="gap-1">
                         <UserX className="h-3 w-3" />
-                        Invited
+                        {t("common.invited")}
                       </Badge>
                     )}
                   </TableCell>
@@ -642,7 +648,7 @@ export default function ContactsPage() {
                           onClick={() => deleteContact.mutate(contact.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -2,6 +2,7 @@
 
 import { StatCard } from "@/components/shared/stat-card";
 import { Eye, Users, Target, Clock, Brain, FileQuestion, GraduationCap } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface OverviewStatsProps {
   totalViews: number;
@@ -24,6 +25,8 @@ export function OverviewStats({
   lessonAttempts = 0,
   averageLessonScore = 0,
 }: OverviewStatsProps) {
+  const { t } = useLocale();
+
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     const m = Math.floor(seconds / 60);
@@ -34,58 +37,58 @@ export function OverviewStats({
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Total Views"
+        title={t("analytics.totalViews")}
         value={totalViews}
-        description="All-time resource views"
+        description={t("analytics.allTimeViews")}
         icon={<Eye className="h-5 w-5" />}
         delay={0}
       />
       <StatCard
-        title="Unique Viewers"
+        title={t("analytics.uniqueViewers")}
         value={uniqueViewers}
-        description="Distinct users"
+        description={t("analytics.distinctUsers")}
         icon={<Users className="h-5 w-5" />}
         delay={50}
       />
       <StatCard
-        title="Quiz Attempts"
+        title={t("analytics.quizAttempts")}
         value={totalAttempts}
-        description="Completed quizzes"
+        description={t("analytics.completedQuizzes")}
         icon={<FileQuestion className="h-5 w-5" />}
         delay={100}
       />
       <StatCard
-        title="Average Score"
+        title={t("analytics.averageScore")}
         value={`${averageScore}%`}
-        description="Across all quiz attempts"
+        description={t("analytics.acrossAllAttempts")}
         icon={<Target className="h-5 w-5" />}
         delay={150}
       />
       <StatCard
-        title="Avg Time Spent"
+        title={t("analytics.avgTimeSpent")}
         value={formatTime(averageTimeSeconds)}
-        description="Per quiz attempt"
+        description={t("analytics.perQuizAttempt")}
         icon={<Clock className="h-5 w-5" />}
         delay={200}
       />
       <StatCard
-        title="Study Sessions"
+        title={t("analytics.studySessions")}
         value={flashcardStudySessions}
-        description="Flashcard reviews"
+        description={t("analytics.flashcardReviews")}
         icon={<Brain className="h-5 w-5" />}
         delay={250}
       />
       <StatCard
-        title="Lesson Attempts"
+        title={t("analytics.lessonAttempts")}
         value={lessonAttempts}
-        description="Completed lessons"
+        description={t("analytics.completedLessons")}
         icon={<GraduationCap className="h-5 w-5" />}
         delay={300}
       />
       <StatCard
-        title="Avg Lesson Score"
+        title={t("analytics.avgLessonScore")}
         value={`${averageLessonScore}%`}
-        description="Across all lesson attempts"
+        description={t("analytics.acrossLessonAttempts")}
         icon={<Target className="h-5 w-5" />}
         delay={350}
       />

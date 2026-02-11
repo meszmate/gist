@@ -30,6 +30,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Contact {
   id: string;
@@ -59,6 +60,7 @@ export function AccessControlDialog({
   initialEmails,
   onSaved,
 }: AccessControlDialogProps) {
+  const { t } = useLocale();
   const [isRestricted, setIsRestricted] = useState(
     !!initialEmails && initialEmails.length > 0
   );
@@ -120,11 +122,11 @@ export function AccessControlDialog({
 
       if (!res.ok) throw new Error("Failed to save");
 
-      toast.success("Access control updated");
+      toast.success(t("resource.accessControlUpdated"));
       onSaved();
       onOpenChange(false);
     } catch {
-      toast.error("Failed to update access control");
+      toast.error(t("resource.failedUpdateAccess"));
     } finally {
       setIsSaving(false);
     }
@@ -137,7 +139,7 @@ export function AccessControlDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Access Control</DialogTitle>
+          <DialogTitle>{t("resource.accessControl")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -151,12 +153,12 @@ export function AccessControlDialog({
               )}
               <div>
                 <p className="font-medium text-sm">
-                  {isRestricted ? "Restricted Access" : "Public Access"}
+                  {isRestricted ? t("resource.restrictedAccess") : t("resource.publicAccess")}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {isRestricted
-                    ? "Only specific users can view"
-                    : "Anyone with the link can view"}
+                    ? t("resource.onlySpecificUsers")
+                    : t("resource.anyoneWithLink")}
                 </p>
               </div>
             </div>
@@ -170,7 +172,7 @@ export function AccessControlDialog({
             <>
               {/* Add email */}
               <div className="space-y-2">
-                <Label className="text-sm">Add email</Label>
+                <Label className="text-sm">{t("resource.addEmail")}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={newEmail}
@@ -193,13 +195,13 @@ export function AccessControlDialog({
               {/* Import from contacts */}
               {contacts.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-sm">Import from contacts</Label>
+                  <Label className="text-sm">{t("resource.importFromContacts")}</Label>
                   <div className="flex gap-2">
                     {contactGroups.length > 0 && (
                       <Select onValueChange={importFromGroup}>
                         <SelectTrigger className="w-[180px]">
                           <Users className="mr-2 h-3.5 w-3.5" />
-                          <SelectValue placeholder="Import group" />
+                          <SelectValue placeholder={t("resource.importGroup")} />
                         </SelectTrigger>
                         <SelectContent>
                           {contactGroups.map((group) => (
@@ -212,7 +214,7 @@ export function AccessControlDialog({
                     )}
                     <Select onValueChange={importContact}>
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select contact" />
+                        <SelectValue placeholder={t("resource.selectContact")} />
                       </SelectTrigger>
                       <SelectContent>
                         {contacts
@@ -237,7 +239,7 @@ export function AccessControlDialog({
               {/* Email list */}
               <div className="space-y-2">
                 <Label className="text-sm">
-                  Allowed viewers ({emails.length})
+                  {t("resource.allowedViewers", { count: emails.length })}
                 </Label>
                 <ScrollArea className="max-h-[200px]">
                   <div className="space-y-1">
@@ -261,7 +263,7 @@ export function AccessControlDialog({
                                 className="text-xs gap-1 shrink-0"
                               >
                                 <UserCheck className="h-3 w-3" />
-                                Account
+                                {t("resource.account")}
                               </Badge>
                             )}
                           </div>
@@ -278,7 +280,7 @@ export function AccessControlDialog({
                     })}
                     {emails.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        No emails added yet
+                        {t("resource.noEmailsAdded")}
                       </p>
                     )}
                   </div>
@@ -290,10 +292,10 @@ export function AccessControlDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? t("common.saving") : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

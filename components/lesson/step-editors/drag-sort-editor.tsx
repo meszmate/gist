@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragSortEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as DragSortContent;
   const ad = (answerData as DragSortAnswerData) || { correctOrder: [] };
 
@@ -21,17 +23,17 @@ export function DragSortEditor({ content, answerData, onChange }: StepEditorProp
   return (
     <div className="space-y-4">
       <div>
-        <Label>Instruction</Label>
+        <Label>{t("stepEditor.instruction")}</Label>
         <Input
           value={c.instruction}
           onChange={(e) => onChange({ ...c, instruction: e.target.value }, ad)}
-          placeholder="Put these items in order..."
+          placeholder={t("stepEditor.putInOrderPlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Items (in correct order)</Label>
+          <Label>{t("stepEditor.itemsInCorrectOrder")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -41,11 +43,11 @@ export function DragSortEditor({ content, answerData, onChange }: StepEditorProp
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Item
+            {t("stepEditor.addItem")}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mb-2">
-          Enter items in the CORRECT order. They will be shuffled for the student.
+          {t("stepEditor.correctOrderHint")}
         </p>
         {c.items.map((item, i) => (
           <div key={item.id} className="flex items-center gap-2 mb-2">
@@ -57,7 +59,7 @@ export function DragSortEditor({ content, answerData, onChange }: StepEditorProp
                 items[i] = { ...items[i], text: e.target.value };
                 updateItems(items);
               }}
-              placeholder={`Item ${i + 1}`}
+              placeholder={`${t("stepEditor.item")} ${i + 1}`}
               className="flex-1"
             />
             <Button

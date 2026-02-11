@@ -5,6 +5,7 @@ import type { StepRendererProps } from "./types";
 import type { DragMatchContent, DragMatchAnswerData, DragMatchUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragMatchRenderer({
   step,
@@ -13,6 +14,7 @@ export function DragMatchRenderer({
   isChecked,
   disabled,
 }: StepRendererProps) {
+  const { t } = useLocale();
   const content = step.content as DragMatchContent;
   const answerData = step.answerData as DragMatchAnswerData;
   const currentPairs = (userAnswer as DragMatchUserAnswer)?.pairs || {};
@@ -43,7 +45,7 @@ export function DragMatchRenderer({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{content.instruction}</h3>
-      <p className="text-sm text-muted-foreground">Tap a left item, then tap a right item to match.</p>
+      <p className="text-sm text-muted-foreground">{t("stepRenderer.dragMatch")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           {content.pairs.map((pair) => {

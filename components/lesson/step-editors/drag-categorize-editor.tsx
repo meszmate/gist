@@ -13,8 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragCategorizeEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as DragCategorizeContent;
 
   const rebuildAnswer = (items: DragCategorizeContent["items"]) => {
@@ -26,17 +28,17 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
   return (
     <div className="space-y-4">
       <div>
-        <Label>Instruction</Label>
+        <Label>{t("stepEditor.instruction")}</Label>
         <Input
           value={c.instruction}
           onChange={(e) => onChange({ ...c, instruction: e.target.value }, answerData)}
-          placeholder="Sort these items into categories..."
+          placeholder={t("stepEditor.sortIntoCategoriesPlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Categories</Label>
+          <Label>{t("stepEditor.categories")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -46,7 +48,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Category
+            {t("stepEditor.addCategory")}
           </Button>
         </div>
         {c.categories.map((cat, i) => (
@@ -58,7 +60,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
                 cats[i] = { ...cats[i], name: e.target.value };
                 onChange({ ...c, categories: cats }, answerData);
               }}
-              placeholder={`Category ${i + 1}`}
+              placeholder={`${t("stepEditor.category")} ${i + 1}`}
               className="flex-1"
             />
             <Button
@@ -76,7 +78,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Items</Label>
+          <Label>{t("stepEditor.items")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -88,7 +90,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Item
+            {t("stepEditor.addItem")}
           </Button>
         </div>
         {c.items.map((item, i) => (
@@ -100,7 +102,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
                 items[i] = { ...items[i], text: e.target.value };
                 onChange({ ...c, items }, rebuildAnswer(items));
               }}
-              placeholder={`Item ${i + 1}`}
+              placeholder={`${t("stepEditor.item")} ${i + 1}`}
               className="flex-1"
             />
             <Select
@@ -112,7 +114,7 @@ export function DragCategorizeEditor({ content, answerData, onChange }: StepEdit
               }}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t("stepEditor.category")} />
               </SelectTrigger>
               <SelectContent>
                 {c.categories.map((cat) => (

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Hash } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { NumericRangeConfig, NumericRangeAnswer, NumericRangeUserAnswer } from "@/lib/types/quiz";
 
@@ -17,6 +18,7 @@ export function NumericRangeRenderer({
   isCorrect,
   feedback,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const numericConfig = config as NumericRangeConfig;
 
   const currentValue = typeof userAnswer === 'number'
@@ -52,7 +54,7 @@ export function NumericRangeRenderer({
           value={inputValue}
           onChange={handleChange}
           disabled={disabled}
-          placeholder={numericConfig.placeholder || "Enter value..."}
+          placeholder={numericConfig.placeholder || t("quizRenderer.enterValue")}
           min={numericConfig.min}
           max={numericConfig.max}
           step={numericConfig.step}
@@ -81,7 +83,7 @@ export function NumericRangeRenderer({
 
       {numericConfig.min !== undefined && numericConfig.max !== undefined && (
         <p className="text-xs text-muted-foreground">
-          Enter a value between {numericConfig.min} and {numericConfig.max}
+          {t("quizRenderer.enterBetween", { min: numericConfig.min, max: numericConfig.max })}
           {numericConfig.unit && ` ${numericConfig.unit}`}
         </p>
       )}
@@ -107,6 +109,7 @@ export function NumericRangeResultRenderer({
   feedback,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const numericConfig = config as NumericRangeConfig;
   const correctAnswer = correctAnswerData as NumericRangeAnswer;
 
@@ -129,12 +132,12 @@ export function NumericRangeResultRenderer({
           "p-4 rounded-lg",
           isCorrect ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"
         )}>
-          <span className="text-sm text-muted-foreground block mb-1">Your answer:</span>
+          <span className="text-sm text-muted-foreground block mb-1">{t("quizRenderer.yourAnswer")}</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold">
               {userValue !== undefined
                 ? formatValue(userValue)
-                : <em className="text-base text-muted-foreground">No answer</em>}
+                : <em className="text-base text-muted-foreground">{t("quizRenderer.noAnswer")}</em>}
             </span>
             {creditPercent > 0 && creditPercent < 100 && (
               <Badge variant="outline" className="text-amber-600 border-amber-300">
@@ -144,13 +147,13 @@ export function NumericRangeResultRenderer({
           </div>
           {difference !== null && difference > 0 && (
             <span className="text-sm text-muted-foreground">
-              Off by {difference.toFixed(2)}{numericConfig.unit && ` ${numericConfig.unit}`}
+              {t("quizRenderer.offBy", { diff: `${difference.toFixed(2)}${numericConfig.unit ? ` ${numericConfig.unit}` : ''}` })}
             </span>
           )}
         </div>
 
         <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-          <span className="text-sm text-muted-foreground block mb-1">Correct answer:</span>
+          <span className="text-sm text-muted-foreground block mb-1">{t("quizRenderer.correctAnswer")}</span>
           <span className="text-2xl font-bold text-green-700">
             {formatValue(correctAnswer.correctValue)}
           </span>
@@ -159,9 +162,10 @@ export function NumericRangeResultRenderer({
 
       {numericConfig.tolerance && numericConfig.tolerance > 0 && (
         <p className="text-sm text-muted-foreground">
-          Answers within {numericConfig.tolerance}
-          {numericConfig.toleranceType === 'percentage' ? '%' : (numericConfig.unit ? ` ${numericConfig.unit}` : '')}
-          {' '}receive partial credit.
+          {t("quizRenderer.partialCredit", {
+            range: numericConfig.tolerance,
+            unit: numericConfig.toleranceType === 'percentage' ? '%' : (numericConfig.unit ? ` ${numericConfig.unit}` : '')
+          })}
         </p>
       )}
 
@@ -171,7 +175,7 @@ export function NumericRangeResultRenderer({
 
       {explanation && (
         <p className="text-sm text-muted-foreground pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

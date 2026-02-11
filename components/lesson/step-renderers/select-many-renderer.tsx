@@ -4,6 +4,7 @@ import type { StepRendererProps } from "./types";
 import type { SelectManyContent, SelectManyAnswerData, SelectManyUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Check, X, Square, CheckSquare } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function SelectManyRenderer({
   step,
@@ -12,6 +13,7 @@ export function SelectManyRenderer({
   isChecked,
   disabled,
 }: StepRendererProps) {
+  const { t } = useLocale();
   const content = step.content as SelectManyContent;
   const answerData = step.answerData as SelectManyAnswerData;
   const selectedIds = (userAnswer as SelectManyUserAnswer)?.selectedOptionIds || [];
@@ -28,7 +30,7 @@ export function SelectManyRenderer({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{content.question}</h3>
-      <p className="text-sm text-muted-foreground">Select all that apply.</p>
+      <p className="text-sm text-muted-foreground">{t("stepRenderer.selectMany")}</p>
       <div className="space-y-2">
         {content.options.map((option) => {
           const isSelected = selectedIds.includes(option.id);

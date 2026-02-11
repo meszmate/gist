@@ -7,8 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function FillBlanksEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as FillBlanksContent;
   const ad = (answerData as FillBlanksAnswerData) || { correctBlanks: {} };
 
@@ -21,21 +23,21 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
   return (
     <div className="space-y-4">
       <div>
-        <Label>Template</Label>
+        <Label>{t("stepEditor.template")}</Label>
         <Textarea
           value={c.template}
           onChange={(e) => onChange({ ...c, template: e.target.value }, ad)}
-          placeholder='Use {{blank_id}} for blanks. E.g. "The {{b1}} is the capital of {{b2}}"'
+          placeholder={t("stepEditor.templatePlaceholder")}
           rows={3}
           className="mt-1.5 font-mono text-sm"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Use {"{{blank_id}}"} syntax for blanks. Each blank ID must match a blank definition below.
+          {t("stepEditor.templateHint")}
         </p>
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Blanks</Label>
+          <Label>{t("stepEditor.blanks")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -45,7 +47,7 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Blank
+            {t("stepEditor.addBlank")}
           </Button>
         </div>
         {c.blanks.map((blank, i) => (
@@ -61,7 +63,7 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
                 };
                 updateBlanks(blanks);
               }}
-              placeholder="Accepted answers (comma-separated)"
+              placeholder={t("stepEditor.acceptedAnswersCommaSeparated")}
               className="flex-1"
             />
             <Button

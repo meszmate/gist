@@ -15,6 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import type {
   QuestionConfig,
   UserAnswer,
@@ -72,6 +73,7 @@ export function SharedQuizTaker({
   token,
   resourceTitle,
 }: SharedQuizTakerProps) {
+  const { t } = useLocale();
   const [state, setState] = useState<QuizState>("intro");
   const [questions, setQuestions] = useState(rawQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -166,13 +168,13 @@ export function SharedQuizTaker({
         <div>
           <h3 className="text-2xl font-bold">{resourceTitle} - Quiz</h3>
           <p className="text-muted-foreground mt-2">
-            {questions.length} questions
+            {t("quiz.questions", { count: questions.length })}
             {settings?.timeLimitSeconds &&
-              ` | ${Math.ceil(settings.timeLimitSeconds / 60)} min time limit`}
+              ` | ${t("quiz.timeLimitInfo", { count: Math.ceil(settings.timeLimitSeconds / 60) })}`}
           </p>
         </div>
         <Button size="lg" onClick={startQuiz}>
-          Start Quiz
+          {t("quiz.startQuiz")}
         </Button>
       </div>
     );
@@ -186,13 +188,13 @@ export function SharedQuizTaker({
           <div className="rounded-full bg-primary/10 w-20 h-20 flex items-center justify-center mx-auto">
             <Trophy className="h-10 w-10 text-primary" />
           </div>
-          <h3 className="text-2xl font-bold">Quiz Complete!</h3>
+          <h3 className="text-2xl font-bold">{t("quiz.quizComplete")}</h3>
           <div className="flex justify-center gap-6">
             <div className="text-center">
               <p className="text-4xl font-bold">
                 {result.percentage.toFixed(0)}%
               </p>
-              <p className="text-sm text-muted-foreground">Score</p>
+              <p className="text-sm text-muted-foreground">{t("quiz.score")}</p>
             </div>
             <div className="text-center">
               <p className="text-4xl font-bold text-green-600">
@@ -205,20 +207,20 @@ export function SharedQuizTaker({
             {result.grade && (
               <div className="text-center">
                 <p className="text-4xl font-bold">{result.grade}</p>
-                <p className="text-sm text-muted-foreground">Grade</p>
+                <p className="text-sm text-muted-foreground">{t("quiz.grade")}</p>
               </div>
             )}
           </div>
           <Button onClick={() => { setState("intro"); setResult(null); }}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Retake Quiz
+            {t("quiz.retakeQuiz")}
           </Button>
         </div>
 
         {/* Answer Review */}
         {settings?.showCorrectAnswers !== false && (
           <div className="space-y-3">
-            <h4 className="font-semibold text-lg">Review Answers</h4>
+            <h4 className="font-semibold text-lg">{t("quiz.reviewAnswers")}</h4>
             {result.answers.map((ans, i) => (
               <Card
                 key={ans.questionId}
@@ -236,7 +238,7 @@ export function SharedQuizTaker({
                       variant={ans.isCorrect ? "default" : "destructive"}
                       className="shrink-0"
                     >
-                      {ans.isCorrect ? "Correct" : "Incorrect"}
+                      {ans.isCorrect ? t("quiz.correct") : t("quiz.incorrect")}
                     </Badge>
                   </div>
                   {ans.explanation && (
@@ -260,7 +262,7 @@ export function SharedQuizTaker({
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
+            {t("quiz.questionOf", { current: currentIndex + 1, total: questions.length })}
           </p>
           <Progress value={progress} className="h-2 w-48" />
         </div>
@@ -275,7 +277,7 @@ export function SharedQuizTaker({
             </Badge>
           )}
           <Badge variant="outline">
-            {answeredCount}/{questions.length} answered
+            {t("quiz.answered", { count: answeredCount, total: questions.length })}
           </Badge>
         </div>
       </div>
@@ -326,7 +328,7 @@ export function SharedQuizTaker({
           disabled={currentIndex === 0}
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Previous
+          {t("quiz.previous")}
         </Button>
 
         {currentIndex === questions.length - 1 ? (
@@ -334,14 +336,14 @@ export function SharedQuizTaker({
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Submitting..." : "Submit Quiz"}
+            {isSubmitting ? t("common.submitting") : t("quiz.submitQuiz")}
           </Button>
         ) : (
           <Button
             variant="outline"
             onClick={() => setCurrentIndex((i) => i + 1)}
           >
-            Next
+            {t("quiz.next")}
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         )}

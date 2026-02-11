@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { TrueFalseConfig, TrueFalseAnswer, TrueFalseUserAnswer } from "@/lib/types/quiz";
 
@@ -14,9 +15,10 @@ export function TrueFalseRenderer({
   showResult,
   correctAnswerData,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const tfConfig = config as TrueFalseConfig;
-  const trueLabel = tfConfig.trueLabel || "True";
-  const falseLabel = tfConfig.falseLabel || "False";
+  const trueLabel = tfConfig.trueLabel || t("quizRenderer.true");
+  const falseLabel = tfConfig.falseLabel || t("quizRenderer.false");
 
   const selectedValue = typeof userAnswer === 'boolean'
     ? userAnswer
@@ -80,10 +82,10 @@ export function TrueFalseRenderer({
               )}
               <span className="text-lg font-medium">{label}</span>
               {showResult && isCorrectOption && (
-                <Badge className="bg-green-500">Correct</Badge>
+                <Badge className="bg-green-500">{t("quizRenderer.correct")}</Badge>
               )}
               {showResult && isWrongSelection && (
-                <Badge variant="destructive">Your answer</Badge>
+                <Badge variant="destructive">{t("quizRenderer.yourAnswerBadge")}</Badge>
               )}
             </div>
           </button>
@@ -99,9 +101,10 @@ export function TrueFalseResultRenderer({
   userAnswer,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const tfConfig = config as TrueFalseConfig;
-  const trueLabel = tfConfig.trueLabel || "True";
-  const falseLabel = tfConfig.falseLabel || "False";
+  const trueLabel = tfConfig.trueLabel || t("quizRenderer.true");
+  const falseLabel = tfConfig.falseLabel || t("quizRenderer.false");
 
   const selectedValue = typeof userAnswer === 'boolean'
     ? userAnswer
@@ -118,9 +121,9 @@ export function TrueFalseResultRenderer({
           correctValue !== true && selectedValue !== true && "bg-muted/50"
         )}>
           <span className="font-medium">{trueLabel}</span>
-          {correctValue === true && <Badge className="ml-2 bg-green-500">Correct</Badge>}
+          {correctValue === true && <Badge className="ml-2 bg-green-500">{t("quizRenderer.correct")}</Badge>}
           {selectedValue === true && correctValue !== true && (
-            <Badge variant="destructive" className="ml-2">Your answer</Badge>
+            <Badge variant="destructive" className="ml-2">{t("quizRenderer.yourAnswerBadge")}</Badge>
           )}
         </div>
         <div className={cn(
@@ -130,15 +133,15 @@ export function TrueFalseResultRenderer({
           correctValue !== false && selectedValue !== false && "bg-muted/50"
         )}>
           <span className="font-medium">{falseLabel}</span>
-          {correctValue === false && <Badge className="ml-2 bg-green-500">Correct</Badge>}
+          {correctValue === false && <Badge className="ml-2 bg-green-500">{t("quizRenderer.correct")}</Badge>}
           {selectedValue === false && correctValue !== false && (
-            <Badge variant="destructive" className="ml-2">Your answer</Badge>
+            <Badge variant="destructive" className="ml-2">{t("quizRenderer.yourAnswerBadge")}</Badge>
           )}
         </div>
       </div>
       {explanation && (
         <p className="text-sm text-muted-foreground mt-3 pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

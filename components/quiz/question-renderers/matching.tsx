@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { MatchingConfig, MatchingAnswer, MatchingUserAnswer } from "@/lib/types/quiz";
 
@@ -34,6 +35,7 @@ export function MatchingRenderer({
   showResult,
   correctAnswerData,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const matchingConfig = config as MatchingConfig;
   const leftColumn = matchingConfig.leftColumn || [];
   const rightColumn = useMemo(() => matchingConfig.rightColumn || [], [matchingConfig.rightColumn]);
@@ -108,7 +110,7 @@ export function MatchingRenderer({
                     showResult && isCorrect && "border-green-500",
                     showResult && isWrong && "border-red-500"
                   )}>
-                    <SelectValue placeholder="Select match..." />
+                    <SelectValue placeholder={t("quizRenderer.selectMatch")} />
                   </SelectTrigger>
                   <SelectContent>
                     {shuffledRight.map((rightItem, rIndex) => (
@@ -128,7 +130,7 @@ export function MatchingRenderer({
 
       {showResult && (
         <div className="text-sm text-muted-foreground">
-          {Object.entries(pairs).filter(([left, right]) => right === correctPairs[left]).length} of {leftColumn.length} correct
+          {t("quizRenderer.correctOf", { count: Object.entries(pairs).filter(([left, right]) => right === correctPairs[left]).length, total: leftColumn.length })}
         </div>
       )}
     </div>
@@ -142,6 +144,7 @@ export function MatchingResultRenderer({
   creditPercent,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const matchingConfig = config as MatchingConfig;
   const leftColumn = matchingConfig.leftColumn || [];
   const correctPairs = (correctAnswerData as MatchingAnswer)?.correctPairs || {};
@@ -152,8 +155,8 @@ export function MatchingResultRenderer({
       {matchingConfig.leftColumnLabel && matchingConfig.rightColumnLabel && (
         <div className="grid grid-cols-3 gap-4 text-sm font-medium text-muted-foreground">
           <div>{matchingConfig.leftColumnLabel}</div>
-          <div>Your Match</div>
-          <div>Correct Match</div>
+          <div>{t("quizRenderer.yourMatch")}</div>
+          <div>{t("quizRenderer.correctMatch")}</div>
         </div>
       )}
 
@@ -183,7 +186,7 @@ export function MatchingResultRenderer({
                     )}
                   </>
                 ) : (
-                  <em className="text-muted-foreground">Not matched</em>
+                  <em className="text-muted-foreground">{t("quizRenderer.notMatched")}</em>
                 )}
               </div>
               <div className="text-green-700">
@@ -195,7 +198,7 @@ export function MatchingResultRenderer({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Score:</span>
+        <span className="text-sm text-muted-foreground">{t("quizRenderer.score")}</span>
         <Badge variant={creditPercent === 100 ? "default" : "secondary"}>
           {creditPercent.toFixed(0)}%
         </Badge>
@@ -203,7 +206,7 @@ export function MatchingResultRenderer({
 
       {explanation && (
         <p className="text-sm text-muted-foreground pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

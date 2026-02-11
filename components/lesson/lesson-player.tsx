@@ -16,6 +16,7 @@ import { LessonPlayerIntro } from "./lesson-player-intro";
 import { LessonPlayerSummary } from "./lesson-player-summary";
 import { LessonPlayerFeedback } from "./lesson-player-feedback";
 import { STEP_RENDERERS } from "./step-renderers";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonPlayerProps {
   lesson: LessonWithSteps;
@@ -41,6 +42,7 @@ export function LessonPlayer({
   attemptId,
   resourceId,
 }: LessonPlayerProps) {
+  const { t } = useLocale();
   const [phase, setPhase] = useState<Phase>("intro");
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, StepUserAnswer>>({});
@@ -313,7 +315,7 @@ export function LessonPlayer({
                 className="text-muted-foreground"
               >
                 <Lightbulb className="mr-1.5 h-3.5 w-3.5" />
-                Show Hint
+                {t("lessons.showHint")}
               </Button>
             )}
           </div>
@@ -335,15 +337,15 @@ export function LessonPlayer({
         <div className="container max-w-2xl mx-auto flex items-center justify-between">
           <div>
             <div className="text-sm font-medium">
-              Step {stepIndex + 1} of {steps.length}
+              {t("lessons.stepOf", { current: stepIndex + 1, total: steps.length })}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
               {isChecked ? (
-                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to continue</>
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> {t("lessons.enterToContinue")}</>
               ) : isInteractive ? (
-                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to check</>
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> {t("lessons.enterToCheck")}</>
               ) : (
-                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> Enter to continue</>
+                <><kbd className="px-1 py-0.5 bg-muted rounded border text-[10px]">↵</kbd> {t("lessons.enterToContinue")}</>
               )}
             </div>
           </div>
@@ -353,11 +355,11 @@ export function LessonPlayer({
                 {!isCorrect && attemptCount <= 1 && (
                   <Button variant="outline" onClick={handleTryAgain} className="gap-2">
                     <RotateCcw className="h-4 w-4" />
-                    Try Again
+                    {t("lessons.tryAgain")}
                   </Button>
                 )}
                 <Button onClick={handleContinue} className="gap-2">
-                  Continue
+                  {t("common.continue")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </>
@@ -367,11 +369,11 @@ export function LessonPlayer({
                 disabled={!userAnswer}
                 className="gap-2"
               >
-                Check
+                {t("lessons.check")}
               </Button>
             ) : (
               <Button onClick={handleContinue} className="gap-2">
-                Continue
+                {t("common.continue")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             )}

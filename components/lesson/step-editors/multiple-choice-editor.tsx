@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function MultipleChoiceEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as MultipleChoiceContent;
   const ad = (answerData as MultipleChoiceAnswerData) || { correctOptionId: "a" };
 
@@ -23,16 +25,16 @@ export function MultipleChoiceEditor({ content, answerData, onChange }: StepEdit
   return (
     <div className="space-y-4">
       <div>
-        <Label>Question</Label>
+        <Label>{t("stepEditor.question")}</Label>
         <Input
           value={c.question}
           onChange={(e) => updateContent({ question: e.target.value })}
-          placeholder="Enter your question..."
+          placeholder={t("stepEditor.enterQuestionPlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
-        <Label>Options</Label>
+        <Label>{t("stepEditor.options")}</Label>
         <RadioGroup value={ad.correctOptionId} onValueChange={updateAnswer} className="mt-2">
           {c.options.map((option, i) => (
             <div key={option.id} className="flex items-center gap-2">
@@ -44,7 +46,7 @@ export function MultipleChoiceEditor({ content, answerData, onChange }: StepEdit
                   opts[i] = { ...opts[i], text: e.target.value };
                   updateContent({ options: opts });
                 }}
-                placeholder={`Option ${option.id.toUpperCase()}`}
+                placeholder={`${t("stepEditor.option")} ${option.id.toUpperCase()}`}
                 className="flex-1"
               />
               <Input
@@ -54,7 +56,7 @@ export function MultipleChoiceEditor({ content, answerData, onChange }: StepEdit
                   opts[i] = { ...opts[i], explanation: e.target.value };
                   updateContent({ options: opts });
                 }}
-                placeholder="Explanation (optional)"
+                placeholder={t("stepEditor.explanationOptional")}
                 className="w-48"
               />
               {c.options.length > 2 && (
@@ -88,7 +90,7 @@ export function MultipleChoiceEditor({ content, answerData, onChange }: StepEdit
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Option
+            {t("stepEditor.addOption")}
           </Button>
         )}
       </div>

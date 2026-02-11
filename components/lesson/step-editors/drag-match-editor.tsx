@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragMatchEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as DragMatchContent;
 
   const updatePairs = (pairs: DragMatchContent["pairs"]) => {
@@ -19,17 +21,17 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
   return (
     <div className="space-y-4">
       <div>
-        <Label>Instruction</Label>
+        <Label>{t("stepEditor.instruction")}</Label>
         <Input
           value={c.instruction}
           onChange={(e) => onChange({ ...c, instruction: e.target.value }, answerData)}
-          placeholder="Match the items..."
+          placeholder={t("stepEditor.matchItemsPlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Pairs</Label>
+          <Label>{t("stepEditor.pairs")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -39,7 +41,7 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Pair
+            {t("stepEditor.addPair")}
           </Button>
         </div>
         {c.pairs.map((pair, i) => (
@@ -51,7 +53,7 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
                 pairs[i] = { ...pairs[i], left: e.target.value };
                 updatePairs(pairs);
               }}
-              placeholder="Left item"
+              placeholder={t("stepEditor.leftItem")}
               className="flex-1"
             />
             <span className="text-muted-foreground">&rarr;</span>
@@ -62,7 +64,7 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
                 pairs[i] = { ...pairs[i], right: e.target.value };
                 updatePairs(pairs);
               }}
-              placeholder="Right item"
+              placeholder={t("stepEditor.rightItem")}
               className="flex-1"
             />
             <Button

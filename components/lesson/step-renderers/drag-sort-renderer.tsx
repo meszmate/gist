@@ -5,6 +5,7 @@ import type { StepRendererProps } from "./types";
 import type { DragSortContent, DragSortAnswerData, DragSortUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { GripVertical, Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragSortRenderer({
   step,
@@ -13,6 +14,7 @@ export function DragSortRenderer({
   isChecked,
   disabled,
 }: StepRendererProps) {
+  const { t } = useLocale();
   const content = step.content as DragSortContent;
   const answerData = step.answerData as DragSortAnswerData;
   const currentOrder = (userAnswer as DragSortUserAnswer)?.orderedIds || content.items.map((i) => i.id);
@@ -49,7 +51,7 @@ export function DragSortRenderer({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{content.instruction}</h3>
-      <p className="text-sm text-muted-foreground">Drag to reorder, or tap two items to swap.</p>
+      <p className="text-sm text-muted-foreground">{t("stepRenderer.dragSort")}</p>
       <div className="space-y-2">
         {currentOrder.map((id, index) => {
           const item = itemMap.get(id);

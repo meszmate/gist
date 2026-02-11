@@ -45,47 +45,23 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
-const createResourceSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  description: z.string().optional(),
-  difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
-  folderId: z.string().optional(),
-});
+type CreateResourceForm = z.infer<ReturnType<typeof createResourceSchema>>;
 
-type CreateResourceForm = z.infer<typeof createResourceSchema>;
+function createResourceSchema(t: (key: string) => string) {
+  return z.object({
+    title: z.string().min(1, t("create.titleRequired")).max(255),
+    description: z.string().optional(),
+    difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+    folderId: z.string().optional(),
+  });
+}
 
 interface Folder {
   id: string;
   name: string;
 }
-
-const steps = [
-  {
-    number: 1,
-    title: "Details",
-    description: "Name your resource",
-    icon: FileText,
-  },
-  {
-    number: 2,
-    title: "Generate",
-    description: "Add content & generate",
-    icon: Sparkles,
-  },
-  {
-    number: 3,
-    title: "Study",
-    description: "Start learning",
-    icon: GraduationCap,
-  },
-];
-
-const difficultyOptions = [
-  { value: "beginner", label: "Beginner", color: "text-green-600" },
-  { value: "intermediate", label: "Intermediate", color: "text-yellow-600" },
-  { value: "advanced", label: "Advanced", color: "text-red-600" },
-];
 
 export default function CreateResourcePage() {
   const router = useRouter();
@@ -93,6 +69,34 @@ export default function CreateResourcePage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState("");
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const { t } = useLocale();
+
+  const steps = [
+    {
+      number: 1,
+      title: t("create.step1"),
+      description: t("create.step1Desc"),
+      icon: FileText,
+    },
+    {
+      number: 2,
+      title: t("create.step2"),
+      description: t("create.step2Desc"),
+      icon: Sparkles,
+    },
+    {
+      number: 3,
+      title: t("create.step3"),
+      description: t("create.step3Desc"),
+      icon: GraduationCap,
+    },
+  ];
+
+  const difficultyOptions = [
+    { value: "beginner", label: t("common.difficulty.beginner"), color: "text-green-600" },
+    { value: "intermediate", label: t("common.difficulty.intermediate"), color: "text-yellow-600" },
+    { value: "advanced", label: t("common.difficulty.advanced"), color: "text-red-600" },
+  ];
 
   const { data: folders = [] } = useQuery<Folder[]>({
     queryKey: ["folders"],
@@ -104,7 +108,7 @@ export default function CreateResourcePage() {
   });
 
   const form = useForm<CreateResourceForm>({
-    resolver: zodResolver(createResourceSchema),
+    resolver: zodResolver(createResourceSchema(t)),
     defaultValues: {
       title: "",
       description: "",
@@ -124,11 +128,11 @@ export default function CreateResourcePage() {
       return res.json();
     },
     onSuccess: (data) => {
-      toast.success("Resource created");
+      toast.success(t("create.resourceCreated"));
       router.push(`/create/${data.id}/generate`);
     },
     onError: () => {
-      toast.error("Failed to create resource");
+      toast.error(t("create.failedCreate"));
     },
   });
 
@@ -148,10 +152,10 @@ export default function CreateResourcePage() {
       setNewFolderName("");
       setNewFolderColor("");
       setFolderDialogOpen(false);
-      toast.success("Folder created");
+      toast.success(t("create.folderCreated"));
     },
     onError: () => {
-      toast.error("Failed to create folder");
+      toast.error(t("create.failedCreateFolder"));
     },
   });
 
@@ -173,11 +177,11 @@ export default function CreateResourcePage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <PageHeader
-        title="Create Resource"
-        description="Start by setting up your study material"
+        title={t("create.title")}
+        description={t("create.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Create Resource" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("create.title") },
         ]}
       />
 
@@ -223,10 +227,10 @@ export default function CreateResourcePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Resource Details
+            {t("create.resourceDetails")}
           </CardTitle>
           <CardDescription>
-            Give your resource a title and optional details to help organize your studies
+            {t("create.resourceDetailsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,16 +241,16 @@ export default function CreateResourcePage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title *</FormLabel>
+                    <FormLabel>{t("create.titleLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., Biology Chapter 5: Cell Division"
+                        placeholder={t("create.titlePlaceholder")}
                         className="h-12 text-lg"
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Choose a descriptive title for your study material
+                      {t("create.titleDescription")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -258,10 +262,10 @@ export default function CreateResourcePage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t("create.descriptionLabel")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="What topics does this resource cover? Any specific learning goals?"
+                        placeholder={t("create.descriptionPlaceholder")}
                         className="min-h-[100px] resize-none"
                         {...field}
                       />
@@ -277,14 +281,14 @@ export default function CreateResourcePage() {
                   name="difficulty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Difficulty Level</FormLabel>
+                      <FormLabel>{t("create.difficultyLabel")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select difficulty" />
+                            <SelectValue placeholder={t("create.difficultyPlaceholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -296,7 +300,7 @@ export default function CreateResourcePage() {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Helps tailor generated content
+                        {t("create.difficultyDescription")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -308,7 +312,7 @@ export default function CreateResourcePage() {
                   name="folderId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Folder</FormLabel>
+                      <FormLabel>{t("create.folderLabel")}</FormLabel>
                       <div className="flex gap-2 items-center">
                         <Select
                           onValueChange={field.onChange}
@@ -316,7 +320,7 @@ export default function CreateResourcePage() {
                         >
                           <FormControl>
                             <SelectTrigger className="h-11">
-                              <SelectValue placeholder="Select folder" />
+                              <SelectValue placeholder={t("create.folderPlaceholder")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -324,7 +328,7 @@ export default function CreateResourcePage() {
                               <SelectItem value="_none" disabled>
                                 <span className="flex items-center gap-2 text-muted-foreground">
                                   <FolderOpen className="h-4 w-4" />
-                                  No folders yet
+                                  {t("create.noFolders")}
                                 </span>
                               </SelectItem>
                             ) : (
@@ -352,14 +356,14 @@ export default function CreateResourcePage() {
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-md">
                             <DialogHeader>
-                              <DialogTitle>Create Folder</DialogTitle>
+                              <DialogTitle>{t("create.createFolder")}</DialogTitle>
                               <DialogDescription>
-                                Add a new folder to organize your resources.
+                                {t("create.createFolderDesc")}
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                               <Input
-                                placeholder="Folder name"
+                                placeholder={t("create.folderName")}
                                 value={newFolderName}
                                 onChange={(e) => setNewFolderName(e.target.value)}
                                 onKeyDown={(e) => {
@@ -370,7 +374,7 @@ export default function CreateResourcePage() {
                                 }}
                               />
                               <div>
-                                <p className="text-sm text-muted-foreground mb-2">Color (optional)</p>
+                                <p className="text-sm text-muted-foreground mb-2">{t("create.colorOptional")}</p>
                                 <div className="flex gap-2">
                                   {["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"].map((color) => (
                                     <button
@@ -398,10 +402,10 @@ export default function CreateResourcePage() {
                                 {createFolder.isPending ? (
                                   <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Creating...
+                                    {t("common.creating")}
                                   </>
                                 ) : (
-                                  "Create Folder"
+                                  t("create.createFolder")
                                 )}
                               </Button>
                             </DialogFooter>
@@ -409,7 +413,7 @@ export default function CreateResourcePage() {
                         </Dialog>
                       </div>
                       <FormDescription>
-                        Organize resources into folders
+                        {t("create.folderDescription")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -420,7 +424,7 @@ export default function CreateResourcePage() {
               {/* Preview card */}
               {titleValue && (
                 <div className="rounded-lg border bg-muted/30 p-4 animate-fade-in">
-                  <p className="text-xs text-muted-foreground mb-2">Preview</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t("common.preview")}</p>
                   <div className="flex items-center gap-3">
                     <div className="rounded-lg bg-primary/10 p-2">
                       <FileText className="h-5 w-5 text-primary" />
@@ -428,7 +432,7 @@ export default function CreateResourcePage() {
                     <div>
                       <p className="font-medium">{titleValue}</p>
                       <p className="text-sm text-muted-foreground">
-                        {form.watch("description") || "No description"}
+                        {form.watch("description") || t("create.noDescription")}
                       </p>
                     </div>
                   </div>
@@ -441,7 +445,7 @@ export default function CreateResourcePage() {
                   variant="outline"
                   onClick={() => router.push("/library")}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -451,11 +455,11 @@ export default function CreateResourcePage() {
                   {createResource.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
+                      {t("common.creating")}
                     </>
                   ) : (
                     <>
-                      Continue
+                      {t("common.continue")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -474,11 +478,9 @@ export default function CreateResourcePage() {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold mb-1">Pro tip</h3>
+              <h3 className="font-semibold mb-1">{t("common.proTip")}</h3>
               <p className="text-sm text-muted-foreground">
-                After creating your resource, you can paste any text content—lecture notes,
-                textbook excerpts, or articles—and our AI will generate flashcards, quizzes,
-                and summaries automatically.
+                {t("create.proTipText")}
               </p>
             </div>
           </div>

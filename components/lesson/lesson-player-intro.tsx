@@ -6,6 +6,7 @@ import { GraduationCap, Clock, Zap } from "lucide-react";
 import type { LessonWithSteps } from "@/lib/types/lesson";
 import { isInteractiveStep } from "@/lib/types/lesson";
 import type { StepType } from "@/lib/types/lesson";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonPlayerIntroProps {
   lesson: LessonWithSteps;
@@ -13,6 +14,7 @@ interface LessonPlayerIntroProps {
 }
 
 export function LessonPlayerIntro({ lesson, onStart }: LessonPlayerIntroProps) {
+  const { t } = useLocale();
   const totalSteps = lesson.steps.length;
   const interactiveSteps = lesson.steps.filter((s) => isInteractiveStep(s.stepType as StepType)).length;
   const contentSteps = totalSteps - interactiveSteps;
@@ -32,23 +34,23 @@ export function LessonPlayerIntro({ lesson, onStart }: LessonPlayerIntroProps) {
       <div className="flex items-center gap-3 flex-wrap justify-center">
         <Badge variant="outline" className="gap-1.5 py-1 px-3">
           <Clock className="h-3.5 w-3.5" />
-          ~{estimatedMinutes} min
+          {t("lessons.estimatedTime", { count: estimatedMinutes })}
         </Badge>
         <Badge variant="outline" className="gap-1.5 py-1 px-3">
-          {totalSteps} steps
+          {t("lessons.steps", { count: totalSteps })}
         </Badge>
         <Badge variant="outline" className="gap-1.5 py-1 px-3">
           <Zap className="h-3.5 w-3.5" />
-          {interactiveSteps} interactive
+          {t("lessons.interactive", { count: interactiveSteps })}
         </Badge>
         {contentSteps > 0 && (
           <Badge variant="secondary" className="gap-1.5 py-1 px-3">
-            {contentSteps} content
+            {t("lessons.content", { count: contentSteps })}
           </Badge>
         )}
       </div>
       <Button size="lg" onClick={onStart} className="mt-4 px-8">
-        Start Lesson
+        {t("lessons.startLesson")}
       </Button>
     </div>
   );
