@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Languages } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -9,12 +9,20 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
+import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/types";
 
 export function SidebarUser() {
   const { data: session } = useSession();
+  const { t, locale, setLocale } = useLocale();
   const user = session?.user;
 
   if (!user) return null;
@@ -51,16 +59,31 @@ export function SidebarUser() {
         <DropdownMenuItem asChild>
           <Link href="/settings">
             <Settings className="mr-2 h-4 w-4" />
-            Settings
+            {t("sidebar.settings")}
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Languages className="mr-2 h-4 w-4" />
+            {t("sidebar.language")}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup value={locale} onValueChange={(v) => setLocale(v as Locale)}>
+              {LOCALES.map((l) => (
+                <DropdownMenuRadioItem key={l} value={l}>
+                  {LOCALE_LABELS[l]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}
           className="text-destructive"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+          {t("sidebar.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/shared/stat-card";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 interface DashboardStats {
   resourceCount: number;
@@ -31,8 +32,17 @@ interface DashboardClientProps {
 }
 
 function WeeklyChart({ data }: { data: number[] }) {
+  const { t } = useLocale();
   const max = Math.max(...data, 1);
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days = [
+    t("dashboard.days.mon"),
+    t("dashboard.days.tue"),
+    t("dashboard.days.wed"),
+    t("dashboard.days.thu"),
+    t("dashboard.days.fri"),
+    t("dashboard.days.sat"),
+    t("dashboard.days.sun"),
+  ];
 
   return (
     <div className="flex items-end justify-between gap-2 h-32 pt-4">
@@ -85,15 +95,17 @@ function ActivityTimeline({
 }: {
   attempts: DashboardStats["recentAttempts"];
 }) {
+  const { t, formatDate } = useLocale();
+
   if (attempts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <FileQuestion className="h-8 w-8 text-muted-foreground mb-3" />
         <p className="text-sm text-muted-foreground">
-          No quiz attempts yet
+          {t("dashboard.noQuizAttempts")}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Create a resource and take a quiz to see your activity
+          {t("dashboard.createAndQuiz")}
         </p>
       </div>
     );
@@ -138,18 +150,18 @@ function ActivityTimeline({
               <p className="font-medium truncate">{attempt.title}</p>
               <p className="text-xs text-muted-foreground">
                 {attempt.completedAt
-                  ? new Date(attempt.completedAt).toLocaleDateString(undefined, {
+                  ? formatDate(new Date(attempt.completedAt), {
                       month: "short",
                       day: "numeric",
                       hour: "numeric",
                       minute: "2-digit",
                     })
-                  : "In progress"}
+                  : t("common.inProgress")}
               </p>
             </div>
             {score !== null && (
               <Badge variant={score >= 80 ? "default" : "secondary"}>
-                {score >= 80 ? "Great!" : score >= 60 ? "Good" : "Keep practicing"}
+                {score >= 80 ? t("dashboard.great") : score >= 60 ? t("dashboard.good") : t("dashboard.keepPracticing")}
               </Badge>
             )}
           </div>
@@ -160,6 +172,7 @@ function ActivityTimeline({
 }
 
 export function DashboardClient({ greeting, firstName, stats }: DashboardClientProps) {
+  const { t } = useLocale();
   const hasCardsDue = stats.flashcardsDue > 0;
   const totalWeeklyReviews = stats.weeklyActivity.reduce((a, b) => a + b, 0);
 
@@ -173,14 +186,14 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
           </h1>
           <p className="text-muted-foreground animate-fade-in">
             {hasCardsDue
-              ? `You have ${stats.flashcardsDue} cards ready for review`
-              : "You're all caught up! Great job."}
+              ? t("dashboard.cardsDueMessage", { count: stats.flashcardsDue })
+              : t("dashboard.allCaughtUp")}
           </p>
         </div>
         <Button asChild size="lg" className="animate-fade-in">
           <Link href="/create">
             <Plus className="mr-2 h-4 w-4" />
-            Create Resource
+            {t("dashboard.createResource")}
           </Link>
         </Button>
       </div>
@@ -189,14 +202,14 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       {hasCardsDue && (
         <Alert className="border-primary/50 bg-primary/5 animate-slide-up">
           <Brain className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-primary">Ready to study?</AlertTitle>
+          <AlertTitle className="text-primary">{t("dashboard.readyToStudy")}</AlertTitle>
           <AlertDescription className="flex items-center justify-between">
             <span>
-              {stats.flashcardsDue} flashcard{stats.flashcardsDue !== 1 ? "s" : ""} due for review
+              {t("dashboard.flashcardsDue", { count: stats.flashcardsDue })}
             </span>
             <Button asChild size="sm" className="ml-4">
               <Link href="/study">
-                Start Session
+                {t("dashboard.startSession")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -207,38 +220,38 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       {/* Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Resources"
+          title={t("dashboard.totalResources")}
           value={stats.resourceCount}
-          description="Study materials created"
+          description={t("dashboard.studyMaterialsCreated")}
           icon={<BookOpen className="h-5 w-5" />}
           delay={0}
           onClick={() => (window.location.href = "/library")}
         />
         <StatCard
-          title="Cards Due"
+          title={t("dashboard.cardsDue")}
           value={stats.flashcardsDue}
-          description="Ready for review"
+          description={t("dashboard.readyForReview")}
           icon={<Brain className="h-5 w-5" />}
           delay={50}
           onClick={() => (window.location.href = "/study")}
           sparklineData={stats.weeklyActivity}
         />
         <StatCard
-          title="Total Flashcards"
+          title={t("dashboard.totalFlashcards")}
           value={stats.totalFlashcards}
-          description="Across all resources"
+          description={t("dashboard.acrossAllResources")}
           icon={<Target className="h-5 w-5" />}
           delay={100}
         />
         <StatCard
-          title="Study Streak"
+          title={t("dashboard.studyStreak")}
           value={stats.studyStreak}
-          description={stats.studyStreak > 0 ? "Days in a row" : "Start studying!"}
+          description={stats.studyStreak > 0 ? t("dashboard.daysInARow") : t("dashboard.startStudying")}
           icon={<Flame className="h-5 w-5" />}
           delay={150}
           trend={
             stats.studyStreak > 0
-              ? { value: stats.studyStreak, label: "Keep it up!" }
+              ? { value: stats.studyStreak, label: t("dashboard.keepItUp") }
               : undefined
           }
         />
@@ -251,7 +264,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Quick Actions
+              {t("dashboard.quickActions")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -260,7 +273,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
                 <Link href="/study">
                   <span className="flex items-center">
                     <Brain className="mr-2 h-4 w-4" />
-                    Study {stats.flashcardsDue} due cards
+                    {t("dashboard.studyDueCards", { count: stats.flashcardsDue })}
                   </span>
                   <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded">
                     S
@@ -270,14 +283,14 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
             ) : (
               <Button variant="secondary" className="w-full justify-start" disabled size="lg">
                 <Brain className="mr-2 h-4 w-4" />
-                No cards due for review
+                {t("dashboard.noCardsDue")}
               </Button>
             )}
             <Button asChild variant="outline" className="w-full justify-between" size="lg">
               <Link href="/library">
                 <span className="flex items-center">
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Browse Library
+                  {t("dashboard.browseLibrary")}
                 </span>
                 <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
                   L
@@ -288,7 +301,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
               <Link href="/create">
                 <span className="flex items-center">
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Resource
+                  {t("dashboard.createResource")}
                 </span>
                 <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
                   C
@@ -299,7 +312,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
               <Link href="/quiz">
                 <span className="flex items-center">
                   <FileQuestion className="mr-2 h-4 w-4" />
-                  Take a Quiz
+                  {t("dashboard.takeQuiz")}
                 </span>
                 <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
                   Q
@@ -313,9 +326,9 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
         <Card className="lg:col-span-2 animate-slide-up" style={{ animationDelay: "50ms" }}>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Weekly Progress</CardTitle>
+              <CardTitle>{t("dashboard.weeklyProgress")}</CardTitle>
               <Badge variant="secondary" className="font-normal">
-                {totalWeeklyReviews} reviews this week
+                {t("dashboard.reviewsThisWeek", { count: totalWeeklyReviews })}
               </Badge>
             </div>
           </CardHeader>
@@ -329,11 +342,11 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       <Card className="animate-slide-up" style={{ animationDelay: "100ms" }}>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Quiz Attempts</CardTitle>
+            <CardTitle>{t("dashboard.recentQuizAttempts")}</CardTitle>
             {stats.recentAttempts.length > 0 && (
               <Button asChild variant="ghost" size="sm">
                 <Link href="/quiz">
-                  View all
+                  {t("common.viewAll")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

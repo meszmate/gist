@@ -22,6 +22,7 @@ import { SharedFlashcardStudy } from "@/components/shared/shared-flashcard-study
 import { SharedQuizTaker } from "@/components/shared/shared-quiz-taker";
 import { LessonPlayer } from "@/components/lesson/lesson-player";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionConfig } from "@/lib/types/quiz";
 import type { LessonWithSteps } from "@/lib/types/lesson";
 
@@ -71,6 +72,7 @@ export function SharedResourceClient({
   resource,
   token,
 }: SharedResourceClientProps) {
+  const { t, formatDate } = useLocale();
   const [isSaved, setIsSaved] = useState(resource.isSaved);
   const [savingState, setSavingState] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -80,7 +82,7 @@ export function SharedResourceClient({
 
   const handleSave = async () => {
     if (!resource.isAuthenticated) {
-      toast.error("Sign in to save resources to your library");
+      toast.error(t("shared.signInToSave"));
       return;
     }
     setSavingState(true);
@@ -88,14 +90,14 @@ export function SharedResourceClient({
       if (isSaved) {
         await fetch(`/api/resources/${resource.id}/save`, { method: "DELETE" });
         setIsSaved(false);
-        toast.success("Removed from library");
+        toast.success(t("shared.removedFromLibrary"));
       } else {
         await fetch(`/api/resources/${resource.id}/save`, { method: "POST" });
         setIsSaved(true);
-        toast.success("Saved to library");
+        toast.success(t("shared.savedToLibrary"));
       }
     } catch {
-      toast.error("Failed to update");
+      toast.error(t("shared.failedToUpdate"));
     } finally {
       setSavingState(false);
     }
@@ -107,12 +109,9 @@ export function SharedResourceClient({
       <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
           <Clock className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Not Yet Available</h1>
+          <h1 className="text-2xl font-bold">{t("shared.notYetAvailable")}</h1>
           <p className="text-muted-foreground">
-            This resource will be available on{" "}
-            {new Date(resource.availableFrom!).toLocaleDateString(undefined, {
-              dateStyle: "long",
-            })}
+            {t("shared.resourceAvailableOn", { date: formatDate(resource.availableFrom!, { dateStyle: "long" }) })}
           </p>
         </div>
       </div>
@@ -124,12 +123,9 @@ export function SharedResourceClient({
       <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
           <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Resource Closed</h1>
+          <h1 className="text-2xl font-bold">{t("shared.resourceClosed")}</h1>
           <p className="text-muted-foreground">
-            This resource was available until{" "}
-            {new Date(resource.availableTo!).toLocaleDateString(undefined, {
-              dateStyle: "long",
-            })}
+            {t("shared.resourceAvailableUntil", { date: formatDate(resource.availableTo!, { dateStyle: "long" }) })}
           </p>
         </div>
       </div>
@@ -144,7 +140,7 @@ export function SharedResourceClient({
   if (resource.visibleSections.summary || resource.summary) {
     tabs.push({
       value: "overview",
-      label: "Overview",
+      label: t("shared.overview"),
       icon: <BookOpen className="mr-2 h-4 w-4" />,
     });
   }
@@ -154,7 +150,7 @@ export function SharedResourceClient({
   ) {
     tabs.push({
       value: "flashcards",
-      label: "Flashcards",
+      label: t("shared.flashcards"),
       icon: <Brain className="mr-2 h-4 w-4" />,
     });
   }
@@ -164,7 +160,7 @@ export function SharedResourceClient({
   ) {
     tabs.push({
       value: "quiz",
-      label: "Quiz",
+      label: t("shared.quiz"),
       icon: <FileQuestion className="mr-2 h-4 w-4" />,
     });
   }
@@ -174,7 +170,7 @@ export function SharedResourceClient({
   ) {
     tabs.push({
       value: "learn",
-      label: "Learn",
+      label: t("shared.learn"),
       icon: <GraduationCap className="mr-2 h-4 w-4" />,
     });
   }
@@ -182,7 +178,7 @@ export function SharedResourceClient({
   if (tabs.length === 0) {
     tabs.push({
       value: "overview",
-      label: "Overview",
+      label: t("shared.overview"),
       icon: <BookOpen className="mr-2 h-4 w-4" />,
     });
   }
@@ -197,7 +193,7 @@ export function SharedResourceClient({
             className="mb-4 self-start"
             onClick={() => setStudyMode(false)}
           >
-            &larr; Back to resource
+            &larr; {t("shared.backToResource")}
           </Button>
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full">
@@ -223,7 +219,7 @@ export function SharedResourceClient({
             className="mb-4 self-start"
             onClick={() => setQuizMode(false)}
           >
-            &larr; Back to resource
+            &larr; {t("shared.backToResource")}
           </Button>
           <div className="flex-1">
             <SharedQuizTaker
@@ -261,7 +257,7 @@ export function SharedResourceClient({
             href="/"
             className="text-sm text-muted-foreground hover:underline"
           >
-            Powered by gist
+            {t("shared.poweredBy")}
           </Link>
           {resource.isAuthenticated && (
             <Button
@@ -273,12 +269,12 @@ export function SharedResourceClient({
               {isSaved ? (
                 <>
                   <BookmarkCheck className="mr-2 h-4 w-4 text-primary" />
-                  Saved
+                  {t("shared.saved")}
                 </>
               ) : (
                 <>
                   <Bookmark className="mr-2 h-4 w-4" />
-                  Save to Library
+                  {t("shared.saveToLibrary")}
                 </>
               )}
             </Button>
@@ -299,17 +295,17 @@ export function SharedResourceClient({
               )}
               {resource.flashcards.length > 0 && (
                 <Badge variant="outline">
-                  {resource.flashcards.length} flashcards
+                  {t("shared.flashcardsCount", { count: resource.flashcards.length })}
                 </Badge>
               )}
               {resource.quizQuestions.length > 0 && (
                 <Badge variant="outline">
-                  {resource.quizQuestions.length} quiz questions
+                  {t("shared.quizQuestionsCount", { count: resource.quizQuestions.length })}
                 </Badge>
               )}
               {resource.lessons.length > 0 && (
                 <Badge variant="outline">
-                  {resource.lessons.length} lesson{resource.lessons.length !== 1 ? "s" : ""}
+                  {t("shared.lessonsCount", { count: resource.lessons.length })}
                 </Badge>
               )}
             </div>
@@ -332,7 +328,7 @@ export function SharedResourceClient({
               {resource.summary ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Summary</CardTitle>
+                    <CardTitle>{t("shared.summary")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <MarkdownRenderer content={resource.summary} />
@@ -342,7 +338,7 @@ export function SharedResourceClient({
                 <Card>
                   <CardContent className="py-8 text-center">
                     <p className="text-muted-foreground">
-                      No summary available for this resource.
+                      {t("shared.noSummary")}
                     </p>
                   </CardContent>
                 </Card>
@@ -355,10 +351,10 @@ export function SharedResourceClient({
                   <CardContent className="py-8 text-center">
                     <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-4">
-                      Sign in to study flashcards
+                      {t("shared.signInToStudy")}
                     </p>
                     <Button asChild>
-                      <Link href="/login">Sign In</Link>
+                      <Link href="/login">{t("shared.signIn")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -366,11 +362,11 @@ export function SharedResourceClient({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      {resource.flashcards.length} flashcards available
+                      {t("shared.flashcardsAvailable", { count: resource.flashcards.length })}
                     </p>
                     <Button onClick={() => setStudyMode(true)}>
                       <Brain className="mr-2 h-4 w-4" />
-                      Start Study Session
+                      {t("shared.startStudySession")}
                     </Button>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -380,13 +376,13 @@ export function SharedResourceClient({
                           <div className="space-y-2">
                             <div>
                               <span className="text-xs font-medium text-muted-foreground">
-                                Front
+                                {t("shared.front")}
                               </span>
                               <p className="text-sm">{card.front}</p>
                             </div>
                             <div>
                               <span className="text-xs font-medium text-muted-foreground">
-                                Back
+                                {t("shared.back")}
                               </span>
                               <p className="text-sm">{card.back}</p>
                             </div>
@@ -405,10 +401,10 @@ export function SharedResourceClient({
                   <CardContent className="py-8 text-center">
                     <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-4">
-                      Sign in to take the quiz
+                      {t("shared.signInToQuiz")}
                     </p>
                     <Button asChild>
-                      <Link href="/login">Sign In</Link>
+                      <Link href="/login">{t("shared.signIn")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -416,26 +412,26 @@ export function SharedResourceClient({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      {resource.quizQuestions.length} questions
+                      {t("shared.questions", { count: resource.quizQuestions.length })}
                     </p>
                     <Button onClick={() => setQuizMode(true)}>
                       <FileQuestion className="mr-2 h-4 w-4" />
-                      Take Quiz
+                      {t("shared.takeQuiz")}
                     </Button>
                   </div>
                   <Card>
                     <CardContent className="py-8 text-center">
                       <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="font-medium mb-2">
-                        Ready to test your knowledge?
+                        {t("shared.readyToTest")}
                       </p>
                       <p className="text-sm text-muted-foreground mb-4">
-                        {resource.quizQuestions.length} questions
+                        {t("shared.questions", { count: resource.quizQuestions.length })}
                         {resource.settings?.timeLimitSeconds &&
-                          ` | ${Math.ceil(resource.settings.timeLimitSeconds / 60)} min time limit`}
+                          ` | ${t("shared.minTimeLimit", { count: Math.ceil(resource.settings.timeLimitSeconds / 60) })}`}
                       </p>
                       <Button onClick={() => setQuizMode(true)}>
-                        Start Quiz
+                        {t("shared.startQuiz")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -448,10 +444,10 @@ export function SharedResourceClient({
                   <CardContent className="py-8 text-center">
                     <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-4">
-                      Sign in to take lessons
+                      {t("shared.signInToLearn")}
                     </p>
                     <Button asChild>
-                      <Link href="/login">Sign In</Link>
+                      <Link href="/login">{t("shared.signIn")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -472,7 +468,7 @@ export function SharedResourceClient({
                           )}
                         </div>
                         <Button size="sm" onClick={() => setLessonMode(lesson.id)}>
-                          Start
+                          {t("shared.start")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -485,10 +481,10 @@ export function SharedResourceClient({
           <Card className="bg-primary/5">
             <CardContent className="py-6 text-center">
               <p className="text-sm text-muted-foreground mb-4">
-                Want to create your own study materials with AI?
+                {t("shared.createOwn")}
               </p>
               <Button asChild>
-                <Link href="/login">Get Started with gist</Link>
+                <Link href="/login">{t("shared.getStartedGist")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -507,13 +503,14 @@ function SharedLessonMode({
   lessonId: string;
   onExit: () => void;
 }) {
+  const { t } = useLocale();
   const [lesson, setLesson] = useState<LessonWithSteps | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`/api/shared/${token}/lessons/${lessonId}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load lesson");
+        if (!res.ok) throw new Error(t("shared.failedLoadLesson"));
         return res.json();
       })
       .then((data) => {
@@ -521,10 +518,10 @@ function SharedLessonMode({
         setLoading(false);
       })
       .catch(() => {
-        toast.error("Failed to load lesson");
+        toast.error(t("shared.failedLoadLesson"));
         onExit();
       });
-  }, [token, lessonId, onExit]);
+  }, [token, lessonId, onExit, t]);
 
   if (loading || !lesson) {
     return (

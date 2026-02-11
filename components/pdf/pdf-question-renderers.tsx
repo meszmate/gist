@@ -1,5 +1,6 @@
 import { View, Text } from "@react-pdf/renderer";
 import { pdfStyles } from "./pdf-styles";
+import type { PdfTranslations } from "./quiz-pdf-document";
 import type {
   QuestionConfig,
   CorrectAnswerData,
@@ -23,6 +24,11 @@ export interface PdfQuestionRendererProps {
   config: QuestionConfig;
   correctAnswerData: CorrectAnswerData | null;
   showAnswerKey?: boolean;
+  translations: PdfTranslations;
+}
+
+function interpolate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? key));
 }
 
 // Multiple Choice
@@ -60,10 +66,11 @@ function TrueFalsePdfRenderer({
   config,
   correctAnswerData,
   showAnswerKey,
+  translations,
 }: PdfQuestionRendererProps) {
   const tfConfig = config as TrueFalseConfig;
-  const trueLabel = tfConfig.trueLabel || "True";
-  const falseLabel = tfConfig.falseLabel || "False";
+  const trueLabel = tfConfig.trueLabel || translations.trueLabel;
+  const falseLabel = tfConfig.falseLabel || translations.falseLabel;
   const correctValue = showAnswerKey
     ? (correctAnswerData as TrueFalseAnswer)?.correctValue
     : undefined;
@@ -92,6 +99,7 @@ function TrueFalsePdfRenderer({
 function TextInputPdfRenderer({
   correctAnswerData,
   showAnswerKey,
+  translations,
 }: PdfQuestionRendererProps) {
   const answer = showAnswerKey
     ? (correctAnswerData as TextInputAnswer)?.acceptedAnswers?.[0]
@@ -100,7 +108,7 @@ function TextInputPdfRenderer({
   return (
     <View style={pdfStyles.answerLines}>
       {showAnswerKey && answer ? (
-        <Text style={{ fontSize: 10, color: "#333" }}>Answer: {answer}</Text>
+        <Text style={{ fontSize: 10, color: "#333" }}>{translations.answer} {answer}</Text>
       ) : (
         <>
           <View style={pdfStyles.answerLine} />
@@ -116,6 +124,7 @@ function TextInputPdfRenderer({
 function YearRangePdfRenderer({
   correctAnswerData,
   showAnswerKey,
+  translations,
 }: PdfQuestionRendererProps) {
   const answer = showAnswerKey
     ? (correctAnswerData as YearRangeAnswer)?.correctYear
@@ -123,7 +132,7 @@ function YearRangePdfRenderer({
 
   return (
     <View style={pdfStyles.shortAnswerRow}>
-      <Text style={pdfStyles.infoLabel}>Year: </Text>
+      <Text style={pdfStyles.infoLabel}>{translations.year} </Text>
       {showAnswerKey && answer ? (
         <Text style={{ fontSize: 11 }}>{answer}</Text>
       ) : (
@@ -303,6 +312,7 @@ function MultiSelectPdfRenderer({
   config,
   correctAnswerData,
   showAnswerKey,
+  translations,
 }: PdfQuestionRendererProps) {
   const msConfig = config as MultiSelectConfig;
   const options = msConfig.options || [];
@@ -321,7 +331,7 @@ function MultiSelectPdfRenderer({
           fontStyle: "italic",
         }}
       >
-        (Select all that apply)
+        {translations.selectAllApply}
       </Text>
       {options.map((option, index) => (
         <View key={index} style={pdfStyles.optionRow}>
@@ -365,9 +375,10 @@ export function getPdfQuestionRenderer(
 export function getAnswerText(
   questionType: string,
   config: QuestionConfig,
-  correctAnswerData: CorrectAnswerData | null
+  correctAnswerData: CorrectAnswerData | null,
+  translations: PdfTranslations
 ): string {
-  if (!correctAnswerData) return "No answer provided";
+  if (!correctAnswerData) return translations.noAnswerProvided;
 
   switch (questionType) {
     case "multiple_choice": {
@@ -382,8 +393,8 @@ export function getAnswerText(
       const tfConfig = config as TrueFalseConfig;
       const tfAnswer = correctAnswerData as TrueFalseAnswer;
       return tfAnswer.correctValue
-        ? tfConfig.trueLabel || "True"
-        : tfConfig.falseLabel || "False";
+        ? tfConfig.trueLabel || translations.trueLabel
+        : tfConfig.falseLabel || translations.falseLabel;
     }
     case "text_input": {
       const tiAnswer = correctAnswerData as TextInputAnswer;
@@ -409,7 +420,7 @@ export function getAnswerText(
       const fbAnswer = correctAnswerData as FillBlankAnswer;
       const blanks = fbAnswer.blanks || {};
       return Object.entries(blanks)
-        .map(([, answers], i) => `Blank ${i + 1}: ${answers[0]}`)
+        .map(([, answers], i) => interpolate(translations.blankAnswer, { index: i + 1, answer: answers[0] }))
         .join("; ");
     }
     case "multi_select": {

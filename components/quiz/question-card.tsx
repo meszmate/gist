@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Flag, AlertCircle } from "lucide-react";
 import { questionRenderers } from "./question-renderers";
+import { useLocale } from "@/hooks/use-locale";
 import type {
   QuestionTypeSlug,
   QuestionConfig,
@@ -35,18 +36,6 @@ interface QuestionCardProps {
   className?: string;
 }
 
-// Map question types to display names
-const questionTypeLabels: Record<string, string> = {
-  multiple_choice: 'Multiple Choice',
-  true_false: 'True/False',
-  text_input: 'Text Input',
-  year_range: 'Year',
-  numeric_range: 'Numeric',
-  matching: 'Matching',
-  fill_blank: 'Fill in the Blank',
-  multi_select: 'Multi-Select',
-};
-
 export function QuestionCard({
   questionId,
   questionNumber,
@@ -68,9 +57,10 @@ export function QuestionCard({
   showFlagButton = false,
   className,
 }: QuestionCardProps) {
+  const { t } = useLocale();
   const Renderer = questionRenderers[questionType];
 
-  const typeLabel = questionTypeLabels[questionType] || questionType;
+  const typeLabel = t(`quiz.questionTypes.${questionType}`) || questionType;
 
   return (
     <Card className={cn("animate-fade-in", className)}>
@@ -139,8 +129,8 @@ export function QuestionCard({
           />
         ) : (
           <div className="p-4 rounded-lg bg-amber-500/10 text-amber-700">
-            <p>Unknown question type: {questionType}</p>
-            <p className="text-sm">This question type is not supported yet.</p>
+            <p>{t("quiz.unknownType", { type: questionType })}</p>
+            <p className="text-sm">{t("quiz.notSupported")}</p>
           </div>
         )}
 

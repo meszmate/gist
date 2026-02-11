@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -42,17 +42,20 @@ import { FileUploadDropzone } from "@/components/upload/file-upload-dropzone";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
-const generateSchema = z.object({
-  sourceContent: z.string().min(50, "Please provide at least 50 characters of content"),
-  generateSummary: z.boolean(),
-  generateFlashcards: z.boolean(),
-  generateQuiz: z.boolean(),
-  flashcardCount: z.number().min(1).max(50),
-  quizQuestionCount: z.number().min(1).max(30),
-});
+function createGenerateSchema(t: (key: string) => string) {
+  return z.object({
+    sourceContent: z.string().min(50, t("generate.contentMinLength")),
+    generateSummary: z.boolean(),
+    generateFlashcards: z.boolean(),
+    generateQuiz: z.boolean(),
+    flashcardCount: z.number().min(1).max(50),
+    quizQuestionCount: z.number().min(1).max(30),
+  });
+}
 
-type GenerateForm = z.infer<typeof generateSchema>;
+type GenerateForm = z.infer<ReturnType<typeof createGenerateSchema>>;
 
 interface Resource {
   id: string;
@@ -62,69 +65,72 @@ interface Resource {
   summary: string | null;
 }
 
-const steps = [
-  {
-    number: 1,
-    title: "Details",
-    description: "Name your resource",
-    icon: FileText,
-  },
-  {
-    number: 2,
-    title: "Generate",
-    description: "Add content & generate",
-    icon: Sparkles,
-  },
-  {
-    number: 3,
-    title: "Study",
-    description: "Start learning",
-    icon: GraduationCap,
-  },
-];
-
-const generateOptions = [
-  {
-    name: "generateSummary" as const,
-    icon: BookOpen,
-    title: "Summary",
-    description: "Generate a concise summary of the key concepts",
-    color: "text-blue-600",
-    bgColor: "bg-blue-500/10",
-  },
-  {
-    name: "generateFlashcards" as const,
-    icon: Brain,
-    title: "Flashcards",
-    description: "Create flashcards for spaced repetition learning",
-    color: "text-purple-600",
-    bgColor: "bg-purple-500/10",
-    hasCount: true,
-    countName: "flashcardCount" as const,
-    countLabel: "Number of flashcards",
-    countMax: 50,
-  },
-  {
-    name: "generateQuiz" as const,
-    icon: FileQuestion,
-    title: "Quiz Questions",
-    description: "Generate multiple-choice questions to test knowledge",
-    color: "text-green-600",
-    bgColor: "bg-green-500/10",
-    hasCount: true,
-    countName: "quizQuestionCount" as const,
-    countLabel: "Number of questions",
-    countMax: 30,
-  },
-];
-
 export default function GeneratePage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const resourceId = params.resourceId as string;
   const [progress, setProgress] = useState(0);
   const [generatingStep, setGeneratingStep] = useState<string | null>(null);
+
+  const generateSchema = useMemo(() => createGenerateSchema(t), [t]);
+
+  const steps = [
+    {
+      number: 1,
+      title: t("create.step1"),
+      description: t("create.step1Desc"),
+      icon: FileText,
+    },
+    {
+      number: 2,
+      title: t("create.step2"),
+      description: t("create.step2Desc"),
+      icon: Sparkles,
+    },
+    {
+      number: 3,
+      title: t("create.step3"),
+      description: t("create.step3Desc"),
+      icon: GraduationCap,
+    },
+  ];
+
+  const generateOptions = [
+    {
+      name: "generateSummary" as const,
+      icon: BookOpen,
+      title: t("generate.summary"),
+      description: t("generate.summaryDesc"),
+      color: "text-blue-600",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      name: "generateFlashcards" as const,
+      icon: Brain,
+      title: t("generate.flashcards"),
+      description: t("generate.flashcardsDesc"),
+      color: "text-purple-600",
+      bgColor: "bg-purple-500/10",
+      hasCount: true,
+      countName: "flashcardCount" as const,
+      countLabel: t("generate.numFlashcards"),
+      countMax: 50,
+    },
+    {
+      name: "generateQuiz" as const,
+      icon: FileQuestion,
+      title: t("generate.quizQuestions"),
+      description: t("generate.quizDesc"),
+      color: "text-green-600",
+      bgColor: "bg-green-500/10",
+      hasCount: true,
+      countName: "quizQuestionCount" as const,
+      countLabel: t("generate.numQuestions"),
+      countMax: 30,
+    },
+  ];
 
   const { data: resource, isLoading } = useQuery<Resource>({
     queryKey: ["resource", resourceId],
@@ -158,7 +164,7 @@ export default function GeneratePage() {
       const progressPerStep = 100 / steps.length;
 
       // First, save the source content
-      setGeneratingStep("Saving content...");
+      setGeneratingStep(t("generate.savingContent"));
       await fetch(`/api/resources/${resourceId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -169,10 +175,10 @@ export default function GeneratePage() {
       for (const step of steps) {
         setGeneratingStep(
           step === "summary"
-            ? "Generating summary..."
+            ? t("generate.generatingSummary")
             : step === "flashcards"
-            ? "Creating flashcards..."
-            : "Building quiz questions..."
+            ? t("generate.creatingFlashcards")
+            : t("generate.buildingQuiz")
         );
 
         const res = await fetch(`/api/resources/${resourceId}/generate`, {
@@ -197,11 +203,11 @@ export default function GeneratePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
-      toast.success("Content generated successfully!");
+      toast.success(t("generate.contentGenerated"));
       router.push(`/library/${resourceId}`);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to generate content");
+      toast.error(error.message || t("generate.failedToGenerate"));
       setProgress(0);
       setGeneratingStep(null);
     },
@@ -209,7 +215,7 @@ export default function GeneratePage() {
 
   const onSubmit = (data: GenerateForm) => {
     if (!data.generateSummary && !data.generateFlashcards && !data.generateQuiz) {
-      toast.error("Please select at least one type of content to generate");
+      toast.error(t("generate.selectAtLeastOne"));
       return;
     }
     generate.mutate(data);
@@ -231,10 +237,10 @@ export default function GeneratePage() {
     return (
       <EmptyState
         icon={<FileText className="h-12 w-12" />}
-        title="Resource not found"
-        description="This resource may have been deleted or doesn't exist."
+        title={t("generate.resourceNotFound")}
+        description={t("generate.resourceNotFoundDesc")}
         action={{
-          label: "Back to Library",
+          label: t("generate.backToLibrary"),
           href: "/library",
         }}
       />
@@ -244,12 +250,12 @@ export default function GeneratePage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <PageHeader
-        title="Generate Content"
+        title={t("generate.title")}
         description={resource.title}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Create", href: "/create" },
-          { label: "Generate" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.create"), href: "/create" },
+          { label: t("generate.title") },
         ]}
       />
 
@@ -307,12 +313,12 @@ export default function GeneratePage() {
               <div className="space-y-2">
                 <h3 className="text-xl font-semibold">{generatingStep}</h3>
                 <p className="text-muted-foreground">
-                  Our AI is working its magic...
+                  {t("generate.aiWorking")}
                 </p>
               </div>
               <div className="max-w-sm mx-auto space-y-2">
                 <Progress value={progress} className="h-2" />
-                <p className="text-sm text-muted-foreground">{progress}% complete</p>
+                <p className="text-sm text-muted-foreground">{t("generate.percentComplete", { progress })}</p>
               </div>
             </div>
           </CardContent>
@@ -324,10 +330,10 @@ export default function GeneratePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  Source Content
+                  {t("generate.sourceContent")}
                 </CardTitle>
                 <CardDescription>
-                  Upload a document or paste your study material directly
+                  {t("generate.sourceContentDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -339,7 +345,7 @@ export default function GeneratePage() {
                     } else {
                       form.setValue("sourceContent", text, { shouldValidate: true });
                     }
-                    toast.success("Text extracted successfully");
+                    toast.success(t("generate.textExtracted"));
                   }}
                   onError={(message) => toast.error(message)}
                   disabled={generate.isPending}
@@ -351,7 +357,7 @@ export default function GeneratePage() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-card px-2 text-muted-foreground">
-                      or paste text directly
+                      {t("generate.orPasteText")}
                     </span>
                   </div>
                 </div>
@@ -363,24 +369,24 @@ export default function GeneratePage() {
                     <FormItem>
                       <FormControl>
                         <Textarea
-                          placeholder="Paste your content here... (lecture notes, textbook excerpts, articles, etc.)"
+                          placeholder={t("generate.pastePlaceholder")}
                           className="min-h-[200px] text-base leading-relaxed"
                           {...field}
                         />
                       </FormControl>
                       <div className="flex items-center justify-between">
                         <FormDescription>
-                          {contentLength} characters
+                          {t("generate.characters", { count: contentLength })}
                           {contentLength < 50 && (
                             <span className="text-destructive ml-1">
-                              (minimum 50 required)
+                              {t("generate.minRequired")}
                             </span>
                           )}
                         </FormDescription>
                         {contentLength >= 50 && (
                           <span className="text-xs text-green-600 flex items-center gap-1">
                             <Check className="h-3 w-3" />
-                            Ready to generate
+                            {t("generate.readyToGenerate")}
                           </span>
                         )}
                       </div>
@@ -395,10 +401,10 @@ export default function GeneratePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  What to Generate
+                  {t("generate.whatToGenerate")}
                 </CardTitle>
                 <CardDescription>
-                  Select what type of study materials to create
+                  {t("generate.whatToGenerateDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -483,7 +489,7 @@ export default function GeneratePage() {
 
             <div className="flex justify-between gap-4 pt-2">
               <Button type="button" variant="outline" asChild>
-                <Link href={`/library/${resourceId}`}>Skip for now</Link>
+                <Link href={`/library/${resourceId}`}>{t("generate.skipForNow")}</Link>
               </Button>
               <Button
                 type="submit"
@@ -491,7 +497,7 @@ export default function GeneratePage() {
                 className="min-w-[160px]"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate Content
+                {t("generate.generateContent")}
               </Button>
             </div>
           </form>

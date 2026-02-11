@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Calendar } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { YearRangeConfig, YearRangeAnswer, YearRangeUserAnswer } from "@/lib/types/quiz";
 
@@ -17,6 +18,7 @@ export function YearRangeRenderer({
   isCorrect,
   feedback,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const yearConfig = config as YearRangeConfig;
 
   const currentValue = typeof userAnswer === 'number'
@@ -52,7 +54,7 @@ export function YearRangeRenderer({
           value={inputValue}
           onChange={handleChange}
           disabled={disabled}
-          placeholder={yearConfig.placeholder || "Enter year..."}
+          placeholder={yearConfig.placeholder || t("quizRenderer.enterYear")}
           min={yearConfig.minYear}
           max={yearConfig.maxYear}
           className={cn(
@@ -74,7 +76,7 @@ export function YearRangeRenderer({
 
       {yearConfig.minYear !== undefined && yearConfig.maxYear !== undefined && (
         <p className="text-xs text-muted-foreground">
-          Enter a year between {yearConfig.minYear} and {yearConfig.maxYear}
+          {t("quizRenderer.enterYearBetween", { min: yearConfig.minYear, max: yearConfig.maxYear })}
         </p>
       )}
 
@@ -99,6 +101,7 @@ export function YearRangeResultRenderer({
   feedback,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const yearConfig = config as YearRangeConfig;
   const correctAnswer = correctAnswerData as YearRangeAnswer;
 
@@ -115,10 +118,10 @@ export function YearRangeResultRenderer({
           "p-4 rounded-lg",
           isCorrect ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"
         )}>
-          <span className="text-sm text-muted-foreground block mb-1">Your answer:</span>
+          <span className="text-sm text-muted-foreground block mb-1">{t("quizRenderer.yourAnswer")}</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold">
-              {userYear !== undefined ? userYear : <em className="text-base text-muted-foreground">No answer</em>}
+              {userYear !== undefined ? userYear : <em className="text-base text-muted-foreground">{t("quizRenderer.noAnswer")}</em>}
             </span>
             {creditPercent > 0 && creditPercent < 100 && (
               <Badge variant="outline" className="text-amber-600 border-amber-300">
@@ -128,20 +131,20 @@ export function YearRangeResultRenderer({
           </div>
           {difference !== null && difference > 0 && (
             <span className="text-sm text-muted-foreground">
-              Off by {difference} year{difference > 1 ? 's' : ''}
+              {t("quizRenderer.offByYears", { diff: difference })}
             </span>
           )}
         </div>
 
         <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-          <span className="text-sm text-muted-foreground block mb-1">Correct answer:</span>
+          <span className="text-sm text-muted-foreground block mb-1">{t("quizRenderer.correctAnswer")}</span>
           <span className="text-2xl font-bold text-green-700">{correctAnswer.correctYear}</span>
         </div>
       </div>
 
       {yearConfig.tolerance && yearConfig.tolerance > 0 && (
         <p className="text-sm text-muted-foreground">
-          Answers within {yearConfig.tolerance} year{yearConfig.tolerance > 1 ? 's' : ''} receive partial credit.
+          {t("quizRenderer.partialCreditYears", { range: yearConfig.tolerance })}
         </p>
       )}
 
@@ -151,7 +154,7 @@ export function YearRangeResultRenderer({
 
       {explanation && (
         <p className="text-sm text-muted-foreground pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

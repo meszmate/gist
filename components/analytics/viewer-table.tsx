@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Viewer {
   email: string;
@@ -25,6 +26,8 @@ interface ViewerTableProps {
 }
 
 export function ViewerTable({ viewers }: ViewerTableProps) {
+  const { t } = useLocale();
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(undefined, {
       month: "short",
@@ -39,22 +42,22 @@ export function ViewerTable({ viewers }: ViewerTableProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Viewers ({viewers.length})
+          {t("analytics.viewersCount", { count: viewers.length })}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {viewers.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            No viewers yet
+            {t("analytics.noViewersYet")}
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Last Viewed</TableHead>
-                <TableHead className="text-center">Views</TableHead>
-                <TableHead className="text-center">Quiz Score</TableHead>
+                <TableHead>{t("analytics.emailColumn")}</TableHead>
+                <TableHead>{t("analytics.lastViewed")}</TableHead>
+                <TableHead className="text-center">{t("analytics.views")}</TableHead>
+                <TableHead className="text-center">{t("analytics.quizScore")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -20,6 +20,7 @@ import {
   Shield,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ResourceSettingsDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function ResourceSettingsDialog({
   initialSettings,
   onSaved,
 }: ResourceSettingsDialogProps) {
+  const { t } = useLocale();
   const [availableFrom, setAvailableFrom] = useState(
     initialSettings.availableFrom || ""
   );
@@ -57,9 +59,9 @@ export function ResourceSettingsDialog({
 
   const getAvailabilityStatus = () => {
     const now = new Date();
-    if (availableFrom && new Date(availableFrom) > now) return "Opens soon";
-    if (availableTo && new Date(availableTo) < now) return "Closed";
-    return "Currently available";
+    if (availableFrom && new Date(availableFrom) > now) return t("resource.opensSoon");
+    if (availableTo && new Date(availableTo) < now) return t("resource.closed");
+    return t("resource.currentlyAvailable");
   };
 
   const handleSave = async () => {
@@ -78,11 +80,11 @@ export function ResourceSettingsDialog({
 
       if (!res.ok) throw new Error("Failed to save");
 
-      toast.success("Settings saved");
+      toast.success(t("resource.settingsSaved"));
       onSaved();
       onOpenChange(false);
     } catch {
-      toast.error("Failed to save settings");
+      toast.error(t("resource.failedSaveSettings"));
     } finally {
       setIsSaving(false);
     }
@@ -92,7 +94,7 @@ export function ResourceSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Resource Settings</DialogTitle>
+          <DialogTitle>{t("resource.resourceSettings")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -100,14 +102,14 @@ export function ResourceSettingsDialog({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <h4 className="font-medium text-sm">Availability Schedule</h4>
+              <h4 className="font-medium text-sm">{t("resource.availabilitySchedule")}</h4>
               <Badge variant="outline" className="ml-auto text-xs">
                 {getAvailabilityStatus()}
               </Badge>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Available from</Label>
+                <Label className="text-xs">{t("resource.availableFrom")}</Label>
                 <Input
                   type="datetime-local"
                   value={availableFrom}
@@ -116,7 +118,7 @@ export function ResourceSettingsDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Available until</Label>
+                <Label className="text-xs">{t("resource.availableUntil")}</Label>
                 <Input
                   type="datetime-local"
                   value={availableTo}
@@ -126,7 +128,7 @@ export function ResourceSettingsDialog({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Leave empty for no restrictions
+              {t("resource.leaveEmpty")}
             </p>
           </div>
 
@@ -137,12 +139,12 @@ export function ResourceSettingsDialog({
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />
               <h4 className="font-medium text-sm">
-                Content Visibility (shared view)
+                {t("resource.contentVisibility")}
               </h4>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Show Summary</Label>
+                <Label className="text-sm">{t("resource.showSummary")}</Label>
                 <Switch
                   checked={visibleSections.summary}
                   onCheckedChange={(checked) =>
@@ -151,7 +153,7 @@ export function ResourceSettingsDialog({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Show Flashcards</Label>
+                <Label className="text-sm">{t("resource.showFlashcards")}</Label>
                 <Switch
                   checked={visibleSections.flashcards}
                   onCheckedChange={(checked) =>
@@ -160,7 +162,7 @@ export function ResourceSettingsDialog({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Show Quiz</Label>
+                <Label className="text-sm">{t("resource.showQuiz")}</Label>
                 <Switch
                   checked={visibleSections.quiz}
                   onCheckedChange={(checked) =>
@@ -169,7 +171,7 @@ export function ResourceSettingsDialog({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Show Lessons</Label>
+                <Label className="text-sm">{t("resource.showLessons")}</Label>
                 <Switch
                   checked={visibleSections.lessons ?? true}
                   onCheckedChange={(checked) =>
@@ -186,13 +188,13 @@ export function ResourceSettingsDialog({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-muted-foreground" />
-              <h4 className="font-medium text-sm">Interaction Settings</h4>
+              <h4 className="font-medium text-sm">{t("resource.interactionSettings")}</h4>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm">Require sign-in to interact</Label>
+                <Label className="text-sm">{t("resource.requireSignIn")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Users must sign in to study flashcards or take quizzes
+                  {t("resource.requireSignInDesc")}
                 </p>
               </div>
               <Switch
@@ -205,10 +207,10 @@ export function ResourceSettingsDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Settings"}
+            {isSaving ? t("common.saving") : t("resource.saveSettings")}
           </Button>
         </DialogFooter>
       </DialogContent>

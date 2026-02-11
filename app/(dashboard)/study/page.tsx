@@ -34,6 +34,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
 
 interface DueCard {
   id: string;
@@ -45,36 +46,6 @@ interface DueCard {
 
 type Rating = 1 | 2 | 3 | 4;
 
-const ratingConfig: Record<
-  Rating,
-  { label: string; color: string; gradient: string; description: string }
-> = {
-  1: {
-    label: "Again",
-    color: "bg-red-500 hover:bg-red-600 border-red-600",
-    gradient: "from-red-500 to-red-600",
-    description: "Didn't know it",
-  },
-  2: {
-    label: "Hard",
-    color: "bg-orange-500 hover:bg-orange-600 border-orange-600",
-    gradient: "from-orange-500 to-orange-600",
-    description: "Struggled a bit",
-  },
-  3: {
-    label: "Good",
-    color: "bg-green-500 hover:bg-green-600 border-green-600",
-    gradient: "from-green-500 to-green-600",
-    description: "Got it right",
-  },
-  4: {
-    label: "Easy",
-    color: "bg-blue-500 hover:bg-blue-600 border-blue-600",
-    gradient: "from-blue-500 to-blue-600",
-    description: "Too easy!",
-  },
-};
-
 async function fetchDueCards(resourceId?: string): Promise<DueCard[]> {
   const url = resourceId
     ? `/api/srs/due?resource=${resourceId}`
@@ -85,9 +56,40 @@ async function fetchDueCards(resourceId?: string): Promise<DueCard[]> {
 }
 
 function StudyContent() {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const resourceId = searchParams.get("resource");
   const queryClient = useQueryClient();
+
+  const ratingConfig: Record<
+    Rating,
+    { label: string; color: string; gradient: string; description: string }
+  > = {
+    1: {
+      label: t("study.rating.again"),
+      color: "bg-red-500 hover:bg-red-600 border-red-600",
+      gradient: "from-red-500 to-red-600",
+      description: t("study.rating.againDesc"),
+    },
+    2: {
+      label: t("study.rating.hard"),
+      color: "bg-orange-500 hover:bg-orange-600 border-orange-600",
+      gradient: "from-orange-500 to-orange-600",
+      description: t("study.rating.hardDesc"),
+    },
+    3: {
+      label: t("study.rating.good"),
+      color: "bg-green-500 hover:bg-green-600 border-green-600",
+      gradient: "from-green-500 to-green-600",
+      description: t("study.rating.goodDesc"),
+    },
+    4: {
+      label: t("study.rating.easy"),
+      color: "bg-blue-500 hover:bg-blue-600 border-blue-600",
+      gradient: "from-blue-500 to-blue-600",
+      description: t("study.rating.easyDesc"),
+    },
+  };
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -145,10 +147,10 @@ function StudyContent() {
       setMarkedDone(true);
       queryClient.invalidateQueries({ queryKey: ["due-cards"] });
       queryClient.invalidateQueries({ queryKey: ["resources"] });
-      toast.success("Resource marked as done!");
+      toast.success(t("study.resourceMarkedDone"));
     },
     onError: () => {
-      toast.error("Failed to mark resource as done");
+      toast.error(t("study.failedMarkDone"));
     },
   });
 
@@ -311,14 +313,14 @@ function StudyContent() {
       <div className="max-w-2xl mx-auto">
         <EmptyState
           icon={<Sparkles className="h-12 w-12" />}
-          title="No cards due for review"
+          title={t("study.noCardsDue")}
           description={
             resourceId
-              ? "All flashcards in this resource have been reviewed."
-              : "You're all caught up! Check back later for more cards."
+              ? t("study.allReviewed")
+              : t("study.allCaughtUp")
           }
           action={{
-            label: "Browse Library",
+            label: t("study.browseLibrary"),
             href: "/library",
           }}
         />
@@ -336,19 +338,19 @@ function StudyContent() {
               {markedDone ? (
                 <>
                   <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                  <h2 className="text-3xl font-bold mb-2">Resource Complete!</h2>
+                  <h2 className="text-3xl font-bold mb-2">{t("study.resourceComplete")}</h2>
                   <p className="text-muted-foreground">
-                    You&apos;ve mastered this resource. It&apos;s been marked as done.
+                    {t("study.resourceMastered")}
                   </p>
                 </>
               ) : (
                 <>
                   <Trophy className="h-16 w-16 mx-auto text-primary mb-4" />
-                  <h2 className="text-3xl font-bold mb-2">Session Complete!</h2>
+                  <h2 className="text-3xl font-bold mb-2">{t("study.sessionComplete")}</h2>
                   <p className="text-muted-foreground">
-                    Great job! You reviewed {reviewedCount} card{reviewedCount !== 1 ? "s" : ""}.
+                    {t("study.reviewedCards", { count: reviewedCount })}
                     {continuationRound > 0 && (
-                      <> ({continuationRound} continuation round{continuationRound !== 1 ? "s" : ""})</>
+                      <> {t("study.continuationRounds", { count: continuationRound })}</>
                     )}
                   </p>
                 </>
@@ -359,23 +361,23 @@ function StudyContent() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center p-4 rounded-lg bg-muted/50">
                 <div className="text-3xl font-bold text-primary">{reviewedCount}</div>
-                <div className="text-sm text-muted-foreground">Cards Reviewed</div>
+                <div className="text-sm text-muted-foreground">{t("study.cardsReviewed")}</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-muted/50">
                 <div className="text-3xl font-bold text-green-600">
                   {stats.percentage.toFixed(0)}%
                 </div>
-                <div className="text-sm text-muted-foreground">Good or Better</div>
+                <div className="text-sm text-muted-foreground">{t("study.goodOrBetter")}</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-muted/50">
                 <div className="text-3xl font-bold">{elapsedMinutes || "<1"}</div>
-                <div className="text-sm text-muted-foreground">Minutes</div>
+                <div className="text-sm text-muted-foreground">{t("study.minutes")}</div>
               </div>
             </div>
             <div className="flex justify-center gap-3 flex-wrap">
               <Button variant="outline" onClick={restartSession} size="lg">
                 <RotateCcw className="mr-2 h-4 w-4" />
-                Study Again
+                {t("study.studyAgain")}
               </Button>
               {sessionResourceId && !markedDone && (
                 <Button
@@ -390,11 +392,11 @@ function StudyContent() {
                   ) : (
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                   )}
-                  Mark as Done
+                  {t("study.markAsDone")}
                 </Button>
               )}
               <Button asChild size="lg">
-                <Link href="/dashboard">Back to Dashboard</Link>
+                <Link href="/dashboard">{t("study.backToDashboard")}</Link>
               </Button>
             </div>
           </CardContent>
@@ -412,15 +414,15 @@ function StudyContent() {
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             <div>
               <p className="font-medium text-sm">
-                Continuing with {activeCards.length} difficult card{activeCards.length !== 1 ? "s" : ""}...
+                {t("study.continuingDifficult", { count: activeCards.length })}
               </p>
               <p className="text-xs text-muted-foreground">
-                Round {continuationRound + 1} — cards rated Again or Hard will keep appearing
+                {t("study.roundInfo", { round: continuationRound + 1 })}
               </p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={finishSession}>
-            Finish Session
+            {t("study.finishSession")}
           </Button>
         </div>
       )}
@@ -439,10 +441,10 @@ function StudyContent() {
                 <div>
                   <h1 className="text-xl font-bold flex items-center gap-2">
                     <Brain className="h-5 w-5 text-primary" />
-                    Study Session
+                    {t("study.title")}
                     {continuationRound > 0 && (
                       <Badge variant="secondary" className="text-xs">
-                        Round {continuationRound + 1}
+                        {t("study.round", { round: continuationRound + 1 })}
                       </Badge>
                     )}
                   </h1>
@@ -476,12 +478,12 @@ function StudyContent() {
                 )}
               >
                 <Repeat className="h-3 w-3" />
-                Practice
+                {t("study.practice")}
               </Label>
             </div>
             {continuationRound > 0 && (
               <Button variant="outline" size="sm" onClick={finishSession}>
-                Finish
+                {t("study.finish")}
               </Button>
             )}
             <Badge variant="outline" className="gap-1">
@@ -495,11 +497,11 @@ function StudyContent() {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Check className="h-4 w-4 text-green-500" />
-              {reviewedCount} reviewed
+              {t("study.reviewed", { count: reviewedCount })}
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              {remainingCards} remaining
+              {t("study.remaining", { count: remainingCards })}
             </div>
             {elapsedMinutes > 0 && (
               <div className="flex items-center gap-1">
@@ -515,8 +517,8 @@ function StudyContent() {
       <div className="space-y-2">
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{reviewedCount} reviewed</span>
-          <span>{activeCards.length - reviewedCount} remaining</span>
+          <span>{t("study.reviewed", { count: reviewedCount })}</span>
+          <span>{t("study.remaining", { count: activeCards.length - reviewedCount })}</span>
         </div>
       </div>
 
@@ -540,7 +542,7 @@ function StudyContent() {
             )}
           >
             <Badge variant="secondary" className="mb-6 uppercase tracking-wider">
-              Question
+              {t("study.question")}
             </Badge>
             <p className="text-xl text-center leading-relaxed">{currentCard?.front}</p>
           </CardContent>
@@ -553,7 +555,7 @@ function StudyContent() {
             )}
           >
             <Badge className="mb-6 uppercase tracking-wider bg-primary">
-              Answer
+              {t("study.answer")}
             </Badge>
             <p className="text-xl text-center leading-relaxed">{currentCard?.back}</p>
           </CardContent>
@@ -564,16 +566,16 @@ function StudyContent() {
       {!isFlipped ? (
         <div className="text-center space-y-4">
           <p className="text-sm text-muted-foreground">
-            Press <kbd className="px-2 py-1 bg-muted rounded font-mono border mx-1">Space</kbd> or click to flip
+            {t("study.pressSpaceToFlip", { key: "Space" })}
           </p>
           <Button onClick={flipCard} size="lg" className="px-8">
-            Show Answer
+            {t("study.showAnswer")}
           </Button>
         </div>
       ) : (
         <div className="space-y-4 animate-slide-up">
           <p className="text-center text-sm text-muted-foreground">
-            How well did you know this?
+            {t("study.howWellDidYouKnow")}
           </p>
           <div className="grid grid-cols-4 gap-3">
             {([1, 2, 3, 4] as Rating[]).map((rating) => (

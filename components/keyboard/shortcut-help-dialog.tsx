@@ -7,38 +7,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useVimContext } from "./vim-navigation-provider";
-
-const shortcuts = [
-  { category: "Navigation", items: [
-    { keys: "j / k", description: "Move down / up" },
-    { keys: "h / l", description: "Switch tabs left / right" },
-    { keys: "gg", description: "Jump to first item" },
-    { keys: "G", description: "Jump to last item" },
-  ]},
-  { category: "Actions", items: [
-    { keys: "Enter / o", description: "Open / select item" },
-    { keys: "/", description: "Open search" },
-    { keys: "?", description: "Toggle this help" },
-    { keys: "Escape", description: "Exit input / close dialog" },
-  ]},
-  { category: "Flashcards", items: [
-    { keys: "Space", description: "Flip card" },
-    { keys: "1 / 2 / 3 / 4", description: "Rate: Again / Hard / Good / Easy" },
-  ]},
-  { category: "Quiz", items: [
-    { keys: "1 / 2 / 3 / 4", description: "Select answer option" },
-    { keys: "Enter", description: "Submit / next question" },
-  ]},
-];
+import { useLocale } from "@/hooks/use-locale";
 
 export function ShortcutHelpDialog() {
   const { showHelp, setShowHelp } = useVimContext();
+  const { t } = useLocale();
+
+  const shortcuts = [
+    { category: t("keyboard.navigation"), items: [
+      { keys: "j / k", description: t("keyboard.moveDownUp") },
+      { keys: "h / l", description: t("keyboard.switchTabsLeftRight") },
+      { keys: "gg", description: t("keyboard.jumpToFirst") },
+      { keys: "G", description: t("keyboard.jumpToLast") },
+    ]},
+    { category: t("keyboard.actions"), items: [
+      { keys: "Enter / o", description: t("keyboard.openSelectItem") },
+      { keys: "/", description: t("keyboard.openSearch") },
+      { keys: "?", description: t("keyboard.toggleHelp") },
+      { keys: "Escape", description: t("keyboard.exitCloseDialog") },
+    ]},
+    { category: t("keyboard.flashcards"), items: [
+      { keys: "Space", description: t("keyboard.flipCard") },
+      { keys: "1 / 2 / 3 / 4", description: t("keyboard.rateCard") },
+    ]},
+    { category: t("keyboard.quiz"), items: [
+      { keys: "1 / 2 / 3 / 4", description: t("keyboard.selectAnswer") },
+      { keys: "Enter", description: t("keyboard.submitNext") },
+    ]},
+  ];
 
   return (
     <Dialog open={showHelp} onOpenChange={setShowHelp}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogTitle>{t("keyboard.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           {shortcuts.map((section) => (
@@ -63,7 +65,7 @@ export function ShortcutHelpDialog() {
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-4">
-          Press <kbd className="px-1 py-0.5 text-xs font-mono bg-muted rounded">?</kbd> to toggle this help
+          {t("keyboard.pressToToggle")} <kbd className="px-1 py-0.5 text-xs font-mono bg-muted rounded">?</kbd>
         </p>
       </DialogContent>
     </Dialog>

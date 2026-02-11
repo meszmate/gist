@@ -26,35 +26,37 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { SidebarUser } from "./sidebar-user";
-
-const navGroups = [
-  {
-    label: "Main",
-    items: [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Library", href: "/library", icon: BookOpen },
-      { title: "Create", href: "/create", icon: FolderPlus },
-    ],
-  },
-  {
-    label: "Learn",
-    items: [
-      { title: "Study", href: "/study", icon: Brain },
-      { title: "Quizzes", href: "/quiz", icon: FileQuestion },
-      { title: "Lessons", href: "/lessons", icon: GraduationCap },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { title: "Contacts", href: "/contacts", icon: Users },
-      { title: "Settings", href: "/settings", icon: Settings },
-    ],
-  },
-];
+import { useLocale } from "@/hooks/use-locale";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { t } = useLocale();
+
+  const navGroups = [
+    {
+      label: t("nav.main"),
+      items: [
+        { title: t("nav.dashboard"), href: "/dashboard", icon: LayoutDashboard },
+        { title: t("nav.library"), href: "/library", icon: BookOpen },
+        { title: t("nav.create"), href: "/create", icon: FolderPlus },
+      ],
+    },
+    {
+      label: t("nav.learn"),
+      items: [
+        { title: t("nav.study"), href: "/study", icon: Brain },
+        { title: t("nav.quizzes"), href: "/quiz", icon: FileQuestion },
+        { title: t("nav.lessons"), href: "/lessons", icon: GraduationCap },
+      ],
+    },
+    {
+      label: t("nav.manage"),
+      items: [
+        { title: t("nav.contacts"), href: "/contacts", icon: Users },
+        { title: t("nav.settings"), href: "/settings", icon: Settings },
+      ],
+    },
+  ];
 
   return (
     <Sidebar>

@@ -5,6 +5,7 @@ import type { StepRendererProps } from "./types";
 import type { DragCategorizeContent, DragCategorizeAnswerData, DragCategorizeUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function DragCategorizeRenderer({
   step,
@@ -13,6 +14,7 @@ export function DragCategorizeRenderer({
   isChecked,
   disabled,
 }: StepRendererProps) {
+  const { t } = useLocale();
   const content = step.content as DragCategorizeContent;
   const answerData = step.answerData as DragCategorizeAnswerData;
   const currentMapping = (userAnswer as DragCategorizeUserAnswer)?.mapping || {};
@@ -42,7 +44,7 @@ export function DragCategorizeRenderer({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{content.instruction}</h3>
-      <p className="text-sm text-muted-foreground">Tap an item, then tap a category to place it.</p>
+      <p className="text-sm text-muted-foreground">{t("stepRenderer.dragCategorize")}</p>
 
       {/* Unassigned items */}
       {unassignedItems.length > 0 && (

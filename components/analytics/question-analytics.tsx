@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { FileQuestion } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 interface QuestionStat {
   id: string;
@@ -19,18 +20,9 @@ interface QuestionAnalyticsProps {
   questions: QuestionStat[];
 }
 
-const questionTypeLabels: Record<string, string> = {
-  multiple_choice: "MC",
-  true_false: "T/F",
-  text_input: "Text",
-  year_range: "Year",
-  numeric_range: "Num",
-  matching: "Match",
-  fill_blank: "Fill",
-  multi_select: "Multi",
-};
-
 export function QuestionAnalytics({ questions }: QuestionAnalyticsProps) {
+  const { t } = useLocale();
+
   const getDifficultyColor = (rate: number) => {
     if (rate >= 80) return "text-green-600";
     if (rate >= 60) return "text-yellow-600";
@@ -39,10 +31,10 @@ export function QuestionAnalytics({ questions }: QuestionAnalyticsProps) {
   };
 
   const getDifficultyLabel = (rate: number) => {
-    if (rate >= 80) return "Easy";
-    if (rate >= 60) return "Medium";
-    if (rate >= 40) return "Hard";
-    return "Very Hard";
+    if (rate >= 80) return t("analytics.difficultyEasy");
+    if (rate >= 60) return t("analytics.difficultyMedium");
+    if (rate >= 40) return t("analytics.difficultyHard");
+    return t("analytics.difficultyVeryHard");
   };
 
   return (
@@ -50,13 +42,13 @@ export function QuestionAnalytics({ questions }: QuestionAnalyticsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileQuestion className="h-5 w-5" />
-          Per-Question Analytics
+          {t("analytics.perQuestionAnalytics")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {questions.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            No questions to analyze
+            {t("analytics.noQuestionsAnalyze")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -72,10 +64,10 @@ export function QuestionAnalytics({ questions }: QuestionAnalyticsProps) {
                   <p className="text-sm font-medium truncate">{q.question}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs">
-                      {questionTypeLabels[q.questionType] || q.questionType}
+                      {t(`quiz.questionTypesShort.${q.questionType}`) || q.questionType}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {q.totalAnswered} responses
+                      {t("analytics.responses", { count: q.totalAnswered })}
                     </span>
                   </div>
                 </div>

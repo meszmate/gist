@@ -13,28 +13,12 @@ import {
 } from "@/components/ui/card";
 import { Loader2, BookOpen, Sparkles, Target } from "lucide-react";
 import { GistLogo } from "@/components/icons/gist-logo";
-
-const features = [
-  {
-    icon: Sparkles,
-    title: "AI-Powered",
-    description: "Generate flashcards and quizzes from any content",
-  },
-  {
-    icon: BookOpen,
-    title: "Spaced Repetition",
-    description: "Learn efficiently with scientifically-proven methods",
-  },
-  {
-    icon: Target,
-    title: "Track Progress",
-    description: "Monitor your learning journey with detailed analytics",
-  },
-];
+import { useLocale } from "@/hooks/use-locale";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const { t } = useLocale();
 
   return (
     <Button
@@ -60,21 +44,43 @@ function LoginForm() {
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         />
       </svg>
-      Continue with Google
+      {t("login.continueWithGoogle")}
     </Button>
   );
 }
 
 function LoginButtonFallback() {
+  const { t } = useLocale();
+
   return (
     <Button className="w-full h-12" size="lg" disabled>
       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-      Loading...
+      {t("common.loading")}
     </Button>
   );
 }
 
 export default function LoginPage() {
+  const { t } = useLocale();
+
+  const features = [
+    {
+      icon: Sparkles,
+      title: t("login.aiPowered"),
+      description: t("login.aiPoweredDesc"),
+    },
+    {
+      icon: BookOpen,
+      title: t("login.spacedRepetition"),
+      description: t("login.spacedRepetitionDesc"),
+    },
+    {
+      icon: Target,
+      title: t("login.trackProgress"),
+      description: t("login.trackProgressDesc"),
+    },
+  ];
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left side - Features */}
@@ -88,12 +94,12 @@ export default function LoginPage() {
               <span className="text-2xl font-bold">gist</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
-              Study smarter,
+              {t("login.studySmarter")}
               <br />
-              <span className="text-primary">not harder</span>
+              <span className="text-primary">{t("login.notHarder")}</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Transform any content into interactive study materials with AI
+              {t("login.transformContent")}
             </p>
           </div>
 
@@ -126,7 +132,7 @@ export default function LoginPage() {
                 />
               ))}
             </div>
-            <span>Join 1,000+ students already learning smarter</span>
+            <span>{t("login.joinStudents")}</span>
           </div>
         </div>
       </div>
@@ -142,10 +148,10 @@ export default function LoginPage() {
             </div>
             <div>
               <CardTitle className="text-2xl lg:text-3xl">
-                Welcome back
+                {t("login.welcomeBack")}
               </CardTitle>
               <CardDescription className="text-base mt-2">
-                Sign in to continue your learning journey
+                {t("login.signInContinue")}
               </CardDescription>
             </div>
           </CardHeader>
@@ -160,7 +166,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  Secure authentication
+                  {t("login.secureAuth")}
                 </span>
               </div>
             </div>
@@ -180,7 +186,7 @@ export default function LoginPage() {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                <span>No password required</span>
+                <span>{t("login.noPassword")}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <svg
@@ -196,18 +202,18 @@ export default function LoginPage() {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                <span>Your data stays private</span>
+                <span>{t("login.dataPrivate")}</span>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              By signing in, you agree to our{" "}
+              {t("login.termsText")}{" "}
               <a href="#" className="underline hover:text-primary">
-                Terms of Service
+                {t("login.termsOfService")}
               </a>{" "}
-              and{" "}
+              {t("login.and")}{" "}
               <a href="#" className="underline hover:text-primary">
-                Privacy Policy
+                {t("login.privacyPolicy")}
               </a>
             </p>
           </CardContent>

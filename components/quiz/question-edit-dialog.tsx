@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type {
   QuestionConfig,
   CorrectAnswerData,
@@ -39,17 +40,6 @@ import type {
   MultiSelectConfig,
   MultiSelectAnswer,
 } from "@/lib/types/quiz";
-
-const QUESTION_TYPE_OPTIONS = [
-  { value: "multiple_choice", label: "Multiple Choice" },
-  { value: "true_false", label: "True/False" },
-  { value: "text_input", label: "Text Input" },
-  { value: "year_range", label: "Year" },
-  { value: "numeric_range", label: "Numeric" },
-  { value: "matching", label: "Matching" },
-  { value: "fill_blank", label: "Fill in the Blank" },
-  { value: "multi_select", label: "Multi-Select" },
-];
 
 interface QuestionEditDialogProps {
   open: boolean;
@@ -110,6 +100,19 @@ function QuestionEditDialogContent({
   initialData,
   mode,
 }: Omit<QuestionEditDialogProps, "open">) {
+  const { t } = useLocale();
+
+  const QUESTION_TYPE_OPTIONS = [
+    { value: "multiple_choice", label: t("quiz.questionTypes.multiple_choice") },
+    { value: "true_false", label: t("quiz.questionTypes.true_false") },
+    { value: "text_input", label: t("quiz.questionTypes.text_input") },
+    { value: "year_range", label: t("quiz.questionTypes.year_range") },
+    { value: "numeric_range", label: t("quiz.questionTypes.numeric_range") },
+    { value: "matching", label: t("quiz.questionTypes.matching") },
+    { value: "fill_blank", label: t("quiz.questionTypes.fill_blank") },
+    { value: "multi_select", label: t("quiz.questionTypes.multi_select") },
+  ];
+
   const [questionType, setQuestionType] = useState<string>(
     initialData?.questionType || "multiple_choice"
   );
@@ -271,14 +274,14 @@ function QuestionEditDialogContent({
     <>
       <DialogHeader>
         <DialogTitle>
-          {mode === "create" ? "Add Question" : "Edit Question"}
+          {mode === "create" ? t("quiz.editDialog.addQuestion") : t("quiz.editDialog.editQuestion")}
         </DialogTitle>
       </DialogHeader>
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Question Type</Label>
+            <Label>{t("quiz.editDialog.questionType")}</Label>
             <Select value={questionType} onValueChange={setQuestionType}>
               <SelectTrigger>
                 <SelectValue />
@@ -293,7 +296,7 @@ function QuestionEditDialogContent({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Points</Label>
+            <Label>{t("quiz.editDialog.points")}</Label>
             <Input
               type="number"
               min={0}
@@ -305,11 +308,11 @@ function QuestionEditDialogContent({
         </div>
 
         <div className="space-y-2">
-          <Label>Question</Label>
+          <Label>{t("quiz.editDialog.question")}</Label>
           <Textarea
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            placeholder="Enter the question..."
+            placeholder={t("quiz.editDialog.questionPlaceholder")}
             rows={2}
           />
         </div>
@@ -318,7 +321,7 @@ function QuestionEditDialogContent({
         {(questionType === "multiple_choice" ||
           questionType === "multi_select") && (
           <div className="space-y-2">
-            <Label>Options</Label>
+            <Label>{t("quiz.editDialog.options")}</Label>
             {options.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
                 {questionType === "multiple_choice" ? (
@@ -382,14 +385,14 @@ function QuestionEditDialogContent({
               onClick={() => setOptions([...options, ""])}
             >
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Add Option
+              {t("quiz.editDialog.addOption")}
             </Button>
           </div>
         )}
 
         {questionType === "true_false" && (
           <div className="space-y-2">
-            <Label>Correct Answer</Label>
+            <Label>{t("quiz.editDialog.correctAnswer")}</Label>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -397,7 +400,7 @@ function QuestionEditDialogContent({
                   checked={correctBool === true}
                   onChange={() => setCorrectBool(true)}
                 />
-                True
+                {t("quiz.editDialog.true")}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -405,7 +408,7 @@ function QuestionEditDialogContent({
                   checked={correctBool === false}
                   onChange={() => setCorrectBool(false)}
                 />
-                False
+                {t("quiz.editDialog.false")}
               </label>
             </div>
           </div>
@@ -413,7 +416,7 @@ function QuestionEditDialogContent({
 
         {questionType === "text_input" && (
           <div className="space-y-2">
-            <Label>Accepted Answers</Label>
+            <Label>{t("quiz.editDialog.acceptedAnswers")}</Label>
             {acceptedAnswers.map((ans, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Input
@@ -423,7 +426,7 @@ function QuestionEditDialogContent({
                     newAns[i] = e.target.value;
                     setAcceptedAnswers(newAns);
                   }}
-                  placeholder="Accepted answer"
+                  placeholder={t("quiz.editDialog.acceptedAnswer")}
                 />
                 {acceptedAnswers.length > 1 && (
                   <Button
@@ -447,7 +450,7 @@ function QuestionEditDialogContent({
               onClick={() => setAcceptedAnswers([...acceptedAnswers, ""])}
             >
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Add Answer
+              {t("quiz.editDialog.addAnswer")}
             </Button>
           </div>
         )}
@@ -455,7 +458,7 @@ function QuestionEditDialogContent({
         {questionType === "year_range" && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Correct Year</Label>
+              <Label>{t("quiz.editDialog.correctYear")}</Label>
               <Input
                 type="number"
                 value={correctYear}
@@ -463,7 +466,7 @@ function QuestionEditDialogContent({
               />
             </div>
             <div className="space-y-2">
-              <Label>Tolerance (years)</Label>
+              <Label>{t("quiz.editDialog.toleranceYears")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -479,7 +482,7 @@ function QuestionEditDialogContent({
         {questionType === "numeric_range" && (
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Correct Value</Label>
+              <Label>{t("quiz.editDialog.correctValue")}</Label>
               <Input
                 type="number"
                 value={correctValue}
@@ -489,7 +492,7 @@ function QuestionEditDialogContent({
               />
             </div>
             <div className="space-y-2">
-              <Label>Tolerance</Label>
+              <Label>{t("quiz.editDialog.tolerance")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -500,7 +503,7 @@ function QuestionEditDialogContent({
               />
             </div>
             <div className="space-y-2">
-              <Label>Unit</Label>
+              <Label>{t("quiz.editDialog.unit")}</Label>
               <Input
                 value={numericUnit}
                 onChange={(e) => setNumericUnit(e.target.value)}
@@ -512,7 +515,7 @@ function QuestionEditDialogContent({
 
         {questionType === "matching" && (
           <div className="space-y-2">
-            <Label>Pairs (left matches right)</Label>
+            <Label>{t("quiz.editDialog.pairs")}</Label>
             {leftColumn.map((left, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Input
@@ -522,7 +525,7 @@ function QuestionEditDialogContent({
                     newLeft[i] = e.target.value;
                     setLeftColumn(newLeft);
                   }}
-                  placeholder="Left item"
+                  placeholder={t("quiz.editDialog.leftItem")}
                 />
                 <span className="text-muted-foreground shrink-0">&rarr;</span>
                 <Input
@@ -532,7 +535,7 @@ function QuestionEditDialogContent({
                     newRight[i] = e.target.value;
                     setRightColumn(newRight);
                   }}
-                  placeholder="Right item"
+                  placeholder={t("quiz.editDialog.rightItem")}
                 />
                 {leftColumn.length > 2 && (
                   <Button
@@ -558,7 +561,7 @@ function QuestionEditDialogContent({
               }}
             >
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Add Pair
+              {t("quiz.editDialog.addPair")}
             </Button>
           </div>
         )}
@@ -566,16 +569,16 @@ function QuestionEditDialogContent({
         {questionType === "fill_blank" && (
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>Template (use {"{{blank}}"} for blanks)</Label>
+              <Label>{t("quiz.editDialog.templateLabel")}</Label>
               <Textarea
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
-                placeholder="The capital of France is {{blank}}."
+                placeholder={t("quiz.editDialog.templatePlaceholder")}
                 rows={2}
               />
             </div>
             <div className="space-y-2">
-              <Label>Blank Answers</Label>
+              <Label>{t("quiz.editDialog.blankAnswers")}</Label>
               {blanks.map((blank, i) => (
                 <div key={blank.id} className="space-y-1">
                   <p className="text-xs text-muted-foreground">
@@ -590,7 +593,7 @@ function QuestionEditDialogContent({
                           newBlanks[i].acceptedAnswers[j] = e.target.value;
                           setBlanks(newBlanks);
                         }}
-                        placeholder="Accepted answer"
+                        placeholder={t("quiz.editDialog.acceptedAnswer")}
                         className="flex-1"
                       />
                     </div>
@@ -605,7 +608,7 @@ function QuestionEditDialogContent({
                     }}
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Add accepted answer
+                    {t("quiz.editDialog.addAcceptedAnswer")}
                   </Button>
                 </div>
               ))}
@@ -614,11 +617,11 @@ function QuestionEditDialogContent({
         )}
 
         <div className="space-y-2">
-          <Label>Explanation (optional)</Label>
+          <Label>{t("quiz.editDialog.explanation")}</Label>
           <Textarea
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
-            placeholder="Explain the correct answer..."
+            placeholder={t("quiz.editDialog.explanationPlaceholder")}
             rows={2}
           />
         </div>
@@ -626,17 +629,17 @@ function QuestionEditDialogContent({
 
       <DialogFooter>
         <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           onClick={handleSave}
           disabled={!questionText.trim() || isSaving}
         >
           {isSaving
-            ? "Saving..."
+            ? t("common.saving")
             : mode === "create"
-            ? "Add Question"
-            : "Save Changes"}
+            ? t("quiz.editDialog.addQuestion")
+            : t("quiz.editDialog.saveChanges")}
         </Button>
       </DialogFooter>
     </>

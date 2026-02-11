@@ -3,15 +3,16 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
+import { cookies } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
 });
 
 export const metadata: Metadata = {
@@ -22,17 +23,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("locale")?.value || "en";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('color-theme');if(t&&t!=='neutral')document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('color-theme');if(t&&t!=='neutral')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();(function(){try{var l=localStorage.getItem('locale');if(l&&(l==='en'||l==='hu'))document.documentElement.lang=l}catch(e){}})()`,
           }}
         />
       </head>

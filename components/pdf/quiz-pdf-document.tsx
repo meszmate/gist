@@ -28,11 +28,35 @@ export interface PdfExportOptions {
   paperSize: PaperSize;
 }
 
+export interface PdfTranslations {
+  name: string;
+  date: string;
+  instructions: string;
+  instructionsText: string;
+  pointsSuffix: string;
+  pt: string;
+  pts: string;
+  page: string;
+  answerKey: string;
+  selectAllApply: string;
+  noAnswerProvided: string;
+  answer: string;
+  year: string;
+  trueLabel: string;
+  falseLabel: string;
+  blankAnswer: string;
+}
+
 interface QuizPdfDocumentProps {
   title: string;
   description?: string;
   questions: QuizQuestion[];
   options: PdfExportOptions;
+  translations: PdfTranslations;
+}
+
+function interpolate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? key));
 }
 
 export function QuizPdfDocument({
@@ -40,6 +64,7 @@ export function QuizPdfDocument({
   description,
   questions,
   options,
+  translations,
 }: QuizPdfDocumentProps) {
   const { includeAnswerKey, showPointValues, answerKeyOnSeparatePage, paperSize } =
     options;
@@ -60,24 +85,21 @@ export function QuizPdfDocument({
           {/* Name and Date */}
           <View style={pdfStyles.infoRow}>
             <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-              <Text style={pdfStyles.infoLabel}>Name:</Text>
+              <Text style={pdfStyles.infoLabel}>{translations.name}</Text>
               <View style={pdfStyles.infoLine} />
             </View>
             <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-              <Text style={pdfStyles.infoLabel}>Date:</Text>
+              <Text style={pdfStyles.infoLabel}>{translations.date}</Text>
               <View style={[pdfStyles.infoLine, { width: 120 }]} />
             </View>
           </View>
 
           {/* Instructions */}
           <View style={pdfStyles.instructions}>
-            <Text style={pdfStyles.instructionsTitle}>Instructions</Text>
+            <Text style={pdfStyles.instructionsTitle}>{translations.instructions}</Text>
             <Text style={pdfStyles.instructionsText}>
-              Answer all questions to the best of your ability. For multiple
-              choice questions, fill in the circle next to your answer. For
-              written responses, write clearly in the space provided.
-              {showPointValues &&
-                " Point values are shown next to each question."}
+              {translations.instructionsText}
+              {showPointValues && ` ${translations.pointsSuffix}`}
             </Text>
           </View>
         </View>
@@ -99,8 +121,7 @@ export function QuizPdfDocument({
                 </View>
                 {showPointValues && (
                   <Text style={pdfStyles.pointsBadge}>
-                    {parseFloat(question.points || "1")} pt
-                    {parseFloat(question.points || "1") !== 1 && "s"}
+                    {parseFloat(question.points || "1")} {parseFloat(question.points || "1") !== 1 ? translations.pts : translations.pt}
                   </Text>
                 )}
               </View>
@@ -110,6 +131,7 @@ export function QuizPdfDocument({
                   config={question.questionConfig}
                   correctAnswerData={question.correctAnswerData}
                   showAnswerKey={includeAnswerKey && !answerKeyOnSeparatePage}
+                  translations={translations}
                 />
               )}
             </View>
@@ -120,7 +142,7 @@ export function QuizPdfDocument({
         <Text
           style={pdfStyles.pageNumber}
           render={({ pageNumber, totalPages }) =>
-            `Page ${pageNumber} of ${totalPages}`
+            interpolate(translations.page, { current: pageNumber, total: totalPages })
           }
           fixed
         />
@@ -132,7 +154,7 @@ export function QuizPdfDocument({
           size={[pageSize.width, pageSize.height]}
           style={pdfStyles.answerKeyPage}
         >
-          <Text style={pdfStyles.answerKeyTitle}>Answer Key - {title}</Text>
+          <Text style={pdfStyles.answerKeyTitle}>{translations.answerKey} - {title}</Text>
 
           {questions.map((question, index) => (
             <View key={question.id} style={pdfStyles.answerKeyItem} wrap={false}>
@@ -142,7 +164,8 @@ export function QuizPdfDocument({
                   {getAnswerText(
                     question.questionType,
                     question.questionConfig,
-                    question.correctAnswerData
+                    question.correctAnswerData,
+                    translations
                   )}
                 </Text>
                 {question.explanation && (
@@ -158,7 +181,7 @@ export function QuizPdfDocument({
           <Text
             style={pdfStyles.pageNumber}
             render={({ pageNumber, totalPages }) =>
-              `Page ${pageNumber} of ${totalPages}`
+              interpolate(translations.page, { current: pageNumber, total: totalPages })
             }
             fixed
           />

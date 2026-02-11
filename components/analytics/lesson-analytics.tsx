@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonStat {
   id: string;
@@ -20,6 +21,8 @@ interface LessonAnalyticsProps {
 }
 
 export function LessonAnalytics({ lessons }: LessonAnalyticsProps) {
+  const { t } = useLocale();
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600";
     if (score >= 40) return "text-yellow-600";
@@ -44,13 +47,13 @@ export function LessonAnalytics({ lessons }: LessonAnalyticsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GraduationCap className="h-5 w-5" />
-          Lesson Performance
+          {t("analytics.lessonPerformance")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {lessons.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            No lessons to analyze
+            {t("analytics.noLessonsAnalyze")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -65,7 +68,7 @@ export function LessonAnalytics({ lessons }: LessonAnalyticsProps) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{lesson.title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {lesson.totalAttempts} attempt{lesson.totalAttempts !== 1 ? "s" : ""} · {lesson.completionRate}% completion · Avg {formatTime(lesson.averageTime)}
+                    {t("analytics.attemptsStat", { count: lesson.totalAttempts })} · {t("analytics.completion", { rate: lesson.completionRate })} · {t("analytics.avgTime", { time: formatTime(lesson.averageTime) })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">

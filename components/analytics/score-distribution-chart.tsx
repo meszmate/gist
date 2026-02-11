@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ScoreDistributionChartProps {
   distribution: Array<{ range: string; count: number }>;
@@ -19,22 +20,25 @@ interface ScoreDistributionChartProps {
 
 export function ScoreDistributionChart({
   distribution,
-  title = "Quiz Score Distribution",
+  title,
 }: ScoreDistributionChartProps) {
+  const { t } = useLocale();
   const hasData = distribution.some((d) => d.count > 0);
+
+  const displayTitle = title ?? t("analytics.scoreDistribution");
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
-          {title}
+          {displayTitle}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!hasData ? (
           <p className="text-center text-muted-foreground py-8">
-            No quiz attempts yet
+            {t("analytics.noQuizAttemptsYet")}
           </p>
         ) : (
           <ResponsiveContainer width="100%" height={250}>

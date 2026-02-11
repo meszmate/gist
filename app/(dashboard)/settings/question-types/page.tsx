@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomTypeBuilder } from "@/components/quiz/custom-type-builder";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 
 interface QuestionType {
   id: string;
@@ -54,6 +55,7 @@ async function fetchQuestionTypes(): Promise<{ questionTypes: QuestionType[] }> 
 }
 
 export default function QuestionTypesPage() {
+  const { t } = useLocale();
   const queryClient = useQueryClient();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -87,7 +89,7 @@ export default function QuestionTypesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["question-types"] });
       setIsCreateOpen(false);
-      toast.success("Question type created successfully");
+      toast.success(t("questionTypes.created"));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -122,7 +124,7 @@ export default function QuestionTypesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["question-types"] });
       setEditingType(null);
-      toast.success("Question type updated successfully");
+      toast.success(t("questionTypes.updated"));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -143,7 +145,7 @@ export default function QuestionTypesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["question-types"] });
       setDeleteType(null);
-      toast.success("Question type deleted successfully");
+      toast.success(t("questionTypes.deleted"));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -185,17 +187,17 @@ export default function QuestionTypesPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <PageHeader
-        title="Question Types"
-        description="Manage built-in and custom question types for your quizzes"
+        title={t("questionTypes.title")}
+        description={t("questionTypes.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Settings", href: "/settings" },
-          { label: "Question Types" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.settings"), href: "/settings" },
+          { label: t("questionTypes.title") },
         ]}
         actions={
           <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Custom Type
+            {t("questionTypes.createCustomType")}
           </Button>
         }
       />
@@ -204,7 +206,7 @@ export default function QuestionTypesPage() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Lock className="h-4 w-4" />
-          Built-in Types
+          {t("questionTypes.builtInTypes")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {systemTypes.map((type) => (
@@ -232,12 +234,12 @@ export default function QuestionTypesPage() {
                     {type.isActive ? (
                       <>
                         <Check className="h-3 w-3 mr-1" />
-                        Active
+                        {t("questionTypes.active")}
                       </>
                     ) : (
                       <>
                         <X className="h-3 w-3 mr-1" />
-                        Disabled
+                        {t("questionTypes.disabled")}
                       </>
                     )}
                   </Badge>
@@ -245,7 +247,7 @@ export default function QuestionTypesPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  {type.description || "No description"}
+                  {type.description || t("questionTypes.noDescription")}
                 </p>
               </CardContent>
             </Card>
@@ -257,16 +259,16 @@ export default function QuestionTypesPage() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Settings2 className="h-4 w-4" />
-          Custom Types
+          {t("questionTypes.customTypes")}
         </h2>
 
         {customTypes.length === 0 ? (
           <EmptyState
             icon={<Settings2 className="h-12 w-12" />}
-            title="No custom question types"
-            description="Create your own question types with custom validation rules"
+            title={t("questionTypes.noCustomTypes")}
+            description={t("questionTypes.noCustomTypesDesc")}
             action={{
-              label: "Create Custom Type",
+              label: t("questionTypes.createCustomType"),
               onClick: () => setIsCreateOpen(true),
             }}
           />
@@ -306,7 +308,7 @@ export default function QuestionTypesPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-3">
-                    {type.description || "No description"}
+                    {type.description || t("questionTypes.noDescription")}
                   </p>
                   <div className="flex gap-2">
                     <Badge
@@ -319,7 +321,7 @@ export default function QuestionTypesPage() {
                         })
                       }
                     >
-                      {type.isActive ? "Active" : "Disabled"}
+                      {type.isActive ? t("questionTypes.active") : t("questionTypes.disabled")}
                     </Badge>
                   </div>
                 </CardContent>
@@ -333,7 +335,7 @@ export default function QuestionTypesPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Custom Question Type</DialogTitle>
+            <DialogTitle>{t("questionTypes.createDialog")}</DialogTitle>
           </DialogHeader>
           <CustomTypeBuilder
             onSave={(data) => createMutation.mutate(data)}
@@ -346,7 +348,7 @@ export default function QuestionTypesPage() {
       <Dialog open={!!editingType} onOpenChange={() => setEditingType(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Question Type</DialogTitle>
+            <DialogTitle>{t("questionTypes.editDialog")}</DialogTitle>
           </DialogHeader>
           {editingType && (
             <CustomTypeBuilder
@@ -373,20 +375,18 @@ export default function QuestionTypesPage() {
       <AlertDialog open={!!deleteType} onOpenChange={() => setDeleteType(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Question Type</AlertDialogTitle>
+            <AlertDialogTitle>{t("questionTypes.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the &quot;{deleteType?.name}&quot; question
-              type? This will not affect existing questions that use this type,
-              but you won&apos;t be able to create new questions with it.
+              {t("questionTypes.deleteConfirm", { name: deleteType?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteType && deleteMutation.mutate(deleteType.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

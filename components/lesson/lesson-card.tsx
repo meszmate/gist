@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, Pencil, Trash2, Play, Globe } from "lucide-react";
 import type { Lesson } from "@/lib/types/lesson";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -14,6 +15,8 @@ interface LessonCardProps {
 }
 
 export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
+  const { t } = useLocale();
+
   return (
     <Card className="group hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
@@ -28,7 +31,7 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
                 variant={lesson.status === "published" ? "default" : "secondary"}
                 className="text-xs shrink-0"
               >
-                {lesson.status}
+                {lesson.status === "published" ? t("common.published") : t("common.draft")}
               </Badge>
               {lesson.isPublic && (
                 <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -43,13 +46,13 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
               <Button asChild size="sm" className="gap-1.5">
                 <Link href={`/library/${resourceId}/lessons/${lesson.id}`}>
                   <Play className="h-3.5 w-3.5" />
-                  Play
+                  {t("lessons.play")}
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="gap-1.5">
                 <Link href={`/library/${resourceId}/lessons/${lesson.id}/edit`}>
                   <Pencil className="h-3.5 w-3.5" />
-                  Edit
+                  {t("common.edit")}
                 </Link>
               </Button>
               {onDelete && (

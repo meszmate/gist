@@ -39,6 +39,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 import { QuizPdfPreview } from "@/components/pdf/quiz-pdf-preview";
 import type { QuizQuestion } from "@/components/pdf/quiz-pdf-document";
 
@@ -101,6 +102,7 @@ async function fetchQuizSettings(quizId: string): Promise<Quiz> {
 export default function QuizSettingsPage() {
   const params = useParams();
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const quizId = params.quizId as string;
   const [copied, setCopied] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
@@ -183,10 +185,10 @@ export default function QuizSettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-settings", quizId] });
-      toast.success("Settings saved");
+      toast.success(t("quizSettings.settingsSaved"));
     },
     onError: () => {
-      toast.error("Failed to save settings");
+      toast.error(t("quizSettings.failedSave"));
     },
   });
 
@@ -200,7 +202,7 @@ export default function QuizSettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-settings", quizId] });
-      toast.success("Share link generated");
+      toast.success(t("quizSettings.shareLinkGenerated"));
     },
   });
 
@@ -213,7 +215,7 @@ export default function QuizSettingsPage() {
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast.success("Link copied to clipboard");
+      toast.success(t("quizSettings.linkCopied"));
     }
   };
 
@@ -230,10 +232,10 @@ export default function QuizSettingsPage() {
     return (
       <EmptyState
         icon={<Clock className="h-12 w-12" />}
-        title="Quiz not found"
-        description="This quiz may have been deleted or doesn't exist."
+        title={t("quizSettings.quizNotFound")}
+        description={t("quizSettings.quizNotFoundDesc")}
         action={{
-          label: "Back to Quizzes",
+          label: t("quizSettings.backToQuizzes"),
           href: "/quiz",
         }}
       />
@@ -243,13 +245,13 @@ export default function QuizSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <PageHeader
-        title="Quiz Settings"
+        title={t("quizSettings.title")}
         description={quiz.title}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Quizzes", href: "/quiz" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.quizzes"), href: "/quiz" },
           { label: quiz.title, href: `/quiz/${quizId}` },
-          { label: "Settings" },
+          { label: t("nav.settings") },
         ]}
       />
 
@@ -263,10 +265,10 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Time & Attempts
+                {t("quizSettings.timeAttempts")}
               </CardTitle>
               <CardDescription>
-                Configure time limits and attempt restrictions
+                {t("quizSettings.timeAttemptsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -276,9 +278,9 @@ export default function QuizSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Time Limit</FormLabel>
+                      <FormLabel>{t("quizSettings.timeLimit")}</FormLabel>
                       <span className="text-sm font-medium">
-                        {field.value === 0 ? "No limit" : `${field.value} min`}
+                        {field.value === 0 ? t("quizSettings.noLimit") : t("quizSettings.minFormat", { count: field.value ?? 0 })}
                       </span>
                     </div>
                     <FormControl>
@@ -292,7 +294,7 @@ export default function QuizSettingsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Slide to set a time limit (0 = no limit)
+                      {t("quizSettings.timeLimitDesc")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -305,9 +307,9 @@ export default function QuizSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Maximum Attempts</FormLabel>
+                      <FormLabel>{t("quizSettings.maxAttempts")}</FormLabel>
                       <span className="text-sm font-medium">
-                        {field.value === 0 ? "Unlimited" : field.value}
+                        {field.value === 0 ? t("quizSettings.unlimited") : field.value}
                       </span>
                     </div>
                     <FormControl>
@@ -321,7 +323,7 @@ export default function QuizSettingsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Limit how many times users can attempt this quiz (0 = unlimited)
+                      {t("quizSettings.maxAttemptsDesc")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -335,10 +337,10 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                Access Control
+                {t("quizSettings.accessControl")}
               </CardTitle>
               <CardDescription>
-                Control who can access this quiz
+                {t("quizSettings.accessControlDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -349,10 +351,10 @@ export default function QuizSettingsPage() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
-                        Require Sign-in
+                        {t("quizSettings.requireSignIn")}
                       </FormLabel>
                       <FormDescription>
-                        Users must sign in to take this quiz
+                        {t("quizSettings.requireSignInDesc")}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -370,17 +372,16 @@ export default function QuizSettingsPage() {
                 name="allowedEmails"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Whitelist</FormLabel>
+                    <FormLabel>{t("quizSettings.emailWhitelist")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter email addresses, one per line&#10;student1@school.edu&#10;student2@school.edu"
+                        placeholder={t("quizSettings.emailWhitelistPlaceholder")}
                         className="min-h-[100px] font-mono text-sm"
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Only these emails can access the quiz. Leave empty to allow
-                      anyone (or anyone signed in if sign-in is required).
+                      {t("quizSettings.emailWhitelistDesc")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -394,10 +395,10 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shuffle className="h-5 w-5 text-primary" />
-                Quiz Behavior
+                {t("quizSettings.quizBehavior")}
               </CardTitle>
               <CardDescription>
-                Configure how the quiz works
+                {t("quizSettings.quizBehaviorDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -408,10 +409,10 @@ export default function QuizSettingsPage() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
-                        Shuffle Questions
+                        {t("quizSettings.shuffleQuestions")}
                       </FormLabel>
                       <FormDescription>
-                        Randomize question order for each attempt
+                        {t("quizSettings.shuffleQuestionsDesc")}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -432,10 +433,10 @@ export default function QuizSettingsPage() {
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer flex items-center gap-2">
                         <Eye className="h-4 w-4" />
-                        Show Correct Answers
+                        {t("quizSettings.showCorrectAnswers")}
                       </FormLabel>
                       <FormDescription>
-                        Display correct answers after submission
+                        {t("quizSettings.showCorrectAnswersDesc")}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -455,10 +456,10 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-primary" />
-                Grading
+                {t("quizSettings.grading")}
               </CardTitle>
               <CardDescription>
-                Configure how quiz results are graded and displayed
+                {t("quizSettings.gradingDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -467,25 +468,25 @@ export default function QuizSettingsPage() {
                 name="gradingType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grading Type</FormLabel>
+                    <FormLabel>{t("quizSettings.gradingType")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select grading type" />
+                          <SelectValue placeholder={t("quizSettings.gradingTypePlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="percentage">Percentage</SelectItem>
-                        <SelectItem value="letter">Letter Grade</SelectItem>
-                        <SelectItem value="pass_fail">Pass/Fail</SelectItem>
-                        <SelectItem value="points">Points</SelectItem>
+                        <SelectItem value="percentage">{t("quizSettings.percentage")}</SelectItem>
+                        <SelectItem value="letter">{t("quizSettings.letterGrade")}</SelectItem>
+                        <SelectItem value="pass_fail">{t("quizSettings.passFail")}</SelectItem>
+                        <SelectItem value="points">{t("quizSettings.points")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      How results are displayed to quiz takers
+                      {t("quizSettings.gradingTypeDesc")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -498,7 +499,7 @@ export default function QuizSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Pass Threshold</FormLabel>
+                      <FormLabel>{t("quizSettings.passThreshold")}</FormLabel>
                       <span className="text-sm font-medium">{field.value}%</span>
                     </div>
                     <FormControl>
@@ -512,7 +513,7 @@ export default function QuizSettingsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Minimum score percentage to pass
+                      {t("quizSettings.passThresholdDesc")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -526,10 +527,10 @@ export default function QuizSettingsPage() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
-                        Show Point Values
+                        {t("quizSettings.showPointValues")}
                       </FormLabel>
                       <FormDescription>
-                        Display point values for each question
+                        {t("quizSettings.showPointValuesDesc")}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -549,10 +550,10 @@ export default function QuizSettingsPage() {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
-                        Partial Credit
+                        {t("quizSettings.partialCredit")}
                       </FormLabel>
                       <FormDescription>
-                        Allow partial credit for certain question types
+                        {t("quizSettings.partialCreditDesc")}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -572,23 +573,23 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings2 className="h-5 w-5 text-primary" />
-                Quick Actions
+                {t("quizSettings.quickActions")}
               </CardTitle>
               <CardDescription>
-                Manage quiz questions and view results
+                {t("quizSettings.quickActionsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button type="button" variant="outline" className="w-full justify-start" asChild>
                 <Link href={`/quiz/${quizId}/questions`}>
                   <ListOrdered className="h-4 w-4 mr-2" />
-                  Edit Questions
+                  {t("quizSettings.editQuestions")}
                 </Link>
               </Button>
               <Button type="button" variant="outline" className="w-full justify-start" asChild>
                 <Link href={`/quiz/${quizId}/participants`}>
                   <Users className="h-4 w-4 mr-2" />
-                  View Participants
+                  {t("quizSettings.viewParticipants")}
                 </Link>
               </Button>
               <Button
@@ -599,7 +600,7 @@ export default function QuizSettingsPage() {
                 disabled={!quiz.questions?.length}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t("quizSettings.exportPdf")}
               </Button>
             </CardContent>
           </Card>
@@ -609,10 +610,10 @@ export default function QuizSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Share2 className="h-5 w-5 text-primary" />
-                Share Quiz
+                {t("quizSettings.shareQuiz")}
               </CardTitle>
               <CardDescription>
-                Share this quiz with students or others
+                {t("quizSettings.shareQuizDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -638,12 +639,12 @@ export default function QuizSettingsPage() {
                   {generateShareLink.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
+                      {t("quizSettings.generating")}
                     </>
                   ) : (
                     <>
                       <Share2 className="mr-2 h-4 w-4" />
-                      Generate Share Link
+                      {t("quizSettings.generateShareLink")}
                     </>
                   )}
                 </Button>
@@ -653,18 +654,18 @@ export default function QuizSettingsPage() {
 
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" asChild>
-              <Link href={`/quiz/${quizId}`}>Cancel</Link>
+              <Link href={`/quiz/${quizId}`}>{t("common.cancel")}</Link>
             </Button>
             <Button type="submit" disabled={saveSettings.isPending}>
               {saveSettings.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t("common.saving")}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Save Settings
+                  {t("quizSettings.saveSettings")}
                 </>
               )}
             </Button>

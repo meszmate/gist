@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Check, X, Lightbulb } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonPlayerFeedbackProps {
   isCorrect: boolean;
@@ -12,6 +13,7 @@ export function LessonPlayerFeedback({
   isCorrect,
   explanation,
 }: LessonPlayerFeedbackProps) {
+  const { t } = useLocale();
   return (
     <div
       className={cn(
@@ -41,7 +43,7 @@ export function LessonPlayerFeedback({
               isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
             )}
           >
-            {isCorrect ? "Correct!" : "Not quite right"}
+            {isCorrect ? t("lessonPlayer.correct") : t("lessonPlayer.notQuiteRight")}
           </p>
           {explanation && (
             <div className="flex items-start gap-2 text-sm text-muted-foreground">

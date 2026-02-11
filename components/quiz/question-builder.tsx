@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import type {
   QuestionTypeSlug,
   QuestionConfig,
@@ -58,18 +59,13 @@ interface QuestionBuilderProps {
   };
 }
 
-const QUESTION_TYPES: { value: QuestionTypeSlug; label: string; description: string }[] = [
-  { value: 'multiple_choice', label: 'Multiple Choice', description: 'Select one correct answer from options' },
-  { value: 'true_false', label: 'True/False', description: 'Binary true or false question' },
-  { value: 'text_input', label: 'Text Input', description: 'Free text answer with keyword matching' },
-  { value: 'year_range', label: 'Year', description: 'Enter a year with tolerance' },
-  { value: 'numeric_range', label: 'Numeric', description: 'Enter a number with tolerance' },
-  { value: 'matching', label: 'Matching', description: 'Match items from two columns' },
-  { value: 'fill_blank', label: 'Fill in the Blank', description: 'Complete sentences with blanks' },
-  { value: 'multi_select', label: 'Multi-Select', description: 'Select all correct answers' },
+const QUESTION_TYPE_SLUGS: QuestionTypeSlug[] = [
+  'multiple_choice', 'true_false', 'text_input', 'year_range',
+  'numeric_range', 'matching', 'fill_blank', 'multi_select',
 ];
 
 export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuilderProps) {
+  const { t } = useLocale();
   const [questionText, setQuestionText] = useState(initialData?.question || '');
   const [questionType, setQuestionType] = useState<QuestionTypeSlug>(initialData?.questionType || 'multiple_choice');
   const [points, setPoints] = useState(initialData?.points || 1);
@@ -227,7 +223,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
       case 'multiple_choice':
         return (
           <div className="space-y-4">
-            <Label>Answer Options</Label>
+            <Label>{t("questionBuilder.answerOptions")}</Label>
             {mcOptions.map((option, index) => (
               <div key={index} className="flex items-center gap-2">
                 <button
@@ -249,7 +245,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                     newOptions[index] = e.target.value;
                     setMcOptions(newOptions);
                   }}
-                  placeholder={`Option ${index + 1}`}
+                  placeholder={t("questionBuilder.option", { index: index + 1 })}
                 />
                 {mcOptions.length > 2 && (
                   <Button
@@ -277,11 +273,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                 onClick={() => setMcOptions([...mcOptions, ''])}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Option
+                {t("questionBuilder.addOption")}
               </Button>
             )}
             <p className="text-sm text-muted-foreground">
-              Click the number to mark the correct answer
+              {t("questionBuilder.clickToMark")}
             </p>
           </div>
         );
@@ -289,21 +285,21 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
       case 'true_false':
         return (
           <div className="space-y-4">
-            <Label>Correct Answer</Label>
+            <Label>{t("questionBuilder.correctAnswer")}</Label>
             <div className="flex gap-4">
               <Button
                 type="button"
                 variant={tfCorrect ? "default" : "outline"}
                 onClick={() => setTfCorrect(true)}
               >
-                True
+                {t("questionBuilder.true")}
               </Button>
               <Button
                 type="button"
                 variant={!tfCorrect ? "default" : "outline"}
                 onClick={() => setTfCorrect(false)}
               >
-                False
+                {t("questionBuilder.false")}
               </Button>
             </div>
           </div>
@@ -313,9 +309,9 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         return (
           <div className="space-y-4">
             <div>
-              <Label>Accepted Answers</Label>
+              <Label>{t("questionBuilder.acceptedAnswers")}</Label>
               <p className="text-sm text-muted-foreground mb-2">
-                Add all variations of correct answers
+                {t("questionBuilder.acceptedDesc")}
               </p>
               {textAcceptedAnswers.map((answer, index) => (
                 <div key={index} className="flex items-center gap-2 mb-2">
@@ -326,7 +322,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                       newAnswers[index] = e.target.value;
                       setTextAcceptedAnswers(newAnswers);
                     }}
-                    placeholder="Accepted answer"
+                    placeholder={t("questionBuilder.acceptedAnswer")}
                   />
                   {textAcceptedAnswers.length > 1 && (
                     <Button
@@ -347,7 +343,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                 onClick={() => setTextAcceptedAnswers([...textAcceptedAnswers, ''])}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Answer
+                {t("questionBuilder.addAnswer")}
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -355,7 +351,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                 checked={textCaseSensitive}
                 onCheckedChange={setTextCaseSensitive}
               />
-              <Label>Case Sensitive</Label>
+              <Label>{t("questionBuilder.caseSensitive")}</Label>
             </div>
           </div>
         );
@@ -364,7 +360,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         return (
           <div className="space-y-4">
             <div>
-              <Label>Correct Year</Label>
+              <Label>{t("questionBuilder.correctYear")}</Label>
               <Input
                 type="number"
                 value={yearCorrect}
@@ -372,7 +368,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
               />
             </div>
             <div>
-              <Label>Tolerance (years for partial credit)</Label>
+              <Label>{t("questionBuilder.tolerance")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -387,7 +383,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         return (
           <div className="space-y-4">
             <div>
-              <Label>Correct Value</Label>
+              <Label>{t("questionBuilder.correctValue")}</Label>
               <Input
                 type="number"
                 step="any"
@@ -396,7 +392,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
               />
             </div>
             <div>
-              <Label>Tolerance (for partial credit)</Label>
+              <Label>{t("questionBuilder.numericTolerance")}</Label>
               <Input
                 type="number"
                 step="any"
@@ -406,11 +402,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
               />
             </div>
             <div>
-              <Label>Unit (optional)</Label>
+              <Label>{t("questionBuilder.unit")}</Label>
               <Input
                 value={numericUnit}
                 onChange={(e) => setNumericUnit(e.target.value)}
-                placeholder="e.g., kg, m, $"
+                placeholder={t("questionBuilder.unitPlaceholder")}
               />
             </div>
           </div>
@@ -419,13 +415,13 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
       case 'matching':
         return (
           <div className="space-y-4">
-            <Label>Matching Pairs</Label>
+            <Label>{t("questionBuilder.matchingPairs")}</Label>
             <p className="text-sm text-muted-foreground">
-              Enter items to match. The order defines correct pairs.
+              {t("questionBuilder.matchingDesc")}
             </p>
             <div className="grid grid-cols-2 gap-4">
-              <div className="font-medium text-sm">Left Column</div>
-              <div className="font-medium text-sm">Right Column</div>
+              <div className="font-medium text-sm">{t("questionBuilder.leftColumn")}</div>
+              <div className="font-medium text-sm">{t("questionBuilder.rightColumn")}</div>
             </div>
             {matchingLeft.map((left, index) => (
               <div key={index} className="grid grid-cols-2 gap-4">
@@ -436,7 +432,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                     newLeft[index] = e.target.value;
                     setMatchingLeft(newLeft);
                   }}
-                  placeholder={`Item ${index + 1}`}
+                  placeholder={t("questionBuilder.item", { index: index + 1 })}
                 />
                 <div className="flex gap-2">
                   <Input
@@ -446,7 +442,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                       newRight[index] = e.target.value;
                       setMatchingRight(newRight);
                     }}
-                    placeholder={`Match ${index + 1}`}
+                    placeholder={t("questionBuilder.match", { index: index + 1 })}
                   />
                   {matchingLeft.length > 2 && (
                     <Button
@@ -474,7 +470,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Pair
+              {t("questionBuilder.addPair")}
             </Button>
           </div>
         );
@@ -484,23 +480,23 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         return (
           <div className="space-y-4">
             <div>
-              <Label>Template</Label>
+              <Label>{t("questionBuilder.template")}</Label>
               <p className="text-sm text-muted-foreground mb-2">
-                {"Use {{blank}} to create blanks. Example: The capital of France is {{blank}}."}
+                {t("questionBuilder.templateDesc")}
               </p>
               <Textarea
                 value={fillBlankTemplate}
                 onChange={(e) => setFillBlankTemplate(e.target.value)}
-                placeholder="Enter text with {{blank}} placeholders..."
+                placeholder={t("questionBuilder.templatePlaceholder")}
                 rows={3}
               />
             </div>
             {blankCount > 0 && (
               <div className="space-y-3">
-                <Label>Accepted Answers for Each Blank</Label>
+                <Label>{t("questionBuilder.blanksAnswers")}</Label>
                 {Array.from({ length: blankCount }).map((_, index) => (
                   <div key={index} className="space-y-2">
-                    <Label className="text-sm">Blank {index + 1}</Label>
+                    <Label className="text-sm">{t("questionBuilder.blankIndex", { index: index + 1 })}</Label>
                     <Input
                       value={(fillBlankAnswers[`blank_${index}`] || []).join(', ')}
                       onChange={(e) => {
@@ -509,7 +505,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                           [`blank_${index}`]: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
                         });
                       }}
-                      placeholder="Separate multiple answers with commas"
+                      placeholder={t("questionBuilder.separateCommas")}
                     />
                   </div>
                 ))}
@@ -521,9 +517,9 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
       case 'multi_select':
         return (
           <div className="space-y-4">
-            <Label>Answer Options</Label>
+            <Label>{t("questionBuilder.answerOptions")}</Label>
             <p className="text-sm text-muted-foreground">
-              Check all correct answers
+              {t("questionBuilder.checkAll")}
             </p>
             {msOptions.map((option, index) => (
               <div key={index} className="flex items-center gap-2">
@@ -546,7 +542,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                     newOptions[index] = e.target.value;
                     setMsOptions(newOptions);
                   }}
-                  placeholder={`Option ${index + 1}`}
+                  placeholder={t("questionBuilder.option", { index: index + 1 })}
                 />
                 {msOptions.length > 2 && (
                   <Button
@@ -572,7 +568,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                 onClick={() => setMsOptions([...msOptions, ''])}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Option
+                {t("questionBuilder.addOption")}
               </Button>
             )}
           </div>
@@ -586,12 +582,12 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{initialData ? 'Edit Question' : 'Create Question'}</CardTitle>
+        <CardTitle>{initialData ? t("questionBuilder.editQuestion") : t("questionBuilder.createQuestion")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Question Type */}
         <div className="space-y-2">
-          <Label>Question Type</Label>
+          <Label>{t("questionBuilder.questionType")}</Label>
           <Select
             value={questionType}
             onValueChange={(value) => setQuestionType(value as QuestionTypeSlug)}
@@ -600,11 +596,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {QUESTION_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
+              {QUESTION_TYPE_SLUGS.map((slug) => (
+                <SelectItem key={slug} value={slug}>
                   <div className="flex flex-col">
-                    <span>{type.label}</span>
-                    <span className="text-xs text-muted-foreground">{type.description}</span>
+                    <span>{t(`questionBuilder.types.${slug}`)}</span>
+                    <span className="text-xs text-muted-foreground">{t(`questionBuilder.types.${slug}_desc`)}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -614,11 +610,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
 
         {/* Question Text */}
         <div className="space-y-2">
-          <Label>Question</Label>
+          <Label>{t("questionBuilder.question")}</Label>
           <Textarea
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            placeholder="Enter your question..."
+            placeholder={t("questionBuilder.enterQuestion")}
             rows={3}
           />
         </div>
@@ -628,7 +624,7 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
 
         {/* Points */}
         <div className="space-y-2">
-          <Label>Points</Label>
+          <Label>{t("questionBuilder.points")}</Label>
           <Input
             type="number"
             min={0.5}
@@ -641,11 +637,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
 
         {/* Explanation */}
         <div className="space-y-2">
-          <Label>Explanation (Optional)</Label>
+          <Label>{t("questionBuilder.explanation")}</Label>
           <Textarea
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
-            placeholder="Explain why this answer is correct..."
+            placeholder={t("questionBuilder.explainWhy")}
             rows={2}
           />
         </div>
@@ -654,11 +650,11 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         <div className="flex justify-end gap-2">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
+              {t("questionBuilder.cancel")}
             </Button>
           )}
           <Button onClick={handleSave} disabled={!questionText.trim()}>
-            {initialData ? 'Update Question' : 'Add Question'}
+            {initialData ? t("questionBuilder.updateQuestion") : t("questionBuilder.addQuestion")}
           </Button>
         </div>
       </CardContent>

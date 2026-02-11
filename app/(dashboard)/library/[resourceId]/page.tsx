@@ -63,6 +63,7 @@ import { AccessControlDialog } from "@/components/resource/access-control-dialog
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import type {
   QuestionConfig,
   CorrectAnswerData,
@@ -133,18 +134,7 @@ async function fetchResource(id: string): Promise<Resource> {
   return res.json();
 }
 
-const questionTypeLabels: Record<string, string> = {
-  multiple_choice: "Multiple Choice",
-  true_false: "True/False",
-  text_input: "Text Input",
-  year_range: "Year",
-  numeric_range: "Numeric",
-  matching: "Matching",
-  fill_blank: "Fill in the Blank",
-  multi_select: "Multi-Select",
-};
-
-function QuestionDetails({ question }: { question: QuizQuestion }) {
+function QuestionDetails({ question, t }: { question: QuizQuestion; t: (key: string, params?: Record<string, string | number>) => string }) {
   const type = question.questionType || "multiple_choice";
   const config = question.questionConfig || {};
   const answerData = question.correctAnswerData;
@@ -179,9 +169,9 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
       const correct = (answerData as TrueFalseAnswer)?.correctValue;
       return (
         <p className="text-sm">
-          Correct answer:{" "}
+          {t("resourceDetail.correctAnswer")}{" "}
           <span className="font-medium text-green-700 dark:text-green-400">
-            {correct === true ? "True" : correct === false ? "False" : "N/A"}
+            {correct === true ? t("resourceDetail.trueLabel") : correct === false ? t("resourceDetail.falseLabel") : t("resourceDetail.naLabel")}
           </span>
         </p>
       );
@@ -190,7 +180,7 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
       const accepted = (answerData as TextInputAnswer)?.acceptedAnswers || [];
       return (
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Accepted answers:</p>
+          <p className="text-xs text-muted-foreground">{t("resourceDetail.acceptedAnswers")}</p>
           <div className="flex flex-wrap gap-1.5">
             {accepted.map((a, i) => (
               <Badge key={i} variant="secondary">
@@ -205,7 +195,7 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
       const year = (answerData as YearRangeAnswer)?.correctYear;
       return (
         <p className="text-sm">
-          Correct year:{" "}
+          {t("resourceDetail.correctYear")}{" "}
           <span className="font-medium text-green-700 dark:text-green-400">
             {year}
           </span>
@@ -216,7 +206,7 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
       const val = (answerData as NumericRangeAnswer)?.correctValue;
       return (
         <p className="text-sm">
-          Correct value:{" "}
+          {t("resourceDetail.correctValue")}{" "}
           <span className="font-medium text-green-700 dark:text-green-400">
             {val}
           </span>
@@ -244,7 +234,7 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
       const fc = config as FillBlankConfig;
       return (
         <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Template:</p>
+          <p className="text-sm text-muted-foreground">{t("resourceDetail.template")}</p>
           <p className="text-sm font-mono bg-muted px-2 py-1 rounded">
             {fc.template}
           </p>
@@ -280,7 +270,7 @@ function QuestionDetails({ question }: { question: QuizQuestion }) {
     default:
       return (
         <p className="text-sm text-muted-foreground">
-          Unknown question type: {type}
+          {t("resourceDetail.unknownType", { type })}
         </p>
       );
   }
@@ -290,6 +280,7 @@ export default function ResourcePage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t, formatDate } = useLocale();
   const resourceId = params.resourceId as string;
   const [activeTab, setActiveTab] = useState("overview");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -344,7 +335,7 @@ export default function ResourcePage() {
       if (!res.ok) throw new Error("Failed to delete resource");
     },
     onSuccess: () => {
-      toast.success("Resource deleted");
+      toast.success(t("resourceDetail.resourceDeleted"));
       router.push("/library");
     },
   });
@@ -361,10 +352,10 @@ export default function ResourcePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
-      toast.success("Resource updated");
+      toast.success(t("resourceDetail.resourceUpdated"));
     },
     onError: () => {
-      toast.error("Failed to update resource");
+      toast.error(t("resourceDetail.failedUpdate"));
     },
   });
 
@@ -382,10 +373,10 @@ export default function ResourcePage() {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
       queryClient.invalidateQueries({ queryKey: ["resources"] });
       queryClient.invalidateQueries({ queryKey: ["due-cards"] });
-      toast.success(completed ? "Resource marked as done" : "Resource reopened");
+      toast.success(completed ? t("resourceDetail.resourceMarkedDone") : t("resourceDetail.resourceReopened"));
     },
     onError: () => {
-      toast.error("Failed to update completion status");
+      toast.error(t("resourceDetail.failedUpdateCompletion"));
     },
   });
 
@@ -406,10 +397,10 @@ export default function ResourcePage() {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
       setEditDialogOpen(false);
       setEditingQuestion(null);
-      toast.success("Question updated");
+      toast.success(t("resourceDetail.questionUpdated"));
     },
     onError: () => {
-      toast.error("Failed to update question");
+      toast.error(t("resourceDetail.failedUpdateQuestion"));
     },
   });
 
@@ -426,10 +417,10 @@ export default function ResourcePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
       setCreateDialogOpen(false);
-      toast.success("Question created");
+      toast.success(t("resourceDetail.questionCreated"));
     },
     onError: () => {
-      toast.error("Failed to create question");
+      toast.error(t("resourceDetail.failedCreateQuestion"));
     },
   });
 
@@ -444,10 +435,10 @@ export default function ResourcePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
       setDeleteQuestionId(null);
-      toast.success("Question deleted");
+      toast.success(t("resourceDetail.questionDeleted"));
     },
     onError: () => {
-      toast.error("Failed to delete question");
+      toast.error(t("resourceDetail.failedDeleteQuestion"));
     },
   });
 
@@ -482,7 +473,7 @@ export default function ResourcePage() {
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast.success("Link copied to clipboard");
+      toast.success(t("resourceDetail.linkCopied"));
     }
   };
 
@@ -521,10 +512,10 @@ export default function ResourcePage() {
     return (
       <EmptyState
         icon={<BookOpen className="h-12 w-12" />}
-        title="Resource not found"
-        description="This resource may have been deleted or doesn't exist."
+        title={t("resourceDetail.notFound")}
+        description={t("resourceDetail.notFoundDesc")}
         action={{
-          label: "Back to Library",
+          label: t("resourceDetail.backToLibrary"),
           href: "/library",
         }}
       />
@@ -537,11 +528,11 @@ export default function ResourcePage() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink href="/dashboard">{t("nav.dashboard")}</BreadcrumbLink>
               <BreadcrumbSeparator />
             </BreadcrumbItem>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/library">Library</BreadcrumbLink>
+              <BreadcrumbLink href="/library">{t("nav.library")}</BreadcrumbLink>
               <BreadcrumbSeparator />
             </BreadcrumbItem>
             <BreadcrumbItem>
@@ -563,7 +554,7 @@ export default function ResourcePage() {
               onSave={(description) => updateResource.mutate({ description })}
               isSaving={updateResource.isPending}
               multiline
-              placeholder="Add a description..."
+              placeholder={t("resourceDetail.addDescription")}
               className="text-muted-foreground"
               inputClassName="text-muted-foreground"
             />
@@ -581,7 +572,7 @@ export default function ResourcePage() {
                 ) : (
                   <RotateCcw className="h-4 w-4" />
                 )}
-                Reopen
+                {t("resourceDetail.reopen")}
               </Button>
             ) : (
               <Button
@@ -595,7 +586,7 @@ export default function ResourcePage() {
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />
                 )}
-                Mark as Done
+                {t("resourceDetail.markAsDone")}
               </Button>
             )}
             <Button variant="outline" size="icon" asChild>
@@ -619,12 +610,12 @@ export default function ResourcePage() {
             </Button>
             <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
               <Share2 className="mr-2 h-4 w-4" />
-              Share
+              {t("resourceDetail.share")}
             </Button>
             <Button asChild>
               <Link href={`/create/${resource.id}/generate`}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate More
+                {t("resourceDetail.generateMore")}
               </Link>
             </Button>
           </div>
@@ -636,7 +627,7 @@ export default function ResourcePage() {
         {resource.completedAt && (
           <Badge className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 border">
             <CheckCircle2 className="h-3 w-3" />
-            Completed {new Date(resource.completedAt).toLocaleDateString()}
+            {t("resourceDetail.completed", { date: formatDate(resource.completedAt) })}
           </Badge>
         )}
         {resource.difficulty && (
@@ -648,15 +639,15 @@ export default function ResourcePage() {
         )}
         <Badge variant="outline" className="gap-1">
           <Brain className="h-3 w-3" />
-          {resource.flashcards.length} flashcards
+          {t("resourceDetail.flashcardsCount", { count: resource.flashcards.length })}
         </Badge>
         <Badge variant="outline" className="gap-1">
           <FileQuestion className="h-3 w-3" />
-          {resource.quizQuestions.length} quiz questions
+          {t("resourceDetail.quizQuestionsCount", { count: resource.quizQuestions.length })}
         </Badge>
         <Badge variant="outline" className="gap-1">
           <Clock className="h-3 w-3" />
-          Created {new Date(resource.createdAt).toLocaleDateString()}
+          {t("resourceDetail.created", { date: formatDate(resource.createdAt) })}
         </Badge>
       </div>
 
@@ -668,25 +659,25 @@ export default function ResourcePage() {
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <BookOpen className="h-4 w-4" />
-            Overview
+            {t("resourceDetail.overview")}
           </TabsTrigger>
           <TabsTrigger value="flashcards" className="gap-2">
             <Brain className="h-4 w-4" />
-            Flashcards
+            {t("resourceDetail.flashcardsTab")}
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
               {resource.flashcards.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="quiz" className="gap-2">
             <FileQuestion className="h-4 w-4" />
-            Quiz
+            {t("resourceDetail.quizTab")}
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
               {resource.quizQuestions.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="lessons" className="gap-2">
             <GraduationCap className="h-4 w-4" />
-            Lessons
+            {t("resourceDetail.lessonsTab")}
             {lessons.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {lessons.length}
@@ -696,33 +687,37 @@ export default function ResourcePage() {
         </TabsList>
 
         <div className="text-xs text-muted-foreground">
-          Use{" "}
-          <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">h</kbd>{" "}
-          and{" "}
-          <kbd className="px-1.5 py-0.5 bg-muted rounded border mx-1">l</kbd>{" "}
-          to switch tabs
+          {(() => {
+            const hint = t("resourceDetail.switchTabsHint", { h: "__H__", l: "__L__" });
+            const parts = hint.split(/(__[HL]__)/);
+            return parts.map((part, i) => {
+              if (part === "__H__") return <kbd key={i} className="px-1.5 py-0.5 bg-muted rounded border mx-1">h</kbd>;
+              if (part === "__L__") return <kbd key={i} className="px-1.5 py-0.5 bg-muted rounded border mx-1">l</kbd>;
+              return <span key={i}>{part}</span>;
+            });
+          })()}
         </div>
 
         <TabsContent value="overview" className="space-y-6 animate-fade-in">
           {/* Stats Cards */}
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
-              title="Flashcards"
+              title={t("resourceDetail.flashcardsTab")}
               value={resource.flashcards.length}
-              description="Total cards"
+              description={t("resourceDetail.totalCards")}
               icon={<Brain className="h-5 w-5" />}
               onClick={() => setActiveTab("flashcards")}
             />
             <StatCard
-              title="Quiz Questions"
+              title={t("resourceDetail.quizTab")}
               value={resource.quizQuestions.length}
-              description="Total questions"
+              description={t("resourceDetail.totalQuestions")}
               icon={<FileQuestion className="h-5 w-5" />}
               onClick={() => setActiveTab("quiz")}
             />
             <StatCard
-              title="Difficulty"
-              value={resource.difficulty || "Not set"}
+              title={t("resourceDetail.difficulty")}
+              value={resource.difficulty || t("resourceDetail.notSet")}
               icon={<Target className="h-5 w-5" />}
             />
           </div>
@@ -736,7 +731,7 @@ export default function ResourcePage() {
                     <CardTitle className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <BookOpen className="h-5 w-5" />
-                        Summary
+                        {t("resourceDetail.summary")}
                       </span>
                       <ChevronDown
                         className={cn(
@@ -759,11 +754,11 @@ export default function ResourcePage() {
               <CardContent className="py-8 text-center">
                 <Sparkles className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">
-                  No summary generated yet
+                  {t("resourceDetail.noSummaryYet")}
                 </p>
                 <Button asChild>
                   <Link href={`/create/${resource.id}/generate`}>
-                    Generate Summary
+                    {t("resourceDetail.generateSummary")}
                   </Link>
                 </Button>
               </CardContent>
@@ -775,7 +770,7 @@ export default function ResourcePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                Quick Actions
+                {t("resourceDetail.quickActions")}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -788,9 +783,9 @@ export default function ResourcePage() {
                   <Link href={`/study?resource=${resource.id}`}>
                     <Brain className="mr-3 h-5 w-5 text-primary" />
                     <div className="text-left">
-                      <div className="font-medium">Study Flashcards</div>
+                      <div className="font-medium">{t("resourceDetail.studyFlashcards")}</div>
                       <div className="text-xs text-muted-foreground">
-                        Review with spaced repetition
+                        {t("resourceDetail.reviewSpacedRepetition")}
                       </div>
                     </div>
                   </Link>
@@ -805,9 +800,9 @@ export default function ResourcePage() {
                   <Link href={`/quiz/${resource.id}`}>
                     <FileQuestion className="mr-3 h-5 w-5 text-primary" />
                     <div className="text-left">
-                      <div className="font-medium">Take Quiz</div>
+                      <div className="font-medium">{t("resourceDetail.takeQuiz")}</div>
                       <div className="text-xs text-muted-foreground">
-                        Test your knowledge
+                        {t("resourceDetail.testKnowledge")}
                       </div>
                     </div>
                   </Link>
@@ -821,9 +816,9 @@ export default function ResourcePage() {
                 <Link href={`/create/${resource.id}/generate`}>
                   <Sparkles className="mr-3 h-5 w-5 text-primary" />
                   <div className="text-left">
-                    <div className="font-medium">Generate Content</div>
+                    <div className="font-medium">{t("resourceDetail.generateContent")}</div>
                     <div className="text-xs text-muted-foreground">
-                      Add more cards or questions
+                      {t("resourceDetail.addMoreCards")}
                     </div>
                   </div>
                 </Link>
@@ -835,8 +830,8 @@ export default function ResourcePage() {
               >
                 <Trash2 className="mr-3 h-5 w-5" />
                 <div className="text-left">
-                  <div className="font-medium">Delete Resource</div>
-                  <div className="text-xs opacity-80">Remove permanently</div>
+                  <div className="font-medium">{t("resourceDetail.deleteResource")}</div>
+                  <div className="text-xs opacity-80">{t("resourceDetail.removePermanently")}</div>
                 </div>
               </Button>
             </CardContent>
@@ -847,10 +842,10 @@ export default function ResourcePage() {
           {resource.flashcards.length === 0 ? (
             <EmptyState
               icon={<Brain className="h-12 w-12" />}
-              title="No flashcards yet"
-              description="Generate flashcards from your content to start studying"
+              title={t("resourceDetail.noFlashcardsYet")}
+              description={t("resourceDetail.generateFlashcardsDesc")}
               action={{
-                label: "Generate Flashcards",
+                label: t("resourceDetail.generateFlashcards"),
                 href: `/create/${resource.id}/generate`,
                 icon: <Plus className="mr-2 h-4 w-4" />,
               }}
@@ -859,13 +854,12 @@ export default function ResourcePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {resource.flashcards.length} flashcard
-                  {resource.flashcards.length !== 1 ? "s" : ""}
+                  {t("resourceDetail.flashcardCount", { count: resource.flashcards.length })}
                 </p>
                 <Button asChild>
                   <Link href={`/study?resource=${resource.id}`}>
                     <Brain className="mr-2 h-4 w-4" />
-                    Start Study Session
+                    {t("resourceDetail.startStudySession")}
                   </Link>
                 </Button>
               </div>
@@ -879,13 +873,13 @@ export default function ResourcePage() {
                     <CardContent className="p-4 space-y-3">
                       <div>
                         <span className="text-xs font-medium text-primary uppercase tracking-wide">
-                          Question
+                          {t("resourceDetail.question")}
                         </span>
                         <p className="text-sm mt-1">{card.front}</p>
                       </div>
                       <div className="border-t pt-3">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          Answer
+                          {t("resourceDetail.answer")}
                         </span>
                         <p className="text-sm mt-1 text-muted-foreground">
                           {card.back}
@@ -903,10 +897,10 @@ export default function ResourcePage() {
           {resource.quizQuestions.length === 0 ? (
             <EmptyState
               icon={<FileQuestion className="h-12 w-12" />}
-              title="No quiz questions yet"
-              description="Generate quiz questions to test your knowledge"
+              title={t("resourceDetail.noQuizYet")}
+              description={t("resourceDetail.generateQuizDesc")}
               action={{
-                label: "Generate Quiz",
+                label: t("resourceDetail.generateQuiz"),
                 href: `/create/${resource.id}/generate`,
                 icon: <Plus className="mr-2 h-4 w-4" />,
               }}
@@ -915,8 +909,7 @@ export default function ResourcePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {resource.quizQuestions.length} question
-                  {resource.quizQuestions.length !== 1 ? "s" : ""}
+                  {t("resourceDetail.questionCount", { count: resource.quizQuestions.length })}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -924,18 +917,18 @@ export default function ResourcePage() {
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Question
+                    {t("resourceDetail.addQuestion")}
                   </Button>
                   <Button asChild variant="outline">
                     <Link href={`/quiz/${resource.id}/settings`}>
                       <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                      {t("nav.settings")}
                     </Link>
                   </Button>
                   <Button asChild>
                     <Link href={`/quiz/${resource.id}`}>
                       <FileQuestion className="mr-2 h-4 w-4" />
-                      Take Quiz
+                      {t("resourceDetail.takeQuiz")}
                     </Link>
                   </Button>
                 </div>
@@ -944,10 +937,11 @@ export default function ResourcePage() {
               <div className="space-y-2">
                 {resource.quizQuestions.map((question, index) => {
                   const isExpanded = expandedQuestions.has(question.id);
+                  const qType = question.questionType || "multiple_choice";
                   const typeLabel =
-                    questionTypeLabels[
-                      question.questionType || "multiple_choice"
-                    ] || question.questionType;
+                    t(`quiz.questionTypes.${qType}`) !== `quiz.questionTypes.${qType}`
+                      ? t(`quiz.questionTypes.${qType}`)
+                      : question.questionType;
                   return (
                     <Card
                       key={question.id}
@@ -982,12 +976,12 @@ export default function ResourcePage() {
                         <CollapsibleContent>
                           <div className="px-4 pb-4 pt-0 space-y-4 border-t">
                             <div className="pt-3">
-                              <QuestionDetails question={question} />
+                              <QuestionDetails question={question} t={t} />
                             </div>
                             {question.explanation && (
                               <div className="text-sm p-3 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
                                 <p className="font-medium text-xs uppercase mb-1">
-                                  Explanation
+                                  {t("resourceDetail.explanation")}
                                 </p>
                                 {question.explanation}
                               </div>
@@ -1002,7 +996,7 @@ export default function ResourcePage() {
                                 }}
                               >
                                 <Pencil className="mr-1 h-3.5 w-3.5" />
-                                Edit
+                                {t("common.edit")}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1013,7 +1007,7 @@ export default function ResourcePage() {
                                 }
                               >
                                 <Trash2 className="mr-1 h-3.5 w-3.5" />
-                                Delete
+                                {t("common.delete")}
                               </Button>
                             </div>
                           </div>
@@ -1031,10 +1025,10 @@ export default function ResourcePage() {
           {lessons.length === 0 ? (
             <EmptyState
               icon={<GraduationCap className="h-12 w-12" />}
-              title="No lessons yet"
-              description="Create interactive lessons for step-by-step learning"
+              title={t("resourceDetail.noLessonsYet")}
+              description={t("resourceDetail.createLessonsDesc")}
               action={{
-                label: "Create Lesson",
+                label: t("resourceDetail.createLesson"),
                 href: `/library/${resource.id}/lessons`,
                 icon: <Plus className="mr-2 h-4 w-4" />,
               }}
@@ -1043,12 +1037,12 @@ export default function ResourcePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {lessons.length} lesson{lessons.length !== 1 ? "s" : ""}
+                  {t("resourceDetail.lessonCount", { count: lessons.length })}
                 </p>
                 <Button asChild>
                   <Link href={`/library/${resource.id}/lessons`}>
                     <GraduationCap className="mr-2 h-4 w-4" />
-                    Manage Lessons
+                    {t("resourceDetail.manageLessons")}
                   </Link>
                 </Button>
               </div>
@@ -1083,13 +1077,13 @@ export default function ResourcePage() {
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/library/${resource.id}/lessons/${lesson.id}`}>
                             <Play className="mr-1.5 h-3.5 w-3.5" />
-                            Play
+                            {t("resourceDetail.play")}
                           </Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/library/${resource.id}/lessons/${lesson.id}/edit`}>
                             <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                            Edit
+                            {t("common.edit")}
                           </Link>
                         </Button>
                       </div>
@@ -1106,9 +1100,9 @@ export default function ResourcePage() {
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Resource</DialogTitle>
+            <DialogTitle>{t("resourceDetail.shareResource")}</DialogTitle>
             <DialogDescription>
-              Share this resource with others via a public link
+              {t("resourceDetail.shareResourceDesc")}
             </DialogDescription>
           </DialogHeader>
           {shareUrl ? (
@@ -1132,21 +1126,21 @@ export default function ResourcePage() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                Anyone with this link can view this resource
+                {t("resourceDetail.anyoneCanView")}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Generate a share link to allow others to view this resource
+                {t("resourceDetail.generateShareLinkDesc")}
               </p>
               <Button
                 onClick={() => generateShareToken.mutate()}
                 disabled={generateShareToken.isPending}
               >
                 {generateShareToken.isPending
-                  ? "Generating..."
-                  : "Generate Share Link"}
+                  ? t("common.loading")
+                  : t("resourceDetail.generateShareLink")}
               </Button>
             </div>
           )}
@@ -1157,10 +1151,9 @@ export default function ResourcePage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Resource</DialogTitle>
+            <DialogTitle>{t("resourceDetail.deleteResourceTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this resource? This action cannot
-              be undone. All flashcards and quiz questions will also be deleted.
+              {t("resourceDetail.deleteResourceConfirm")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1168,14 +1161,14 @@ export default function ResourcePage() {
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteResource.mutate()}
               disabled={deleteResource.isPending}
             >
-              {deleteResource.isPending ? "Deleting..." : "Delete"}
+              {deleteResource.isPending ? t("resourceDetail.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1188,15 +1181,14 @@ export default function ResourcePage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Question</DialogTitle>
+            <DialogTitle>{t("resourceDetail.deleteQuestionTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this question? This action cannot
-              be undone.
+              {t("resourceDetail.deleteQuestionConfirm")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteQuestionId(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -1205,7 +1197,7 @@ export default function ResourcePage() {
               }
               disabled={deleteQuestion.isPending}
             >
-              {deleteQuestion.isPending ? "Deleting..." : "Delete"}
+              {deleteQuestion.isPending ? t("resourceDetail.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useVimNavigation } from "@/lib/hooks/use-vim-navigation";
 import { useVimContext } from "@/components/keyboard/vim-navigation-provider";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import Link from "next/link";
 
 interface QuizResource {
@@ -44,6 +45,7 @@ async function fetchQuizzes(): Promise<QuizResource[]> {
 
 export default function QuizzesPage() {
   const router = useRouter();
+  const { t, formatDate } = useLocale();
   const [search, setSearch] = useState("");
   const { searchOpen, setSearchOpen } = useVimContext();
 
@@ -76,17 +78,17 @@ export default function QuizzesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Quizzes"
-        description="Test your knowledge with quizzes from your resources"
+        title={t("quiz.title")}
+        description={t("quiz.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Quizzes" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("nav.quizzes") },
         ]}
         actions={
           <Button asChild>
             <Link href="/create">
               <Plus className="mr-2 h-4 w-4" />
-              Create Resource
+              {t("quiz.createResource")}
             </Link>
           </Button>
         }
@@ -102,7 +104,7 @@ export default function QuizzesPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalQuizzes}</p>
-                <p className="text-sm text-muted-foreground">Available Quizzes</p>
+                <p className="text-sm text-muted-foreground">{t("quiz.availableQuizzes")}</p>
               </div>
             </CardContent>
           </Card>
@@ -113,7 +115,7 @@ export default function QuizzesPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{completedQuizzes}</p>
-                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-sm text-muted-foreground">{t("quiz.completed")}</p>
               </div>
             </CardContent>
           </Card>
@@ -124,7 +126,7 @@ export default function QuizzesPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalAttempts}</p>
-                <p className="text-sm text-muted-foreground">Total Attempts</p>
+                <p className="text-sm text-muted-foreground">{t("quiz.totalAttempts")}</p>
               </div>
             </CardContent>
           </Card>
@@ -136,7 +138,7 @@ export default function QuizzesPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search quizzes... (press /)"
+            placeholder={t("quiz.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -161,16 +163,16 @@ export default function QuizzesPage() {
       ) : filteredQuizzes.length === 0 ? (
         <EmptyState
           icon={<FileQuestion className="h-12 w-12" />}
-          title="No quizzes found"
+          title={t("quiz.noQuizzesFound")}
           description={
             search
-              ? "Try adjusting your search terms"
-              : "Create a resource and generate quiz questions to get started"
+              ? t("quiz.adjustSearchTerms")
+              : t("quiz.createToStart")
           }
           action={
             !search
               ? {
-                  label: "Create Resource",
+                  label: t("quiz.createResource"),
                   href: "/create",
                   icon: <Plus className="mr-2 h-4 w-4" />,
                 }
@@ -219,7 +221,7 @@ export default function QuizzesPage() {
                 {quiz.attemptCount > 0 && quiz.bestScore !== undefined && quiz.bestScore !== null && (
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Best Score</span>
+                      <span className="text-muted-foreground">{t("quiz.bestScore")}</span>
                       <span className="font-medium">{quiz.bestScore}%</span>
                     </div>
                     <Progress value={quiz.bestScore} className="h-2" />
@@ -229,18 +231,18 @@ export default function QuizzesPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="gap-1">
                     <Target className="h-3 w-3" />
-                    {quiz.questionCount} questions
+                    {t("quiz.questions", { count: quiz.questionCount })}
                   </Badge>
                   {quiz.attemptCount > 0 && (
                     <Badge variant="outline" className="gap-1">
                       <Trophy className="h-3 w-3" />
-                      {quiz.attemptCount} attempt{quiz.attemptCount !== 1 ? "s" : ""}
+                      {t("quiz.attempts", { count: quiz.attemptCount })}
                     </Badge>
                   )}
                   {quiz.hasSettings && (
                     <Badge variant="outline" className="gap-1 text-xs">
                       <Settings className="h-3 w-3" />
-                      Configured
+                      {t("quiz.configured")}
                     </Badge>
                   )}
                 </div>
@@ -248,8 +250,8 @@ export default function QuizzesPage() {
                 {quiz.lastAttempt && (
                   <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    Last attempt:{" "}
-                    {new Date(quiz.lastAttempt).toLocaleDateString(undefined, {
+                    {t("quiz.lastAttempt")}{" "}
+                    {formatDate(quiz.lastAttempt, {
                       month: "short",
                       day: "numeric",
                     })}

@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { MultipleChoiceConfig, MultipleChoiceAnswer, MultipleChoiceUserAnswer } from "@/lib/types/quiz";
 
@@ -14,6 +15,7 @@ export function MultipleChoiceRenderer({
   showResult,
   correctAnswerData,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const mcConfig = config as MultipleChoiceConfig;
   const options = mcConfig.options || [];
 
@@ -73,10 +75,10 @@ export function MultipleChoiceRenderer({
                 <span>{option}</span>
               </div>
               {showResult && isCorrectOption && (
-                <Badge className="bg-green-500">Correct</Badge>
+                <Badge className="bg-green-500">{t("quizRenderer.correct")}</Badge>
               )}
               {showResult && isWrongSelection && (
-                <Badge variant="destructive">Your answer</Badge>
+                <Badge variant="destructive">{t("quizRenderer.yourAnswerBadge")}</Badge>
               )}
             </div>
           </button>
@@ -92,6 +94,7 @@ export function MultipleChoiceResultRenderer({
   userAnswer,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const mcConfig = config as MultipleChoiceConfig;
   const options = mcConfig.options || [];
 
@@ -122,17 +125,17 @@ export function MultipleChoiceResultRenderer({
             </span>
             {option}
             {isCorrectOption && (
-              <Badge className="ml-2 bg-green-500">Correct</Badge>
+              <Badge className="ml-2 bg-green-500">{t("quizRenderer.correct")}</Badge>
             )}
             {isWrongSelection && (
-              <Badge variant="destructive" className="ml-2">Your answer</Badge>
+              <Badge variant="destructive" className="ml-2">{t("quizRenderer.yourAnswerBadge")}</Badge>
             )}
           </div>
         );
       })}
       {explanation && (
         <p className="text-sm text-muted-foreground mt-3 pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

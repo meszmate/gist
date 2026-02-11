@@ -20,10 +20,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useLocale } from "@/hooks/use-locale";
 import {
   QuizPdfDocument,
   type QuizQuestion,
   type PdfExportOptions,
+  type PdfTranslations,
 } from "./quiz-pdf-document";
 import type { PaperSize } from "./pdf-styles";
 
@@ -55,6 +57,7 @@ export function QuizPdfPreview({
   questions,
   quizId,
 }: QuizPdfPreviewProps) {
+  const { t } = useLocale();
   const [options, setOptions] = useState<PdfExportOptions>({
     includeAnswerKey: false,
     showPointValues: true,
@@ -78,13 +81,33 @@ export function QuizPdfPreview({
   const sanitizedTitle = title.replace(/[^a-zA-Z0-9-_ ]/g, "").slice(0, 50);
   const fileName = `${sanitizedTitle || "quiz"}-${quizId.slice(0, 8)}.pdf`;
 
+  // Build translations object for PDF components (which can't access React context)
+  const pdfTranslations: PdfTranslations = {
+    name: t("pdfExport.name"),
+    date: t("pdfExport.date"),
+    instructions: t("pdfExport.instructions"),
+    instructionsText: t("pdfExport.instructionsText"),
+    pointsSuffix: t("pdfExport.pointsSuffix"),
+    pt: t("pdfExport.pt"),
+    pts: t("pdfExport.pts"),
+    page: t("pdfExport.page", { current: "{current}", total: "{total}" }),
+    answerKey: t("pdfExport.answerKey"),
+    selectAllApply: t("pdfExport.selectAllApply"),
+    noAnswerProvided: t("pdfExport.noAnswerProvided"),
+    answer: t("pdfExport.answer"),
+    year: t("pdfExport.year"),
+    trueLabel: t("quizRenderer.true"),
+    falseLabel: t("quizRenderer.false"),
+    blankAnswer: t("pdfExport.blankAnswer", { index: "{index}", answer: "{answer}" }),
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            PDF Preview
+            {t("pdfExport.preview")}
           </DialogTitle>
         </DialogHeader>
 
@@ -93,14 +116,14 @@ export function QuizPdfPreview({
           <div className="w-64 shrink-0 space-y-4 p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Settings2 className="h-4 w-4" />
-              Export Options
+              {t("pdfExport.exportOptions")}
             </div>
 
             <Separator />
 
             {/* Paper Size */}
             <div className="space-y-2">
-              <Label className="text-sm">Paper Size</Label>
+              <Label className="text-sm">{t("pdfExport.paperSize")}</Label>
               <Select
                 value={options.paperSize}
                 onValueChange={(value: PaperSize) =>
@@ -111,8 +134,8 @@ export function QuizPdfPreview({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="letter">US Letter</SelectItem>
-                  <SelectItem value="a4">A4</SelectItem>
+                  <SelectItem value="letter">{t("pdfExport.usLetter")}</SelectItem>
+                  <SelectItem value="a4">{t("pdfExport.a4")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -122,7 +145,7 @@ export function QuizPdfPreview({
             {/* Show Point Values */}
             <div className="flex items-center justify-between">
               <Label htmlFor="showPoints" className="text-sm cursor-pointer">
-                Show Point Values
+                {t("pdfExport.showPoints")}
               </Label>
               <Switch
                 id="showPoints"
@@ -136,7 +159,7 @@ export function QuizPdfPreview({
             {/* Include Answer Key */}
             <div className="flex items-center justify-between">
               <Label htmlFor="answerKey" className="text-sm cursor-pointer">
-                Include Answer Key
+                {t("pdfExport.includeAnswerKey")}
               </Label>
               <Switch
                 id="answerKey"
@@ -151,7 +174,7 @@ export function QuizPdfPreview({
             {options.includeAnswerKey && (
               <div className="flex items-center justify-between pl-4">
                 <Label htmlFor="separatePage" className="text-sm cursor-pointer">
-                  Separate Page
+                  {t("pdfExport.separatePage")}
                 </Label>
                 <Switch
                   id="separatePage"
@@ -175,6 +198,7 @@ export function QuizPdfPreview({
                       description={description}
                       questions={questions}
                       options={options}
+                      translations={pdfTranslations}
                     />
                   }
                   fileName={fileName}
@@ -184,12 +208,12 @@ export function QuizPdfPreview({
                       {loading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Generating...
+                          {t("pdfExport.generating")}
                         </>
                       ) : (
                         <>
                           <Download className="h-4 w-4 mr-2" />
-                          Download PDF
+                          {t("pdfExport.downloadPdf")}
                         </>
                       )}
                     </Button>
@@ -199,8 +223,8 @@ export function QuizPdfPreview({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              {questions.length} question{questions.length !== 1 && "s"} •{" "}
-              {options.paperSize === "letter" ? "Letter" : "A4"} format
+              {t("pdfExport.questionCount", { count: questions.length })} •{" "}
+              {t("pdfExport.format", { size: options.paperSize === "letter" ? t("pdfExport.usLetter") : t("pdfExport.a4") })}
             </p>
           </div>
 
@@ -218,6 +242,7 @@ export function QuizPdfPreview({
                   description={description}
                   questions={questions}
                   options={options}
+                  translations={pdfTranslations}
                 />
               </PDFViewer>
             ) : (

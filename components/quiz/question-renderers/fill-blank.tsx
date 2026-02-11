@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { FillBlankConfig, FillBlankAnswer, FillBlankUserAnswer } from "@/lib/types/quiz";
 
@@ -62,6 +63,7 @@ export function FillBlankRenderer({
   showResult,
   correctAnswerData,
 }: QuestionRendererProps) {
+  const { t } = useLocale();
   const fillConfig = config as FillBlankConfig;
   const template = fillConfig.template || '';
   const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
@@ -145,7 +147,7 @@ export function FillBlankRenderer({
 
       {showResult && (
         <div className="text-sm text-muted-foreground">
-          {Object.entries(values).filter(([id]) => checkBlankCorrect(id)).length} of {blanks.length} blanks correct
+          {t("quizRenderer.blanksCorrect", { count: Object.entries(values).filter(([id]) => checkBlankCorrect(id)).length, total: blanks.length })}
         </div>
       )}
     </div>
@@ -159,6 +161,7 @@ export function FillBlankResultRenderer({
   creditPercent,
   explanation,
 }: ResultRendererProps) {
+  const { t } = useLocale();
   const fillConfig = config as FillBlankConfig;
   const template = fillConfig.template || '';
   const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
@@ -227,11 +230,11 @@ export function FillBlankResultRenderer({
       </div>
 
       <div className="space-y-2">
-        <div className="text-sm font-medium">Accepted answers for each blank:</div>
+        <div className="text-sm font-medium">{t("quizRenderer.acceptedForBlanks")}</div>
         <div className="grid gap-2">
           {blanks.map((blank, index) => (
             <div key={blank.id} className="flex items-center gap-2 text-sm">
-              <Badge variant="outline">Blank {index + 1}</Badge>
+              <Badge variant="outline">{t("quizRenderer.blank", { index: index + 1 })}</Badge>
               <div className="flex flex-wrap gap-1">
                 {correctBlanks[blank.id]?.map((answer, i) => (
                   <Badge key={i} variant="secondary" className="bg-green-500/20">
@@ -245,7 +248,7 @@ export function FillBlankResultRenderer({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Score:</span>
+        <span className="text-sm text-muted-foreground">{t("quizRenderer.score")}</span>
         <Badge variant={creditPercent === 100 ? "default" : "secondary"}>
           {creditPercent.toFixed(0)}%
         </Badge>
@@ -253,7 +256,7 @@ export function FillBlankResultRenderer({
 
       {explanation && (
         <p className="text-sm text-muted-foreground pt-3 border-t">
-          <strong>Explanation:</strong> {explanation}
+          <strong>{t("quizRenderer.explanation")}</strong> {explanation}
         </p>
       )}
     </div>

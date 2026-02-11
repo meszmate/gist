@@ -7,8 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function ExplanationEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as ExplanationContent;
 
   const update = (patch: Partial<ExplanationContent>) => {
@@ -18,18 +20,18 @@ export function ExplanationEditor({ content, answerData, onChange }: StepEditorP
   return (
     <div className="space-y-4">
       <div>
-        <Label>Content (Markdown)</Label>
+        <Label>{t("stepEditor.contentMarkdown")}</Label>
         <Textarea
           value={c.markdown}
           onChange={(e) => update({ markdown: e.target.value })}
           rows={8}
-          placeholder="Write your explanation in markdown..."
+          placeholder={t("stepEditor.writeExplanationPlaceholder")}
           className="mt-1.5 font-mono text-sm"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Reveal Sections (optional)</Label>
+          <Label>{t("stepEditor.revealSectionsOptional")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -43,7 +45,7 @@ export function ExplanationEditor({ content, answerData, onChange }: StepEditorP
             }
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Section
+            {t("stepEditor.addSection")}
           </Button>
         </div>
         {c.revealSections?.map((section, i) => (
@@ -55,7 +57,7 @@ export function ExplanationEditor({ content, answerData, onChange }: StepEditorP
                 sections[i] = { ...sections[i], label: e.target.value };
                 update({ revealSections: sections });
               }}
-              placeholder="Section label"
+              placeholder={t("stepEditor.sectionLabel")}
               className="w-1/3"
             />
             <Textarea
@@ -65,7 +67,7 @@ export function ExplanationEditor({ content, answerData, onChange }: StepEditorP
                 sections[i] = { ...sections[i], content: e.target.value };
                 update({ revealSections: sections });
               }}
-              placeholder="Section content (markdown)"
+              placeholder={t("stepEditor.sectionContentMarkdown")}
               rows={2}
               className="flex-1"
             />

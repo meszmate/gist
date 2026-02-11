@@ -15,6 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 interface SchemaField {
   id: string;
@@ -113,6 +114,7 @@ export function CustomTypeBuilder({
   onSave,
   onCancel,
 }: CustomTypeBuilderProps) {
+  const { t } = useLocale();
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [name, setName] = useState(initialData?.name || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -196,36 +198,36 @@ export function CustomTypeBuilder({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug (identifier)</Label>
+            <Label htmlFor="slug">{t("customTypeBuilder.slugLabel")}</Label>
             <Input
               id="slug"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder="my_question_type"
+              placeholder={t("customTypeBuilder.slugPlaceholder")}
               pattern="[a-z0-9_]+"
             />
             <p className="text-xs text-muted-foreground">
-              Lowercase letters, numbers, and underscores only
+              {t("customTypeBuilder.slugHint")}
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Display Name</Label>
+            <Label htmlFor="name">{t("customTypeBuilder.displayName")}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Question Type"
+              placeholder={t("customTypeBuilder.displayNamePlaceholder")}
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">{t("customTypeBuilder.description")}</Label>
           <Textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe what this question type is used for..."
+            placeholder={t("customTypeBuilder.descriptionPlaceholder")}
             rows={2}
           />
         </div>
@@ -236,21 +238,21 @@ export function CustomTypeBuilder({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Question Configuration</CardTitle>
+              <CardTitle className="text-base">{t("customTypeBuilder.questionConfig")}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Fields that define how the question is displayed
+                {t("customTypeBuilder.questionConfigDesc")}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={addConfigField}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Field
+              {t("customTypeBuilder.addField")}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {configFields.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No configuration fields yet. Add fields to customize question display.
+              {t("customTypeBuilder.noConfigFields")}
             </p>
           ) : (
             configFields.map((field) => (
@@ -270,21 +272,21 @@ export function CustomTypeBuilder({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Answer Schema</CardTitle>
+              <CardTitle className="text-base">{t("customTypeBuilder.answerSchema")}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Fields that define the correct answer format
+                {t("customTypeBuilder.answerSchemaDesc")}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={addAnswerField}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Field
+              {t("customTypeBuilder.addField")}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {answerFields.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              At least one answer field is required.
+              {t("customTypeBuilder.noAnswerFields")}
             </p>
           ) : (
             answerFields.map((field) => (
@@ -302,12 +304,12 @@ export function CustomTypeBuilder({
       {/* Preview */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Schema Preview</CardTitle>
+          <CardTitle className="text-base">{t("customTypeBuilder.schemaPreview")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium mb-2">Config Schema</p>
+              <p className="text-sm font-medium mb-2">{t("customTypeBuilder.configSchema")}</p>
               <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
                 {JSON.stringify(
                   fieldsToSchema(configFields.filter((f) => f.name)),
@@ -317,7 +319,7 @@ export function CustomTypeBuilder({
               </pre>
             </div>
             <div>
-              <p className="text-sm font-medium mb-2">Answer Schema</p>
+              <p className="text-sm font-medium mb-2">{t("customTypeBuilder.answerSchemaLabel")}</p>
               <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
                 {JSON.stringify(
                   fieldsToSchema(answerFields.filter((f) => f.name)),
@@ -333,10 +335,10 @@ export function CustomTypeBuilder({
       {/* Actions */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t("customTypeBuilder.cancel")}
         </Button>
         <Button onClick={handleSubmit} disabled={!isValid}>
-          {initialData ? "Update Question Type" : "Create Question Type"}
+          {initialData ? t("customTypeBuilder.updateType") : t("customTypeBuilder.createType")}
         </Button>
       </div>
     </div>
@@ -350,23 +352,24 @@ interface SchemaFieldEditorProps {
 }
 
 function SchemaFieldEditor({ field, onChange, onRemove }: SchemaFieldEditorProps) {
+  const { t } = useLocale();
   return (
     <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
       <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-grab" />
 
       <div className="flex-1 grid grid-cols-4 gap-2">
         <div className="space-y-1">
-          <Label className="text-xs">Field Name</Label>
+          <Label className="text-xs">{t("customTypeBuilder.fieldName")}</Label>
           <Input
             value={field.name}
             onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="fieldName"
+            placeholder={t("customTypeBuilder.fieldNamePlaceholder")}
             className="h-8 text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">Type</Label>
+          <Label className="text-xs">{t("customTypeBuilder.type")}</Label>
           <Select
             value={field.type}
             onValueChange={(value) =>
@@ -387,7 +390,7 @@ function SchemaFieldEditor({ field, onChange, onRemove }: SchemaFieldEditorProps
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">Default Value</Label>
+          <Label className="text-xs">{t("customTypeBuilder.defaultValue")}</Label>
           <Input
             value={field.defaultValue || ""}
             onChange={(e) => onChange({ defaultValue: e.target.value })}
@@ -410,7 +413,7 @@ function SchemaFieldEditor({ field, onChange, onRemove }: SchemaFieldEditorProps
               onCheckedChange={(checked) => onChange({ required: checked })}
             />
             <Label htmlFor={`required-${field.id}`} className="text-xs">
-              Required
+              {t("customTypeBuilder.required")}
             </Label>
           </div>
         </div>

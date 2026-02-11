@@ -25,11 +25,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { GraduationCap, Plus, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 import type { Lesson } from "@/lib/types/lesson";
 
 export default function LessonsPage() {
   const params = useParams();
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const resourceId = params.resourceId as string;
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -54,7 +56,7 @@ export default function LessonsPage() {
     },
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
-      toast.success("Lesson created");
+      toast.success(t("resourceLessons.lessonCreated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
   });
@@ -71,10 +73,10 @@ export default function LessonsPage() {
     },
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
-      toast.success("Lesson generated! Opening editor...");
+      toast.success(t("resourceLessons.lessonGenerated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
-    onError: () => toast.error("Failed to generate lesson"),
+    onError: () => toast.error(t("resourceLessons.failedGenerate")),
   });
 
   const deleteLesson = useMutation({
@@ -87,7 +89,7 @@ export default function LessonsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
       setDeleteId(null);
-      toast.success("Lesson deleted");
+      toast.success(t("resourceLessons.lessonDeleted"));
     },
   });
 
@@ -105,22 +107,22 @@ export default function LessonsPage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/library">Library</BreadcrumbLink>
+            <BreadcrumbLink href="/library">{t("nav.library")}</BreadcrumbLink>
             <BreadcrumbSeparator />
           </BreadcrumbItem>
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/library/${resourceId}`}>Resource</BreadcrumbLink>
+            <BreadcrumbLink href={`/library/${resourceId}`}>{t("resourceLessons.resource")}</BreadcrumbLink>
             <BreadcrumbSeparator />
           </BreadcrumbItem>
           <BreadcrumbItem>
-            <BreadcrumbPage>Lessons</BreadcrumbPage>
+            <BreadcrumbPage>{t("resourceLessons.lessons")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Lessons</h1>
+          <h1 className="text-2xl font-bold">{t("resourceLessons.lessons")}</h1>
           <Badge variant="secondary">{lessons.length}</Badge>
         </div>
         <div className="flex gap-2">
@@ -134,14 +136,14 @@ export default function LessonsPage() {
             ) : (
               <Sparkles className="mr-2 h-4 w-4" />
             )}
-            AI Generate
+            {t("resourceLessons.aiGenerate")}
           </Button>
           <Button
             onClick={() => createLesson.mutate()}
             disabled={createLesson.isPending}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Create Lesson
+            {t("resourceLessons.createLesson")}
           </Button>
         </div>
       </div>
@@ -149,8 +151,8 @@ export default function LessonsPage() {
       {lessons.length === 0 ? (
         <EmptyState
           icon={<GraduationCap className="h-12 w-12" />}
-          title="No lessons yet"
-          description="Create interactive lessons for step-by-step learning"
+          title={t("resourceLessons.noLessonsYet")}
+          description={t("resourceLessons.noLessonsDesc")}
         />
       ) : (
         <div className="space-y-3">
@@ -168,21 +170,21 @@ export default function LessonsPage() {
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Lesson</DialogTitle>
+            <DialogTitle>{t("resourceLessons.deleteLesson")}</DialogTitle>
             <DialogDescription>
-              Are you sure? This will permanently delete this lesson and all its steps.
+              {t("resourceLessons.deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteId && deleteLesson.mutate(deleteId)}
               disabled={deleteLesson.isPending}
             >
-              {deleteLesson.isPending ? "Deleting..." : "Delete"}
+              {deleteLesson.isPending ? t("resourceLessons.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

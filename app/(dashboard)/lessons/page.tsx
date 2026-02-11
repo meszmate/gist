@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LessonCard } from "@/components/lesson/lesson-card";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LessonItem {
   id: string;
@@ -40,6 +41,7 @@ async function fetchLessons(): Promise<LessonItem[]> {
 
 export default function LessonsPage() {
   const [search, setSearch] = useState("");
+  const { t } = useLocale();
 
   const { data: lessons = [], isLoading } = useQuery({
     queryKey: ["lessons"],
@@ -60,17 +62,17 @@ export default function LessonsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Lessons"
-        description="Browse and play lessons from all your resources"
+        title={t("lessons.title")}
+        description={t("lessons.description")}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Lessons" },
+          { label: t("nav.dashboard"), href: "/dashboard" },
+          { label: t("lessons.title") },
         ]}
         actions={
           <Button asChild>
             <Link href="/create">
               <Plus className="mr-2 h-4 w-4" />
-              Create Resource
+              {t("lessons.createResource")}
             </Link>
           </Button>
         }
@@ -86,7 +88,7 @@ export default function LessonsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalLessons}</p>
-                <p className="text-sm text-muted-foreground">Total Lessons</p>
+                <p className="text-sm text-muted-foreground">{t("lessons.totalLessons")}</p>
               </div>
             </CardContent>
           </Card>
@@ -97,7 +99,7 @@ export default function LessonsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{publishedLessons}</p>
-                <p className="text-sm text-muted-foreground">Published</p>
+                <p className="text-sm text-muted-foreground">{t("lessons.publishedLessons")}</p>
               </div>
             </CardContent>
           </Card>
@@ -108,7 +110,7 @@ export default function LessonsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalSteps}</p>
-                <p className="text-sm text-muted-foreground">Total Steps</p>
+                <p className="text-sm text-muted-foreground">{t("lessons.totalSteps")}</p>
               </div>
             </CardContent>
           </Card>
@@ -120,7 +122,7 @@ export default function LessonsPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search lessons..."
+            placeholder={t("lessons.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -142,16 +144,16 @@ export default function LessonsPage() {
       ) : filteredLessons.length === 0 ? (
         <EmptyState
           icon={<GraduationCap className="h-12 w-12" />}
-          title="No lessons found"
+          title={t("lessons.noLessonsFound")}
           description={
             search
-              ? "Try adjusting your search terms"
-              : "Create a resource and add lessons to get started"
+              ? t("lessons.adjustSearchTerms")
+              : t("lessons.createToStart")
           }
           action={
             !search
               ? {
-                  label: "Create Resource",
+                  label: t("lessons.createResource"),
                   href: "/create",
                   icon: <Plus className="mr-2 h-4 w-4" />,
                 }
@@ -176,7 +178,7 @@ export default function LessonsPage() {
                   {resourceLessons[0].resourceTitle}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {resourceLessons.length} lesson{resourceLessons.length !== 1 ? "s" : ""}
+                  {t("lessons.lessonCount", { count: resourceLessons.length })}
                 </span>
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

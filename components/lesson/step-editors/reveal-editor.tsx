@@ -7,24 +7,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export function RevealEditor({ content, answerData, onChange }: StepEditorProps) {
+  const { t } = useLocale();
   const c = content as RevealContent;
 
   return (
     <div className="space-y-4">
       <div>
-        <Label>Title (optional)</Label>
+        <Label>{t("stepEditor.titleOptional")}</Label>
         <Input
           value={c.title || ""}
           onChange={(e) => onChange({ ...c, title: e.target.value }, answerData)}
-          placeholder="Reveal section title"
+          placeholder={t("stepEditor.revealSectionTitlePlaceholder")}
           className="mt-1.5"
         />
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label>Steps</Label>
+          <Label>{t("stepEditor.steps")}</Label>
           <Button
             variant="outline"
             size="sm"
@@ -34,7 +36,7 @@ export function RevealEditor({ content, answerData, onChange }: StepEditorProps)
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
-            Add Step
+            {t("stepEditor.addStep")}
           </Button>
         </div>
         {c.steps.map((revealStep, i) => (
@@ -47,7 +49,7 @@ export function RevealEditor({ content, answerData, onChange }: StepEditorProps)
                 steps[i] = { ...steps[i], content: e.target.value };
                 onChange({ ...c, steps }, answerData);
               }}
-              placeholder={`Step ${i + 1} content (markdown)`}
+              placeholder={`${t("stepEditor.step")} ${i + 1} ${t("stepEditor.contentMarkdownSuffix")}`}
               rows={2}
               className="flex-1"
             />

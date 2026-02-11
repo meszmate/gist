@@ -24,6 +24,7 @@ import {
   Eye,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 const iconComponents: Record<string, LucideIcon> = {
   FileText,
@@ -50,6 +51,7 @@ export function LessonStepTypePicker({
   onOpenChange,
   onSelect,
 }: LessonStepTypePickerProps) {
+  const { t } = useLocale();
   const contentTypes = Object.values(STEP_TYPE_META).filter((m) => m.category === "content");
   const interactiveTypes = Object.values(STEP_TYPE_META).filter((m) => m.category === "interactive");
 
@@ -62,11 +64,11 @@ export function LessonStepTypePicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Step</DialogTitle>
+          <DialogTitle>{t("lessonStepPicker.addStep")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Content</h4>
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">{t("lessonStepPicker.content")}</h4>
             <div className="grid grid-cols-1 gap-1.5">
               {contentTypes.map((meta) => {
                 const Icon = iconComponents[meta.icon] || FileText;
@@ -89,8 +91,8 @@ export function LessonStepTypePicker({
           </div>
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              Interactive
-              <Badge variant="secondary" className="ml-2 text-xs">Graded</Badge>
+              {t("lessonStepPicker.interactive")}
+              <Badge variant="secondary" className="ml-2 text-xs">{t("lessonStepPicker.graded")}</Badge>
             </h4>
             <div className="grid grid-cols-1 gap-1.5">
               {interactiveTypes.map((meta) => {
