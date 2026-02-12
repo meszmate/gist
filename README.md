@@ -27,6 +27,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, int
 - **Quiz Sharing** - Share quizzes via link with participant tracking
 - **Participant Dashboard** - View scores, grades, time spent, and export results to CSV
 - **Spaced Repetition** - Flashcard study mode with spaced repetition algorithm
+- **Internationalization** - English and Hungarian UI with locale-aware AI content generation
 - **Dark Mode** - Full dark mode support
 - **CI/CD** - GitHub Actions pipeline with lint, type-check, and build jobs
 
@@ -36,7 +37,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, int
 - **Language**: TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: NextAuth.js v5 (Auth.js)
-- **AI**: OpenAI GPT-4o-mini
+- **AI**: OpenAI (configurable model, defaults to o4-mini)
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui + Radix UI
 - **State Management**: TanStack Query (React Query)
@@ -94,6 +95,7 @@ Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 | `AUTH_GOOGLE_ID` | Google OAuth client ID | Yes |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret | Yes |
 | `OPENAI_API_KEY` | OpenAI API key for AI features | Yes |
+| `OPENAI_MODEL` | OpenAI model to use (defaults to `o4-mini`) | No |
 | `NEXT_PUBLIC_APP_URL` | Public app URL for share links | Yes |
 | `NEXT_PUBLIC_REPOSITORY_URL` | GitHub repository URL (shows in sidebar) | No |
 

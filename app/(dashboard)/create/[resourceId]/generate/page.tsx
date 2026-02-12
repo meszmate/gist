@@ -69,7 +69,7 @@ export default function GeneratePage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const resourceId = params.resourceId as string;
   const [progress, setProgress] = useState(0);
   const [generatingStep, setGeneratingStep] = useState<string | null>(null);
@@ -188,6 +188,7 @@ export default function GeneratePage() {
             type: step,
             sourceContent: data.sourceContent,
             count: step === "flashcards" ? data.flashcardCount : data.quizQuestionCount,
+            locale,
           }),
         });
 
