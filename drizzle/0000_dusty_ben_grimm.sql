@@ -12,7 +12,7 @@ CREATE TABLE "accounts" (
 	"session_state" varchar(255),
 	CONSTRAINT "accounts_provider_provider_account_id_pk" PRIMARY KEY("provider","provider_account_id")
 );
---> statement-breakpoint
+
 CREATE TABLE "contact_groups" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"teacher_id" uuid NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE "contact_groups" (
 	"color" varchar(20),
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "contacts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"teacher_id" uuid NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE "contacts" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "flashcard_study_logs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"resource_id" uuid NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE "flashcard_study_logs" (
 	"time_spent_seconds" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "flashcards" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE "flashcards" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "folders" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE "folders" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "grading_configs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -80,7 +80,7 @@ CREATE TABLE "grading_configs" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "grading_configs_study_material_id_unique" UNIQUE("study_material_id")
 );
---> statement-breakpoint
+
 CREATE TABLE "lesson_attempts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"lesson_id" uuid NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE "lesson_attempts" (
 	"completed_at" timestamp,
 	"time_spent_seconds" integer
 );
---> statement-breakpoint
+
 CREATE TABLE "lesson_steps" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"lesson_id" uuid NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE "lesson_steps" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "lessons" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE "lessons" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "question_types" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"slug" varchar(50) NOT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE "question_types" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "question_types_slug_unique" UNIQUE("slug")
 );
---> statement-breakpoint
+
 CREATE TABLE "quiz_attempts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -158,7 +158,7 @@ CREATE TABLE "quiz_attempts" (
 	"time_spent_seconds" integer,
 	"attempt_number" integer DEFAULT 1
 );
---> statement-breakpoint
+
 CREATE TABLE "quiz_questions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE "quiz_questions" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now()
 );
---> statement-breakpoint
+
 CREATE TABLE "quiz_settings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"study_material_id" uuid NOT NULL,
@@ -188,7 +188,7 @@ CREATE TABLE "quiz_settings" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "quiz_settings_study_material_id_unique" UNIQUE("study_material_id")
 );
---> statement-breakpoint
+
 CREATE TABLE "resource_access_logs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"resource_id" uuid NOT NULL,
@@ -197,7 +197,7 @@ CREATE TABLE "resource_access_logs" (
 	"access_type" varchar(50) NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "saved_resources" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -205,13 +205,13 @@ CREATE TABLE "saved_resources" (
 	"permission" varchar(20) DEFAULT 'read',
 	"saved_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "sessions" (
 	"session_token" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"expires" timestamp NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "study_materials" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE "study_materials" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "study_materials_share_token_unique" UNIQUE("share_token")
 );
---> statement-breakpoint
+
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" varchar(255) NOT NULL,
@@ -244,61 +244,61 @@ CREATE TABLE "users" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
---> statement-breakpoint
+
 CREATE TABLE "verification_tokens" (
 	"identifier" varchar(255) NOT NULL,
 	"token" varchar(255) NOT NULL,
 	"expires" timestamp NOT NULL,
 	CONSTRAINT "verification_tokens_identifier_token_pk" PRIMARY KEY("identifier","token")
 );
---> statement-breakpoint
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "contact_groups" ADD CONSTRAINT "contact_groups_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "contacts" ADD CONSTRAINT "contacts_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "contacts" ADD CONSTRAINT "contacts_group_id_contact_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."contact_groups"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "flashcard_study_logs" ADD CONSTRAINT "flashcard_study_logs_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "flashcard_study_logs" ADD CONSTRAINT "flashcard_study_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "flashcards" ADD CONSTRAINT "flashcards_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "folders" ADD CONSTRAINT "folders_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "grading_configs" ADD CONSTRAINT "grading_configs_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "lesson_attempts" ADD CONSTRAINT "lesson_attempts_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "lesson_attempts" ADD CONSTRAINT "lesson_attempts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "lesson_steps" ADD CONSTRAINT "lesson_steps_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "lessons" ADD CONSTRAINT "lessons_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "quiz_attempts" ADD CONSTRAINT "quiz_attempts_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "quiz_attempts" ADD CONSTRAINT "quiz_attempts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "quiz_questions" ADD CONSTRAINT "quiz_questions_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "quiz_settings" ADD CONSTRAINT "quiz_settings_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "resource_access_logs" ADD CONSTRAINT "resource_access_logs_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "resource_access_logs" ADD CONSTRAINT "resource_access_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "saved_resources" ADD CONSTRAINT "saved_resources_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "saved_resources" ADD CONSTRAINT "saved_resources_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "study_materials" ADD CONSTRAINT "study_materials_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "study_materials" ADD CONSTRAINT "study_materials_folder_id_folders_id_fk" FOREIGN KEY ("folder_id") REFERENCES "public"."folders"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "contact_groups_teacher_idx" ON "contact_groups" USING btree ("teacher_id");--> statement-breakpoint
-CREATE INDEX "contacts_teacher_idx" ON "contacts" USING btree ("teacher_id");--> statement-breakpoint
-CREATE INDEX "contacts_email_idx" ON "contacts" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "flashcard_study_logs_resource_idx" ON "flashcard_study_logs" USING btree ("resource_id");--> statement-breakpoint
-CREATE INDEX "flashcard_study_logs_user_idx" ON "flashcard_study_logs" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "flashcards_material_idx" ON "flashcards" USING btree ("study_material_id");--> statement-breakpoint
-CREATE INDEX "flashcards_next_review_idx" ON "flashcards" USING btree ("next_review");--> statement-breakpoint
-CREATE INDEX "lesson_attempts_lesson_idx" ON "lesson_attempts" USING btree ("lesson_id");--> statement-breakpoint
-CREATE INDEX "lesson_attempts_user_idx" ON "lesson_attempts" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "lesson_steps_lesson_idx" ON "lesson_steps" USING btree ("lesson_id");--> statement-breakpoint
-CREATE INDEX "lesson_steps_order_idx" ON "lesson_steps" USING btree ("lesson_id","order");--> statement-breakpoint
-CREATE INDEX "lessons_material_idx" ON "lessons" USING btree ("study_material_id");--> statement-breakpoint
-CREATE INDEX "lessons_order_idx" ON "lessons" USING btree ("study_material_id","order");--> statement-breakpoint
-CREATE INDEX "question_types_slug_idx" ON "question_types" USING btree ("slug");--> statement-breakpoint
-CREATE INDEX "quiz_attempts_material_idx" ON "quiz_attempts" USING btree ("study_material_id");--> statement-breakpoint
-CREATE INDEX "quiz_attempts_user_idx" ON "quiz_attempts" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "quiz_attempts_completed_idx" ON "quiz_attempts" USING btree ("completed_at");--> statement-breakpoint
-CREATE INDEX "quiz_questions_material_idx" ON "quiz_questions" USING btree ("study_material_id");--> statement-breakpoint
-CREATE INDEX "quiz_questions_type_idx" ON "quiz_questions" USING btree ("question_type");--> statement-breakpoint
-CREATE INDEX "access_logs_resource_idx" ON "resource_access_logs" USING btree ("resource_id");--> statement-breakpoint
-CREATE INDEX "access_logs_email_idx" ON "resource_access_logs" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "saved_resources_user_idx" ON "saved_resources" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "saved_resources_resource_idx" ON "saved_resources" USING btree ("resource_id");--> statement-breakpoint
-CREATE INDEX "study_materials_user_idx" ON "study_materials" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "study_materials_folder_idx" ON "study_materials" USING btree ("folder_id");--> statement-breakpoint
+
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "contact_groups" ADD CONSTRAINT "contact_groups_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_group_id_contact_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."contact_groups"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "flashcard_study_logs" ADD CONSTRAINT "flashcard_study_logs_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "flashcard_study_logs" ADD CONSTRAINT "flashcard_study_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "flashcards" ADD CONSTRAINT "flashcards_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "folders" ADD CONSTRAINT "folders_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "grading_configs" ADD CONSTRAINT "grading_configs_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "lesson_attempts" ADD CONSTRAINT "lesson_attempts_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "lesson_attempts" ADD CONSTRAINT "lesson_attempts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "lesson_steps" ADD CONSTRAINT "lesson_steps_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "lessons" ADD CONSTRAINT "lessons_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "quiz_attempts" ADD CONSTRAINT "quiz_attempts_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "quiz_attempts" ADD CONSTRAINT "quiz_attempts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "quiz_questions" ADD CONSTRAINT "quiz_questions_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "quiz_settings" ADD CONSTRAINT "quiz_settings_study_material_id_study_materials_id_fk" FOREIGN KEY ("study_material_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resource_access_logs" ADD CONSTRAINT "resource_access_logs_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "resource_access_logs" ADD CONSTRAINT "resource_access_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "saved_resources" ADD CONSTRAINT "saved_resources_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "saved_resources" ADD CONSTRAINT "saved_resources_resource_id_study_materials_id_fk" FOREIGN KEY ("resource_id") REFERENCES "public"."study_materials"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "study_materials" ADD CONSTRAINT "study_materials_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "study_materials" ADD CONSTRAINT "study_materials_folder_id_folders_id_fk" FOREIGN KEY ("folder_id") REFERENCES "public"."folders"("id") ON DELETE set null ON UPDATE no action;
+CREATE INDEX "contact_groups_teacher_idx" ON "contact_groups" USING btree ("teacher_id");
+CREATE INDEX "contacts_teacher_idx" ON "contacts" USING btree ("teacher_id");
+CREATE INDEX "contacts_email_idx" ON "contacts" USING btree ("email");
+CREATE INDEX "flashcard_study_logs_resource_idx" ON "flashcard_study_logs" USING btree ("resource_id");
+CREATE INDEX "flashcard_study_logs_user_idx" ON "flashcard_study_logs" USING btree ("user_id");
+CREATE INDEX "flashcards_material_idx" ON "flashcards" USING btree ("study_material_id");
+CREATE INDEX "flashcards_next_review_idx" ON "flashcards" USING btree ("next_review");
+CREATE INDEX "lesson_attempts_lesson_idx" ON "lesson_attempts" USING btree ("lesson_id");
+CREATE INDEX "lesson_attempts_user_idx" ON "lesson_attempts" USING btree ("user_id");
+CREATE INDEX "lesson_steps_lesson_idx" ON "lesson_steps" USING btree ("lesson_id");
+CREATE INDEX "lesson_steps_order_idx" ON "lesson_steps" USING btree ("lesson_id","order");
+CREATE INDEX "lessons_material_idx" ON "lessons" USING btree ("study_material_id");
+CREATE INDEX "lessons_order_idx" ON "lessons" USING btree ("study_material_id","order");
+CREATE INDEX "question_types_slug_idx" ON "question_types" USING btree ("slug");
+CREATE INDEX "quiz_attempts_material_idx" ON "quiz_attempts" USING btree ("study_material_id");
+CREATE INDEX "quiz_attempts_user_idx" ON "quiz_attempts" USING btree ("user_id");
+CREATE INDEX "quiz_attempts_completed_idx" ON "quiz_attempts" USING btree ("completed_at");
+CREATE INDEX "quiz_questions_material_idx" ON "quiz_questions" USING btree ("study_material_id");
+CREATE INDEX "quiz_questions_type_idx" ON "quiz_questions" USING btree ("question_type");
+CREATE INDEX "access_logs_resource_idx" ON "resource_access_logs" USING btree ("resource_id");
+CREATE INDEX "access_logs_email_idx" ON "resource_access_logs" USING btree ("email");
+CREATE INDEX "saved_resources_user_idx" ON "saved_resources" USING btree ("user_id");
+CREATE INDEX "saved_resources_resource_idx" ON "saved_resources" USING btree ("resource_id");
+CREATE INDEX "study_materials_user_idx" ON "study_materials" USING btree ("user_id");
+CREATE INDEX "study_materials_folder_idx" ON "study_materials" USING btree ("folder_id");
 CREATE INDEX "study_materials_share_token_idx" ON "study_materials" USING btree ("share_token");

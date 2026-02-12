@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -37,18 +37,18 @@ export function PageHeader({
         <Breadcrumb>
           <BreadcrumbList>
             {breadcrumbs.map((item, index) => (
-              <BreadcrumbItem key={index}>
-                {index < breadcrumbs.length - 1 ? (
-                  <>
+              <React.Fragment key={index}>
+                <BreadcrumbItem>
+                  {index < breadcrumbs.length - 1 ? (
                     <BreadcrumbLink href={item.href || "#"}>
                       {item.label}
                     </BreadcrumbLink>
-                    <BreadcrumbSeparator />
-                  </>
-                ) : (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                )}
-              </BreadcrumbItem>
+                  ) : (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+                {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+              </React.Fragment>
             ))}
           </BreadcrumbList>
         </Breadcrumb>

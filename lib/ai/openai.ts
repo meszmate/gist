@@ -8,6 +8,15 @@ import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
 
 export const openai = new OpenAI();
 
+const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", hu: "Hungarian" };
+
+function getLanguageInstruction(locale?: string): string {
+  const lang = LANGUAGE_NAMES[locale || "en"] || "English";
+  return `\nIMPORTANT: Generate ALL content in ${lang}.`;
+}
+
 export const SUMMARY_SYSTEM_PROMPT = `You are an expert educator. Generate a clear, well-organized summary of the provided content.
 Focus on key concepts, main ideas, and important details.
 Use markdown formatting for better readability (headings, bullet points, etc.).
@@ -113,11 +122,11 @@ export interface ExtendedQuizQuestion {
 
 export type QuestionTypeFilter = QuestionTypeSlug | "all" | "mixed";
 
-export async function generateSummary(content: string): Promise<string> {
+export async function generateSummary(content: string, locale?: string): Promise<string> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: SUMMARY_SYSTEM_PROMPT },
+      { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       { role: "user", content: `Please summarize the following content:\n\n${content}` },
     ],
     max_tokens: 2000,
@@ -128,12 +137,13 @@ export async function generateSummary(content: string): Promise<string> {
 
 export async function generateFlashcards(
   content: string,
-  count: number = 10
+  count: number = 10,
+  locale?: string
 ): Promise<GeneratedFlashcard[]> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: FLASHCARD_SYSTEM_PROMPT },
+      { role: "system", content: FLASHCARD_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Generate ${count} flashcards from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
@@ -159,12 +169,13 @@ export async function generateFlashcards(
 
 export async function generateQuizQuestions(
   content: string,
-  count: number = 5
+  count: number = 5,
+  locale?: string
 ): Promise<GeneratedQuizQuestion[]> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: QUIZ_SYSTEM_PROMPT },
+      { role: "system", content: QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
@@ -194,7 +205,8 @@ export async function generateQuizQuestions(
 export async function generateExtendedQuizQuestions(
   content: string,
   count: number = 10,
-  questionTypes: QuestionTypeFilter = "mixed"
+  questionTypes: QuestionTypeFilter = "mixed",
+  locale?: string
 ): Promise<ExtendedQuizQuestion[]> {
   let typeInstruction = "";
 
@@ -212,9 +224,9 @@ Aim for this distribution:
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: EXTENDED_QUIZ_SYSTEM_PROMPT },
+      { role: "system", content: EXTENDED_QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Generate ${count} quiz questions from the following content.
@@ -309,7 +321,8 @@ export async function generateLesson(
   sourceContent: string,
   existingFlashcards?: { front: string; back: string }[],
   existingQuizQuestions?: { question: string; options?: string[] }[],
-  options?: { stepCount?: number; title?: string }
+  options?: { stepCount?: number; title?: string },
+  locale?: string
 ): Promise<{ title: string; description: string; steps: GeneratedLessonStep[] }> {
   const stepCount = options?.stepCount || 14;
 
@@ -328,9 +341,9 @@ export async function generateLesson(
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: LESSON_SYSTEM_PROMPT },
+      { role: "system", content: LESSON_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}\n\nAlso provide a title and short description for the lesson.\n\nReturn JSON: { "title": "...", "description": "...", "steps": [...] }\n\n${context}`,
@@ -364,12 +377,13 @@ export async function generateLesson(
 
 export async function improveLessonStep(
   step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
-  sourceContent?: string
+  sourceContent?: string,
+  locale?: string
 ): Promise<GeneratedLessonStep> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: LESSON_IMPROVE_PROMPT },
+      { role: "system", content: LESSON_IMPROVE_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Improve this lesson step:\n${JSON.stringify(step)}${sourceContent ? `\n\nOriginal source material for context:\n${sourceContent.slice(0, 2000)}` : ""}\n\nReturn the improved step as JSON with the same structure.`,

@@ -529,12 +529,12 @@ export default function ResourcePage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="/dashboard">{t("nav.dashboard")}</BreadcrumbLink>
-              <BreadcrumbSeparator />
             </BreadcrumbItem>
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink href="/library">{t("nav.library")}</BreadcrumbLink>
-              <BreadcrumbSeparator />
             </BreadcrumbItem>
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbPage>{resource.title}</BreadcrumbPage>
             </BreadcrumbItem>

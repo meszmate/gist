@@ -80,7 +80,7 @@ export function SidebarUser() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="text-destructive"
+          variant="destructive"
         >
           <LogOut className="mr-2 h-4 w-4" />
           {t("sidebar.signOut")}

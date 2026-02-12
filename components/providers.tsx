@@ -6,7 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
 import { I18nProvider } from "@/lib/i18n/i18n-context";
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, locale }: { children: ReactNode; locale: string }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -28,7 +28,7 @@ export function Providers({ children }: { children: ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          <I18nProvider>
+          <I18nProvider initialLocale={locale}>
             {children}
           </I18nProvider>
         </ThemeProvider>

@@ -54,12 +54,14 @@ export async function POST(
     .where(eq(quizQuestions.studyMaterialId, resourceId));
 
   const body = await req.json().catch(() => ({}));
+  const locale = body.locale || "en";
 
   const generated = await generateLesson(
     content,
     existingFlashcards,
     existingQuestions.map((q) => ({ question: q.question, options: q.options || undefined })),
-    { stepCount: body.stepCount, title: body.title }
+    { stepCount: body.stepCount, title: body.title },
+    locale
   );
 
   // Create the lesson

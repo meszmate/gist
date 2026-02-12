@@ -14,6 +14,7 @@ const generateSchema = z.object({
   type: z.enum(["summary", "flashcards", "quiz"]),
   sourceContent: z.string().min(1),
   count: z.number().min(1).max(50).optional(),
+  locale: z.string().optional(),
 });
 
 export async function POST(
@@ -47,7 +48,7 @@ export async function POST(
 
     switch (data.type) {
       case "summary": {
-        const summary = await generateSummary(data.sourceContent);
+        const summary = await generateSummary(data.sourceContent, data.locale);
         await db
           .update(studyMaterials)
           .set({ summary, updatedAt: new Date() })
@@ -58,7 +59,8 @@ export async function POST(
       case "flashcards": {
         const generatedFlashcards = await generateFlashcards(
           data.sourceContent,
-          data.count || 10
+          data.count || 10,
+          data.locale
         );
 
         if (generatedFlashcards.length > 0) {
@@ -81,7 +83,8 @@ export async function POST(
         const generatedQuestions = await generateExtendedQuizQuestions(
           data.sourceContent,
           data.count || 5,
-          "mixed"
+          "mixed",
+          data.locale
         );
 
         if (generatedQuestions.length > 0) {

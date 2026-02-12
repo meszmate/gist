@@ -16,7 +16,7 @@ export async function POST(
     }
 
     const { resourceId } = await params;
-    const { message, history = [] } = await req.json();
+    const { message, history = [], locale } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -56,11 +56,13 @@ Your role is to:
 Context from the study material:
 ${context.slice(0, 8000)}
 
-Be concise, helpful, and encouraging. If you don't know something or it's not in the material, say so.`;
+Be concise, helpful, and encouraging. If you don't know something or it's not in the material, say so.${locale === "hu" ? "\nIMPORTANT: Respond in Hungarian." : ""}`;
+
+    const MODEL = process.env.OPENAI_MODEL || "o4-mini";
 
     // Create streaming response
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         ...history.map((msg: { role: string; content: string }) => ({
