@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 export const COLOR_THEMES = [
   "neutral",
@@ -16,15 +16,13 @@ export type ColorTheme = (typeof COLOR_THEMES)[number];
 const STORAGE_KEY = "color-theme";
 
 export function useColorTheme() {
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>("neutral");
-
-  // Sync from localStorage after hydration to avoid server/client mismatch
-  useEffect(() => {
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
+    if (typeof window === "undefined") return "neutral";
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && COLOR_THEMES.includes(stored as ColorTheme)) {
-      setColorThemeState(stored as ColorTheme);
-    }
-  }, []);
+    return stored && COLOR_THEMES.includes(stored as ColorTheme)
+      ? (stored as ColorTheme)
+      : "neutral";
+  });
 
   const setColorTheme = useCallback((theme: ColorTheme) => {
     setColorThemeState(theme);

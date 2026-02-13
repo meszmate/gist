@@ -36,7 +36,7 @@ export function FileUploadDropzone({
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
       return t("upload.fileSizeExceeds");
     }
@@ -47,7 +47,7 @@ export function FileUploadDropzone({
       return t("upload.unsupportedType", { types: ACCEPTED_EXTENSIONS.join(", ") });
     }
     return null;
-  };
+  }, [t]);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -86,7 +86,7 @@ export function FileUploadDropzone({
         onError(message);
       }
     },
-    [onTextExtracted, onError]
+    [onTextExtracted, onError, validateFile]
   );
 
   const handleDrop = useCallback(
