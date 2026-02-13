@@ -129,7 +129,7 @@ export async function generateSummary(content: string, locale?: string): Promise
       { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       { role: "user", content: `Please summarize the following content:\n\n${content}` },
     ],
-    max_tokens: 2000,
+    max_completion_tokens: 2000,
   });
 
   return completion.choices[0].message.content || "";
@@ -150,7 +150,7 @@ export async function generateFlashcards(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 3000,
   });
 
   const result = completion.choices[0].message.content;
@@ -182,7 +182,7 @@ export async function generateQuizQuestions(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 3000,
   });
 
   const result = completion.choices[0].message.content;
@@ -246,7 +246,7 @@ ${content}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 4000,
+    max_completion_tokens: 4000,
   });
 
   const result = completion.choices[0].message.content;
@@ -350,7 +350,7 @@ export async function generateLesson(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 6000,
+    max_completion_tokens: 6000,
   });
 
   const result = completion.choices[0].message.content;
@@ -390,7 +390,7 @@ export async function improveLessonStep(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 2000,
+    max_completion_tokens: 2000,
   });
 
   const result = completion.choices[0].message.content;
