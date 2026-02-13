@@ -110,6 +110,19 @@ export async function GET() {
     return NextResponse.json([...resourcesWithCounts, ...savedWithCounts]);
   } catch (error) {
     console.error("Error fetching resources:", error);
+
+    const errorText = String(error);
+    if (
+      errorText.includes("EHOSTUNREACH") ||
+      errorText.includes("ECONNREFUSED") ||
+      errorText.includes("ENOTFOUND")
+    ) {
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch resources" },
       { status: 500 }

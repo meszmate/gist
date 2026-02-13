@@ -68,7 +68,13 @@ export default function LessonsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale }),
       });
-      if (!res.ok) throw new Error("Failed to generate lesson");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+          throw new Error(t("generate.tokenLimitExceeded"));
+        }
+        throw new Error("Failed to generate lesson");
+      }
       return res.json();
     },
     onSuccess: (lesson) => {
@@ -76,7 +82,7 @@ export default function LessonsPage() {
       toast.success(t("resourceLessons.lessonGenerated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
-    onError: () => toast.error(t("resourceLessons.failedGenerate")),
+    onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
   });
 
   const deleteLesson = useMutation({

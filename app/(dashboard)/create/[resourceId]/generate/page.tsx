@@ -193,6 +193,10 @@ export default function GeneratePage() {
         });
 
         if (!res.ok) {
+          const errorBody = await res.json().catch(() => ({}));
+          if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+            throw new Error(t("generate.tokenLimitExceeded"));
+          }
           throw new Error(`Failed to generate ${step}`);
         }
 

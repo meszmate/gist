@@ -47,6 +47,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   contacts: many(contacts),
   contactGroups: many(contactGroups),
   savedResources: many(savedResources),
+  tokenUsageLogs: many(tokenUsageLogs),
 }));
 
 // ============== AUTH (NextAuth.js) ==============
@@ -527,6 +528,34 @@ export const flashcardStudyLogsRelations = relations(
   })
 );
 
+// ============== TOKEN USAGE LOGS ==============
+export const tokenUsageLogs = pgTable(
+  "token_usage_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokensUsed: integer("tokens_used").notNull(),
+    promptTokens: integer("prompt_tokens"),
+    completionTokens: integer("completion_tokens"),
+    operation: varchar("operation", { length: 100 }).notNull(),
+    model: varchar("model", { length: 100 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("token_usage_logs_user_idx").on(table.userId),
+    index("token_usage_logs_user_created_idx").on(table.userId, table.createdAt),
+  ]
+);
+
+export const tokenUsageLogsRelations = relations(tokenUsageLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [tokenUsageLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============== LESSONS ==============
 export const lessons = pgTable(
   "lessons",
@@ -677,3 +706,6 @@ export type NewLessonStep = typeof lessonSteps.$inferInsert;
 
 export type LessonAttemptRow = typeof lessonAttempts.$inferSelect;
 export type NewLessonAttempt = typeof lessonAttempts.$inferInsert;
+
+export type TokenUsageLog = typeof tokenUsageLogs.$inferSelect;
+export type NewTokenUsageLog = typeof tokenUsageLogs.$inferInsert;

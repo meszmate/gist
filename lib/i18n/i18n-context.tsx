@@ -54,7 +54,22 @@ export function I18nProvider({ children, initialLocale }: { children: ReactNode;
     ? (initialLocale as Locale)
     : DEFAULT_LOCALE;
 
-  const [locale, setLocaleState] = useState<Locale>(validInitial);
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") return validInitial;
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && LOCALES.includes(stored as Locale)) {
+      return stored as Locale;
+    }
+
+    const hasCookie = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
+    if (hasCookie?.[1] && LOCALES.includes(hasCookie[1] as Locale)) {
+      return hasCookie[1] as Locale;
+    }
+
+    const browserLang = navigator.language.split("-")[0] as Locale;
+    return LOCALES.includes(browserLang) ? browserLang : validInitial;
+  });
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
@@ -63,23 +78,10 @@ export function I18nProvider({ children, initialLocale }: { children: ReactNode;
     document.documentElement.lang = newLocale;
   }, []);
 
-  // On mount: only detect and override if no cookie/localStorage exists yet (first-time users)
-  useEffect(() => {
-    const hasCookie = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
-    const hasStorage = localStorage.getItem(STORAGE_KEY);
-
-    if (!hasCookie && !hasStorage) {
-      const browserLang = navigator.language.split("-")[0] as Locale;
-      const detected = LOCALES.includes(browserLang) ? browserLang : DEFAULT_LOCALE;
-      setLocaleState(detected);
-      localStorage.setItem(STORAGE_KEY, detected);
-      setCookie(detected);
-      document.documentElement.lang = detected;
-    }
-  }, []);
-
   // Sync lang attribute when locale changes
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, locale);
+    setCookie(locale);
     document.documentElement.lang = locale;
   }, [locale]);
 

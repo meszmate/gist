@@ -163,7 +163,13 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
           body: JSON.stringify({ locale }),
         }
       );
-      if (!res.ok) throw new Error("Failed to improve step");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+          throw new Error(t("generate.tokenLimitExceeded"));
+        }
+        throw new Error("Failed to improve step");
+      }
       return res.json();
     },
     onSuccess: (improved) => {
@@ -172,6 +178,9 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
       );
       setIsDirty(true);
       toast.success(t("lessonEditor.stepImproved"));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 

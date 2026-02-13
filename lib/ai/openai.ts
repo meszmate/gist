@@ -8,7 +8,22 @@ import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
 
 export const openai = new OpenAI();
 
-const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+export const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+
+export interface TokenUsageData {
+  total_tokens: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+}
+
+function extractUsage(completion: { usage?: { total_tokens: number; prompt_tokens: number; completion_tokens: number } | null }): TokenUsageData | null {
+  if (!completion.usage) return null;
+  return {
+    total_tokens: completion.usage.total_tokens,
+    prompt_tokens: completion.usage.prompt_tokens,
+    completion_tokens: completion.usage.completion_tokens,
+  };
+}
 
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", hu: "Hungarian" };
 
@@ -122,24 +137,27 @@ export interface ExtendedQuizQuestion {
 
 export type QuestionTypeFilter = QuestionTypeSlug | "all" | "mixed";
 
-export async function generateSummary(content: string, locale?: string): Promise<string> {
+export async function generateSummary(content: string, locale?: string): Promise<{ result: string; usage: TokenUsageData | null }> {
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
       { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       { role: "user", content: `Please summarize the following content:\n\n${content}` },
     ],
-    max_tokens: 2000,
+    max_completion_tokens: 16000,
   });
 
-  return completion.choices[0].message.content || "";
+  return {
+    result: completion.choices[0].message.content || "",
+    usage: extractUsage(completion),
+  };
 }
 
 export async function generateFlashcards(
   content: string,
   count: number = 10,
   locale?: string
-): Promise<GeneratedFlashcard[]> {
+): Promise<{ result: GeneratedFlashcard[]; usage: TokenUsageData | null }> {
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
@@ -150,20 +168,21 @@ export async function generateFlashcards(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
 
   try {
     const parsed = JSON.parse(result);
     // Handle both { flashcards: [...] } and direct array formats
     const flashcards = Array.isArray(parsed) ? parsed : parsed.flashcards || [];
-    return flashcards.slice(0, count);
+    return { result: flashcards.slice(0, count), usage };
   } catch {
     console.error("Failed to parse flashcards:", result);
-    return [];
+    return { result: [], usage };
   }
 }
 
@@ -171,7 +190,7 @@ export async function generateQuizQuestions(
   content: string,
   count: number = 5,
   locale?: string
-): Promise<GeneratedQuizQuestion[]> {
+): Promise<{ result: GeneratedQuizQuestion[]; usage: TokenUsageData | null }> {
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
@@ -182,20 +201,21 @@ export async function generateQuizQuestions(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
 
   try {
     const parsed = JSON.parse(result);
     // Handle both { questions: [...] } and direct array formats
     const questions = Array.isArray(parsed) ? parsed : parsed.questions || [];
-    return questions.slice(0, count);
+    return { result: questions.slice(0, count), usage };
   } catch {
     console.error("Failed to parse quiz questions:", result);
-    return [];
+    return { result: [], usage };
   }
 }
 
@@ -207,7 +227,7 @@ export async function generateExtendedQuizQuestions(
   count: number = 10,
   questionTypes: QuestionTypeFilter = "mixed",
   locale?: string
-): Promise<ExtendedQuizQuestion[]> {
+): Promise<{ result: ExtendedQuizQuestion[]; usage: TokenUsageData | null }> {
   let typeInstruction = "";
 
   if (questionTypes === "all" || questionTypes === "mixed") {
@@ -246,11 +266,12 @@ ${content}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 4000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
 
   try {
     const parsed = JSON.parse(result);
@@ -270,10 +291,10 @@ ${content}`,
         explanation: q.explanation || "",
       }));
 
-    return validQuestions.slice(0, count);
+    return { result: validQuestions.slice(0, count), usage };
   } catch (error) {
     console.error("Failed to parse extended quiz questions:", result, error);
-    return [];
+    return { result: [], usage };
   }
 }
 
@@ -323,7 +344,7 @@ export async function generateLesson(
   existingQuizQuestions?: { question: string; options?: string[] }[],
   options?: { stepCount?: number; title?: string },
   locale?: string
-): Promise<{ title: string; description: string; steps: GeneratedLessonStep[] }> {
+): Promise<{ result: { title: string; description: string; steps: GeneratedLessonStep[] }; usage: TokenUsageData | null }> {
   const stepCount = options?.stepCount || 14;
 
   let context = `Source material:\n${sourceContent}`;
@@ -350,28 +371,32 @@ export async function generateLesson(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 6000,
+    max_completion_tokens: 25000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return { title: "Untitled Lesson", description: "", steps: [] };
+  if (!result) return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
 
   try {
     const parsed = JSON.parse(result);
     return {
-      title: parsed.title || options?.title || "Untitled Lesson",
-      description: parsed.description || "",
-      steps: (parsed.steps || []).map((s: GeneratedLessonStep) => ({
-        stepType: s.stepType,
-        content: s.content,
-        answerData: s.answerData || null,
-        explanation: s.explanation || null,
-        hint: s.hint || null,
-      })),
+      result: {
+        title: parsed.title || options?.title || "Untitled Lesson",
+        description: parsed.description || "",
+        steps: (parsed.steps || []).map((s: GeneratedLessonStep) => ({
+          stepType: s.stepType,
+          content: s.content,
+          answerData: s.answerData || null,
+          explanation: s.explanation || null,
+          hint: s.hint || null,
+        })),
+      },
+      usage,
     };
   } catch {
     console.error("Failed to parse lesson:", result);
-    return { title: "Untitled Lesson", description: "", steps: [] };
+    return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
   }
 }
 
@@ -379,7 +404,7 @@ export async function improveLessonStep(
   step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
   sourceContent?: string,
   locale?: string
-): Promise<GeneratedLessonStep> {
+): Promise<{ result: GeneratedLessonStep; usage: TokenUsageData | null }> {
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
@@ -390,23 +415,27 @@ export async function improveLessonStep(
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 2000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return step as GeneratedLessonStep;
+  if (!result) return { result: step as GeneratedLessonStep, usage };
 
   try {
     const parsed = JSON.parse(result);
     return {
-      stepType: parsed.stepType || step.stepType,
-      content: parsed.content || step.content,
-      answerData: parsed.answerData ?? step.answerData,
-      explanation: parsed.explanation ?? step.explanation,
-      hint: parsed.hint ?? step.hint,
+      result: {
+        stepType: parsed.stepType || step.stepType,
+        content: parsed.content || step.content,
+        answerData: parsed.answerData ?? step.answerData,
+        explanation: parsed.explanation ?? step.explanation,
+        hint: parsed.hint ?? step.hint,
+      },
+      usage,
     };
   } catch {
-    return step as GeneratedLessonStep;
+    return { result: step as GeneratedLessonStep, usage };
   }
 }
 
