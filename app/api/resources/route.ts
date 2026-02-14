@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizQuestions, folders, savedResources, users } from "@/lib/db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, ne, and, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 const createResourceSchema = z.object({
@@ -107,7 +107,85 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json([...resourcesWithCounts, ...savedWithCounts]);
+    // Resources explicitly shared with the signed-in user via access-control email list
+    let emailSharedWithCounts: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      difficulty: string | null;
+      completedAt: Date | null;
+      createdAt: Date;
+      folder: null;
+      flashcardCount: number;
+      quizQuestionCount: number;
+      isOwned: false;
+      permission: string;
+      ownerName: string | null;
+    }> = [];
+
+    if (session.user.email) {
+      const sharedCandidates = await db
+        .select({
+          id: studyMaterials.id,
+          title: studyMaterials.title,
+          description: studyMaterials.description,
+          difficulty: studyMaterials.difficulty,
+          completedAt: studyMaterials.completedAt,
+          createdAt: studyMaterials.createdAt,
+          allowedViewerEmails: studyMaterials.allowedViewerEmails,
+          ownerName: users.name,
+        })
+        .from(studyMaterials)
+        .innerJoin(users, eq(studyMaterials.userId, users.id))
+        .where(
+          and(
+            ne(studyMaterials.userId, session.user.id),
+            isNotNull(studyMaterials.allowedViewerEmails)
+          )
+        )
+        .orderBy(desc(studyMaterials.createdAt));
+
+      const email = session.user.email.toLowerCase();
+      const sharedForUser = sharedCandidates.filter((resource) =>
+        (resource.allowedViewerEmails || []).some((viewerEmail) => viewerEmail.toLowerCase() === email)
+      );
+
+      emailSharedWithCounts = await Promise.all(
+        sharedForUser.map(async (resource) => {
+          const [flashcardCount] = await db
+            .select({ count: count() })
+            .from(flashcards)
+            .where(eq(flashcards.studyMaterialId, resource.id));
+
+          const [quizCount] = await db
+            .select({ count: count() })
+            .from(quizQuestions)
+            .where(eq(quizQuestions.studyMaterialId, resource.id));
+
+          return {
+            id: resource.id,
+            title: resource.title,
+            description: resource.description,
+            difficulty: resource.difficulty,
+            completedAt: resource.completedAt,
+            createdAt: resource.createdAt,
+            folder: null,
+            flashcardCount: flashcardCount?.count ?? 0,
+            quizQuestionCount: quizCount?.count ?? 0,
+            isOwned: false as const,
+            permission: "read",
+            ownerName: resource.ownerName,
+          };
+        })
+      );
+    }
+
+    const dedupedById = new Map<string, (typeof resourcesWithCounts)[number] | (typeof savedWithCounts)[number] | (typeof emailSharedWithCounts)[number]>();
+    for (const resource of [...resourcesWithCounts, ...savedWithCounts, ...emailSharedWithCounts]) {
+      if (!dedupedById.has(resource.id)) dedupedById.set(resource.id, resource);
+    }
+
+    return NextResponse.json(Array.from(dedupedById.values()));
   } catch (error) {
     console.error("Error fetching resources:", error);
 

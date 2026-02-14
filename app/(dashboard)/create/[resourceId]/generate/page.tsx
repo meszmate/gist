@@ -159,6 +159,7 @@ export default function GeneratePage() {
       if (data.generateSummary) steps.push("summary");
       if (data.generateFlashcards) steps.push("flashcards");
       if (data.generateQuiz) steps.push("quiz");
+      const failedSteps: string[] = [];
 
       let currentProgress = 0;
       const progressPerStep = 100 / steps.length;
@@ -197,18 +198,32 @@ export default function GeneratePage() {
           if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
             throw new Error(t("generate.tokenLimitExceeded"));
           }
-          throw new Error(`Failed to generate ${step}`);
+          failedSteps.push(step);
         }
 
         currentProgress += progressPerStep;
         setProgress(Math.round(currentProgress));
       }
 
-      return { success: true };
+      if (failedSteps.length === steps.length) {
+        throw new Error(t("generate.failedToGenerate"));
+      }
+
+      return {
+        success: true,
+        failedSteps,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
-      toast.success(t("generate.contentGenerated"));
+      if (result.failedSteps.length > 0) {
+        toast.warning(
+          t("generate.contentGenerated") +
+            ` (${result.failedSteps.length} step${result.failedSteps.length > 1 ? "s" : ""} failed)`
+        );
+      } else {
+        toast.success(t("generate.contentGenerated"));
+      }
       router.push(`/library/${resourceId}`);
     },
     onError: (error) => {
@@ -266,9 +281,9 @@ export default function GeneratePage() {
 
       {/* Step Indicator */}
       <div className="relative">
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted hidden sm:block" />
-        <div className="absolute top-5 left-0 w-1/3 h-0.5 bg-primary hidden sm:block" />
-        <div className="flex justify-between relative">
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted hidden sm:block z-0" />
+        <div className="absolute top-5 left-0 w-1/3 h-0.5 bg-primary hidden sm:block z-0" />
+        <div className="flex justify-between relative z-10">
           {steps.map((step, index) => (
             <div
               key={step.number}
@@ -280,9 +295,9 @@ export default function GeneratePage() {
             >
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 bg-background transition-all",
+                  "w-10 h-10 rounded-full flex items-center justify-center border-2 bg-background transition-all relative z-10",
                   index < 1
-                    ? "border-primary bg-primary/10"
+                    ? "border-primary bg-background"
                     : index === 1
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted"

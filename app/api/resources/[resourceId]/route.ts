@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { studyMaterials, flashcards, quizQuestions } from "@/lib/db/schema";
+import { studyMaterials, flashcards, quizQuestions, savedResources } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -38,14 +38,35 @@ export async function GET(
     const [resource] = await db
       .select()
       .from(studyMaterials)
-      .where(
-        and(
-          eq(studyMaterials.id, resourceId),
-          eq(studyMaterials.userId, session.user.id)
-        )
-      );
+      .where(eq(studyMaterials.id, resourceId));
 
     if (!resource) {
+      return NextResponse.json({ error: "Resource not found" }, { status: 404 });
+    }
+
+    const isOwner = resource.userId === session.user.id;
+    const sessionEmail = session.user.email?.toLowerCase() ?? null;
+    const hasEmailAccess =
+      !!sessionEmail &&
+      (resource.allowedViewerEmails || []).some(
+        (email) => email.toLowerCase() === sessionEmail
+      );
+
+    let isSaved = false;
+    if (!isOwner) {
+      const [saved] = await db
+        .select({ id: savedResources.id })
+        .from(savedResources)
+        .where(
+          and(
+            eq(savedResources.userId, session.user.id),
+            eq(savedResources.resourceId, resourceId)
+          )
+        );
+      isSaved = !!saved;
+    }
+
+    if (!isOwner && !isSaved && !hasEmailAccess) {
       return NextResponse.json({ error: "Resource not found" }, { status: 404 });
     }
 
@@ -78,6 +99,7 @@ export async function GET(
       ...resource,
       flashcards: resourceFlashcards,
       quizQuestions: resourceQuizQuestions,
+      isOwned: isOwner,
     });
   } catch (error) {
     console.error("Error fetching resource:", error);
