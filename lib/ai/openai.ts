@@ -26,10 +26,60 @@ function extractUsage(completion: { usage?: { total_tokens: number; prompt_token
 }
 
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", hu: "Hungarian" };
+const GENERATION_INPUT_MAX_CHARS = 24000;
 
 function getLanguageInstruction(locale?: string): string {
   const lang = LANGUAGE_NAMES[locale || "en"] || "English";
   return `\nIMPORTANT: Generate ALL content in ${lang}.`;
+}
+
+function prepareGenerationContent(content: string): string {
+  const trimmed = content.trim();
+  if (trimmed.length <= GENERATION_INPUT_MAX_CHARS) return trimmed;
+
+  const half = Math.floor(GENERATION_INPUT_MAX_CHARS / 2);
+  const head = trimmed.slice(0, half);
+  const tail = trimmed.slice(-half);
+  return `${head}\n\n[... middle section omitted due to length ...]\n\n${tail}`;
+}
+
+function parseJsonWithFallback(result: string): unknown {
+  try {
+    return JSON.parse(result);
+  } catch {
+    const objectStart = result.indexOf("{");
+    const objectEnd = result.lastIndexOf("}");
+    if (objectStart >= 0 && objectEnd > objectStart) {
+      try {
+        return JSON.parse(result.slice(objectStart, objectEnd + 1));
+      } catch {
+        // Continue to array fallback
+      }
+    }
+
+    const arrayStart = result.indexOf("[");
+    const arrayEnd = result.lastIndexOf("]");
+    if (arrayStart >= 0 && arrayEnd > arrayStart) {
+      try {
+        return JSON.parse(result.slice(arrayStart, arrayEnd + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function extractArray(parsed: unknown, keys: string[]): unknown[] {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object") {
+    const asRecord = parsed as Record<string, unknown>;
+    for (const key of keys) {
+      const value = asRecord[key];
+      if (Array.isArray(value)) return value;
+    }
+  }
+  return [];
 }
 
 export const SUMMARY_SYSTEM_PROMPT = `You are an expert educator. Generate a clear, well-organized summary of the provided content.
@@ -137,12 +187,24 @@ export interface ExtendedQuizQuestion {
 
 export type QuestionTypeFilter = QuestionTypeSlug | "all" | "mixed";
 
+function isExtendedQuizQuestion(value: unknown): value is ExtendedQuizQuestion {
+  if (!value || typeof value !== "object") return false;
+  const question = value as Record<string, unknown>;
+  return (
+    typeof question.question === "string" &&
+    typeof question.questionType === "string" &&
+    !!question.questionConfig &&
+    !!question.correctAnswerData
+  );
+}
+
 export async function generateSummary(content: string, locale?: string): Promise<{ result: string; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
       { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
-      { role: "user", content: `Please summarize the following content:\n\n${content}` },
+      { role: "user", content: `Please summarize the following content:\n\n${preparedContent}` },
     ],
     max_completion_tokens: 16000,
   });
@@ -158,13 +220,14 @@ export async function generateFlashcards(
   count: number = 10,
   locale?: string
 ): Promise<{ result: GeneratedFlashcard[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
       { role: "system", content: FLASHCARD_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
-        content: `Generate ${count} flashcards from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
+        content: `Generate ${count} flashcards from the following content. Return ONLY JSON:\n\n${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
@@ -176,10 +239,17 @@ export async function generateFlashcards(
   if (!result) return { result: [], usage };
 
   try {
-    const parsed = JSON.parse(result);
-    // Handle both { flashcards: [...] } and direct array formats
-    const flashcards = Array.isArray(parsed) ? parsed : parsed.flashcards || [];
-    return { result: flashcards.slice(0, count), usage };
+    const parsed = parseJsonWithFallback(result);
+    const flashcards = extractArray(parsed, ["flashcards", "cards", "items"]);
+    const normalized = flashcards
+      .filter((card): card is Record<string, unknown> => !!card && typeof card === "object")
+      .map((card) => ({
+        front: String(card.front ?? card.question ?? ""),
+        back: String(card.back ?? card.answer ?? ""),
+      }))
+      .filter((card) => card.front.trim() && card.back.trim());
+
+    return { result: normalized.slice(0, count), usage };
   } catch {
     console.error("Failed to parse flashcards:", result);
     return { result: [], usage };
@@ -191,13 +261,14 @@ export async function generateQuizQuestions(
   count: number = 5,
   locale?: string
 ): Promise<{ result: GeneratedQuizQuestion[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
       { role: "system", content: QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
-        content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
+        content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY JSON:\n\n${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
@@ -228,6 +299,7 @@ export async function generateExtendedQuizQuestions(
   questionTypes: QuestionTypeFilter = "mixed",
   locale?: string
 ): Promise<{ result: ExtendedQuizQuestion[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   let typeInstruction = "";
 
   if (questionTypes === "all" || questionTypes === "mixed") {
@@ -262,7 +334,7 @@ Important:
 - For fill_blank, use 1-2 blanks per question
 
 Content to generate questions from:
-${content}`,
+${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
@@ -274,18 +346,13 @@ ${content}`,
   if (!result) return { result: [], usage };
 
   try {
-    const parsed = JSON.parse(result);
-    const questions = Array.isArray(parsed) ? parsed : parsed.questions || [];
+    const parsed = parseJsonWithFallback(result);
+    const questions = extractArray(parsed, ["questions", "items", "quizQuestions"]);
 
     // Validate and clean up questions
     const validQuestions = questions
-      .filter((q: ExtendedQuizQuestion) =>
-        q.question &&
-        q.questionType &&
-        q.questionConfig &&
-        q.correctAnswerData
-      )
-      .map((q: ExtendedQuizQuestion) => ({
+      .filter(isExtendedQuizQuestion)
+      .map((q) => ({
         ...q,
         points: q.points || 1,
         explanation: q.explanation || "",

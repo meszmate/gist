@@ -60,6 +60,12 @@ export async function POST(
     switch (data.type) {
       case "summary": {
         const { result: summary, usage } = await generateSummary(data.sourceContent, data.locale);
+        if (!summary.trim()) {
+          return NextResponse.json(
+            { error: "No summary generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
+          );
+        }
         await db
           .update(studyMaterials)
           .set({ summary, updatedAt: new Date() })
@@ -75,15 +81,20 @@ export async function POST(
           data.locale
         );
 
-        if (generatedFlashcards.length > 0) {
-          await db.insert(flashcards).values(
-            generatedFlashcards.map((card) => ({
-              studyMaterialId: resourceId,
-              front: card.front,
-              back: card.back,
-            }))
+        if (generatedFlashcards.length === 0) {
+          return NextResponse.json(
+            { error: "No flashcards generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
           );
         }
+
+        await db.insert(flashcards).values(
+          generatedFlashcards.map((card) => ({
+            studyMaterialId: resourceId,
+            front: card.front,
+            back: card.back,
+          }))
+        );
 
         await logTokenUsage(session.user.id, usage, "generate_flashcards", MODEL);
         return NextResponse.json({
@@ -100,27 +111,32 @@ export async function POST(
           data.locale
         );
 
-        if (generatedQuestions.length > 0) {
-          await db.insert(quizQuestions).values(
-            generatedQuestions.map((q, index) => ({
-              studyMaterialId: resourceId,
-              question: q.question,
-              questionType: q.questionType,
-              questionConfig: q.questionConfig,
-              correctAnswerData: q.correctAnswerData,
-              points: String(q.points),
-              order: index,
-              explanation: q.explanation,
-              // Legacy fields for backward compatibility
-              options: q.questionType === "multiple_choice" && "options" in q.questionConfig
-                ? (q.questionConfig as { options: string[] }).options
-                : null,
-              correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
-                ? (q.correctAnswerData as { correctIndex: number }).correctIndex
-                : null,
-            }))
+        if (generatedQuestions.length === 0) {
+          return NextResponse.json(
+            { error: "No quiz questions generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
           );
         }
+
+        await db.insert(quizQuestions).values(
+          generatedQuestions.map((q, index) => ({
+            studyMaterialId: resourceId,
+            question: q.question,
+            questionType: q.questionType,
+            questionConfig: q.questionConfig,
+            correctAnswerData: q.correctAnswerData,
+            points: String(q.points),
+            order: index,
+            explanation: q.explanation,
+            // Legacy fields for backward compatibility
+            options: q.questionType === "multiple_choice" && "options" in q.questionConfig
+              ? (q.questionConfig as { options: string[] }).options
+              : null,
+            correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
+              ? (q.correctAnswerData as { correctIndex: number }).correctIndex
+              : null,
+          }))
+        );
 
         await logTokenUsage(session.user.id, usage, "generate_quiz", MODEL);
         return NextResponse.json({
