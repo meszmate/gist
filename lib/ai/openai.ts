@@ -82,6 +82,48 @@ function extractArray(parsed: unknown, keys: string[]): unknown[] {
   return [];
 }
 
+function extractArrayDeep(parsed: unknown, keys: string[]): unknown[] {
+  const direct = extractArray(parsed, keys);
+  if (direct.length > 0) return direct;
+
+  if (parsed && typeof parsed === "object") {
+    for (const value of Object.values(parsed as Record<string, unknown>)) {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") {
+        const nested = extractArrayDeep(value, keys);
+        if (nested.length > 0) return nested;
+      }
+    }
+  }
+
+  return [];
+}
+
+function normalizeFlashcards(values: unknown[]): GeneratedFlashcard[] {
+  return values
+    .filter((card): card is Record<string, unknown> => !!card && typeof card === "object")
+    .map((card) => {
+      const front = String(
+        card.front ??
+        card.question ??
+        card.prompt ??
+        card.term ??
+        card.title ??
+        ""
+      ).trim();
+      const back = String(
+        card.back ??
+        card.answer ??
+        card.definition ??
+        card.explanation ??
+        card.description ??
+        ""
+      ).trim();
+      return { front, back };
+    })
+    .filter((card) => card.front.length > 0 && card.back.length > 0);
+}
+
 export const SUMMARY_SYSTEM_PROMPT = `You are an expert educator. Generate a clear, well-organized summary of the provided content.
 Focus on key concepts, main ideas, and important details.
 Use markdown formatting for better readability (headings, bullet points, etc.).
@@ -238,18 +280,42 @@ export async function generateFlashcards(
   const result = completion.choices[0].message.content;
   if (!result) return { result: [], usage };
 
-  try {
-    const parsed = parseJsonWithFallback(result);
-    const flashcards = extractArray(parsed, ["flashcards", "cards", "items"]);
-    const normalized = flashcards
-      .filter((card): card is Record<string, unknown> => !!card && typeof card === "object")
-      .map((card) => ({
-        front: String(card.front ?? card.question ?? ""),
-        back: String(card.back ?? card.answer ?? ""),
-      }))
-      .filter((card) => card.front.trim() && card.back.trim());
+  const parsed = parseJsonWithFallback(result);
+  const flashcards = extractArrayDeep(parsed, ["flashcards", "cards", "items", "questions"]);
+  const normalized = normalizeFlashcards(flashcards);
 
+  if (normalized.length > 0) {
     return { result: normalized.slice(0, count), usage };
+  }
+
+  try {
+    // Retry once with stricter output instructions when the first attempt is empty.
+    const retryCompletion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            `Return valid JSON ONLY in this exact format: {"flashcards":[{"front":"...","back":"..."}]}. ` +
+            `Create exactly ${count} flashcards.` +
+            getLanguageInstruction(locale),
+        },
+        {
+          role: "user",
+          content: `Create flashcards from this content:\n\n${preparedContent}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 16000,
+    });
+
+    const retryResult = retryCompletion.choices[0].message.content;
+    if (!retryResult) return { result: [], usage };
+
+    const retryParsed = parseJsonWithFallback(retryResult);
+    const retryFlashcards = extractArrayDeep(retryParsed, ["flashcards", "cards", "items", "questions"]);
+    const retryNormalized = normalizeFlashcards(retryFlashcards);
+    return { result: retryNormalized.slice(0, count), usage };
   } catch {
     console.error("Failed to parse flashcards:", result);
     return { result: [], usage };
@@ -405,6 +471,57 @@ export interface GeneratedLessonStep {
   hint: string | null;
 }
 
+function normalizeGeneratedLessonStep(step: GeneratedLessonStep): GeneratedLessonStep {
+  if (step.stepType !== "drag_match") return step;
+
+  const rawContent = (step.content as unknown as Record<string, unknown>) || {};
+  const rawPairs = Array.isArray(rawContent.pairs) ? rawContent.pairs : [];
+
+  const pairs = rawPairs
+    .map((pair, index) => {
+      const rawPair = (pair || {}) as Record<string, unknown>;
+      return {
+        id: String(rawPair.id ?? `${index + 1}`),
+        left: String(rawPair.left ?? rawPair.term ?? rawPair.concept ?? rawPair.title ?? ""),
+        right: String(
+          rawPair.right ??
+          rawPair.definition ??
+          rawPair.match ??
+          rawPair.value ??
+          rawPair.explanation ??
+          ""
+        ),
+      };
+    })
+    .filter((pair) => pair.left.trim().length > 0 || pair.right.trim().length > 0);
+
+  const rawAnswerData = (step.answerData || {}) as Record<string, unknown>;
+  const existingCorrectPairs =
+    rawAnswerData.correctPairs && typeof rawAnswerData.correctPairs === "object"
+      ? (rawAnswerData.correctPairs as Record<string, unknown>)
+      : {};
+
+  const normalizedCorrectPairs: Record<string, string> = {};
+  for (const [key, value] of Object.entries(existingCorrectPairs)) {
+    normalizedCorrectPairs[String(key)] = String(value ?? "");
+  }
+  for (const pair of pairs) {
+    if (pair.right.trim().length > 0 && !normalizedCorrectPairs[pair.id]) {
+      normalizedCorrectPairs[pair.id] = pair.right;
+    }
+  }
+
+  return {
+    ...step,
+    content: {
+      type: "drag_match",
+      instruction: String(rawContent.instruction ?? "Match each item with its definition"),
+      pairs,
+    },
+    answerData: { correctPairs: normalizedCorrectPairs },
+  };
+}
+
 export async function generateLesson(
   sourceContent: string,
   existingFlashcards?: { front: string; back: string }[],
@@ -446,18 +563,23 @@ export async function generateLesson(
   if (!result) return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
 
   try {
-    const parsed = JSON.parse(result);
+    const parsed = parseJsonWithFallback(result) as Record<string, unknown> | null;
+    const rawSteps = Array.isArray(parsed?.steps) ? parsed.steps : [];
     return {
       result: {
-        title: parsed.title || options?.title || "Untitled Lesson",
-        description: parsed.description || "",
-        steps: (parsed.steps || []).map((s: GeneratedLessonStep) => ({
-          stepType: s.stepType,
-          content: s.content,
-          answerData: s.answerData || null,
-          explanation: s.explanation || null,
-          hint: s.hint || null,
-        })),
+        title: String(parsed?.title || options?.title || "Untitled Lesson"),
+        description: String(parsed?.description || ""),
+        steps: rawSteps.map((rawStep) => {
+          const s = (rawStep || {}) as Record<string, unknown>;
+          const base: GeneratedLessonStep = {
+            stepType: (s.stepType as StepType) || "explanation",
+            content: (s.content as StepContent) || ({ type: "explanation", markdown: "" } as StepContent),
+            answerData: (s.answerData as StepAnswerData) || null,
+            explanation: typeof s.explanation === "string" ? s.explanation : null,
+            hint: typeof s.hint === "string" ? s.hint : null,
+          };
+          return normalizeGeneratedLessonStep(base);
+        }),
       },
       usage,
     };
