@@ -28,9 +28,28 @@ function getNestedValue(obj: unknown, path: string): string | undefined {
   return typeof current === "string" ? current : undefined;
 }
 
-function interpolate(template: string, params?: Record<string, string | number>): string {
+function interpolate(
+  template: string,
+  params: Record<string, string | number> | undefined,
+  locale: Locale
+): string {
   if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key) => {
+
+  const pluralRules = new Intl.PluralRules(locale);
+
+  const withPlurals = template.replace(
+    /\{(\w+),\s*plural,\s*one\s*\{([^{}]*)\}\s*other\s*\{([^{}]*)\}\s*\}/g,
+    (match, key: string, oneForm: string, otherForm: string) => {
+      const value = params[key];
+      const numericValue = typeof value === "number" ? value : Number(value);
+
+      if (!Number.isFinite(numericValue)) return match;
+
+      return pluralRules.select(numericValue) === "one" ? oneForm : otherForm;
+    }
+  );
+
+  return withPlurals.replace(/\{(\w+)\}/g, (_, key) => {
     return params[key] !== undefined ? String(params[key]) : `{${key}}`;
   });
 }
@@ -92,7 +111,7 @@ export function I18nProvider({ children, initialLocale }: { children: ReactNode;
         getNestedValue(messages[locale], key) ??
         getNestedValue(messages.en, key) ??
         key;
-      return interpolate(value, params);
+      return interpolate(value, params, locale);
     },
     [locale]
   );

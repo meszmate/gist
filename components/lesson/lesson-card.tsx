@@ -20,16 +20,16 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
   return (
     <Card className="group hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+        <div className="grid grid-cols-[auto,minmax(0,1fr)] gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <GraduationCap className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium truncate">{lesson.title}</h3>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="min-w-0 flex-1 truncate font-medium">{lesson.title}</h3>
               <Badge
                 variant={lesson.status === "published" ? "default" : "secondary"}
-                className="text-xs shrink-0"
+                className="text-xs shrink-0 whitespace-nowrap"
               >
                 {lesson.status === "published" ? t("common.published") : t("common.draft")}
               </Badge>
@@ -38,18 +38,18 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
               )}
             </div>
             {lesson.description && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2 [overflow-wrap:anywhere]">
                 {lesson.description}
               </p>
             )}
-            <div className="flex items-center gap-2 mt-3">
-              <Button asChild size="sm" className="gap-1.5">
+            <div className="mt-3 grid gap-2 sm:flex sm:items-center">
+              <Button asChild size="sm" className="w-full gap-1.5 sm:w-auto">
                 <Link href={`/library/${resourceId}/lessons/${lesson.id}`}>
                   <Play className="h-3.5 w-3.5" />
                   {t("lessons.play")}
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Button asChild variant="outline" size="sm" className="w-full gap-1.5 sm:w-auto">
                 <Link href={`/library/${resourceId}/lessons/${lesson.id}/edit`}>
                   <Pencil className="h-3.5 w-3.5" />
                   {t("common.edit")}
@@ -59,7 +59,7 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-destructive hover:text-destructive gap-1.5 ml-auto"
+                  className="justify-self-end text-destructive hover:text-destructive gap-1.5 sm:ml-auto"
                   onClick={() => onDelete(lesson.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
