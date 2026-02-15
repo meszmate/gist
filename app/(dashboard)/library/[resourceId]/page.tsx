@@ -1053,39 +1053,41 @@ export default function ResourcePage() {
                     className="group hover:border-primary/30 transition-colors animate-slide-up"
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <GraduationCap className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium truncate">{lesson.title}</h3>
-                          <Badge
-                            variant={lesson.status === "published" ? "default" : "secondary"}
-                            className="text-xs shrink-0"
-                          >
-                            {lesson.status}
-                          </Badge>
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-[auto,minmax(0,1fr)] gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <GraduationCap className="h-5 w-5 text-primary" />
                         </div>
-                        {lesson.description && (
-                          <p className="text-sm text-muted-foreground truncate mt-0.5">
-                            {lesson.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/library/${resource.id}/lessons/${lesson.id}`}>
-                            <Play className="mr-1.5 h-3.5 w-3.5" />
-                            {t("resourceDetail.play")}
-                          </Link>
-                        </Button>
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/library/${resource.id}/lessons/${lesson.id}/edit`}>
-                            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                            {t("common.edit")}
-                          </Link>
-                        </Button>
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <h3 className="min-w-0 flex-1 truncate font-medium">{lesson.title}</h3>
+                            <Badge
+                              variant={lesson.status === "published" ? "default" : "secondary"}
+                              className="text-xs shrink-0 whitespace-nowrap"
+                            >
+                              {lesson.status}
+                            </Badge>
+                          </div>
+                          {lesson.description && (
+                            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2 [overflow-wrap:anywhere]">
+                              {lesson.description}
+                            </p>
+                          )}
+                          <div className="mt-3 grid gap-2 sm:flex sm:gap-2">
+                            <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
+                              <Link href={`/library/${resource.id}/lessons/${lesson.id}`}>
+                                <Play className="mr-1.5 h-3.5 w-3.5" />
+                                {t("resourceDetail.play")}
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
+                              <Link href={`/library/${resource.id}/lessons/${lesson.id}/edit`}>
+                                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                                {t("common.edit")}
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
