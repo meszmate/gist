@@ -19,14 +19,14 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
 
   return (
     <Card className="group hover:border-primary/30 transition-colors">
-      <CardContent className="p-4">
+      <CardContent className="px-4 py-3">
         <div className="grid grid-cols-[auto,minmax(0,1fr)] gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <GraduationCap className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate font-medium">{lesson.title}</h3>
+              <h3 className="min-w-0 shrink truncate font-medium">{lesson.title}</h3>
               <Badge
                 variant={lesson.status === "published" ? "default" : "secondary"}
                 className="text-xs shrink-0 whitespace-nowrap"
@@ -38,11 +38,11 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
               )}
             </div>
             {lesson.description && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2 [overflow-wrap:anywhere]">
+              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 [overflow-wrap:anywhere]">
                 {lesson.description}
               </p>
             )}
-            <div className="mt-3 grid gap-2 sm:flex sm:items-center">
+            <div className="mt-2 grid gap-2 sm:flex sm:items-center">
               <Button asChild size="sm" className="w-full gap-1.5 sm:w-auto">
                 <Link href={`/library/${resourceId}/lessons/${lesson.id}`}>
                   <Play className="h-3.5 w-3.5" />
