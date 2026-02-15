@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Loader2, Sun, Moon, Globe } from "lucide-react";
 import { GistLogo } from "@/components/icons/gist-logo";
 import { useLocale } from "@/hooks/use-locale";
@@ -146,8 +145,8 @@ export default function LoginPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="rounded-xl bg-primary p-2">
-              <GistLogo className="h-5 w-5 text-primary-foreground" />
+            <div className="rounded-md bg-primary p-1">
+              <GistLogo className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold tracking-tight">gist</span>
           </div>
@@ -175,25 +174,6 @@ export default function LoginPage() {
                 <Suspense fallback={<LoginButtonFallback />}>
                   <LoginForm />
                 </Suspense>
-
-                <Separator />
-
-                <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                  {t("login.termsText")}{" "}
-                  <a
-                    href="#"
-                    className="underline underline-offset-2 hover:text-foreground transition-colors"
-                  >
-                    {t("login.termsOfService")}
-                  </a>{" "}
-                  {t("login.and")}{" "}
-                  <a
-                    href="#"
-                    className="underline underline-offset-2 hover:text-foreground transition-colors"
-                  >
-                    {t("login.privacyPolicy")}
-                  </a>
-                </p>
               </CardContent>
             </Card>
           </div>
