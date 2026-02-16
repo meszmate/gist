@@ -335,8 +335,16 @@ export default function ResourcePage() {
       if (!res.ok) throw new Error("Failed to delete resource");
     },
     onSuccess: () => {
+      queryClient.setQueryData<{ id: string }[]>(["resources"], (current = []) =>
+        current.filter((resource) => resource.id !== resourceId)
+      );
+      queryClient.removeQueries({ queryKey: ["resource", resourceId] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       toast.success(t("resourceDetail.resourceDeleted"));
       router.push("/library");
+    },
+    onError: () => {
+      toast.error(t("resourceDetail.failedDeleteResource"));
     },
   });
 

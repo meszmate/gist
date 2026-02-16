@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -53,6 +53,7 @@ import { useVimContext } from "@/components/keyboard/vim-navigation-provider";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Resource {
   id: string;
@@ -85,6 +86,7 @@ type FilterOption = "all" | "owned" | "shared" | "completed";
 
 export default function LibraryPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t, formatDate: formatDateLocale } = useLocale();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -96,6 +98,49 @@ export default function LibraryPage() {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ["resources"],
     queryFn: fetchResources,
+  });
+
+  const deleteResource = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete resource");
+      return resourceId;
+    },
+    onSuccess: (resourceId) => {
+      queryClient.setQueryData<Resource[]>(["resources"], (current = []) =>
+        current.filter((resource) => resource.id !== resourceId)
+      );
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      toast.success(t("resourceDetail.resourceDeleted"));
+    },
+    onError: () => {
+      toast.error(t("resourceDetail.failedDeleteResource"));
+    },
+  });
+
+  const shareResource = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const res = await fetch(`/api/resources/${resourceId}/share`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to generate share link");
+      const data = (await res.json()) as { shareToken: string };
+      return data.shareToken;
+    },
+    onSuccess: async (shareToken) => {
+      const shareUrl = `${window.location.origin}/shared/${shareToken}`;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success(t("resourceDetail.linkCopied"));
+      } catch {
+        toast.error(t("resourceDetail.failedCopyLink"));
+      }
+    },
+    onError: () => {
+      toast.error(t("resourceDetail.failedShareResource"));
+    },
   });
 
   // Get unique folders
@@ -184,6 +229,18 @@ export default function LibraryPage() {
   };
 
   const savedCount = resources.filter((r) => !r.isOwned).length;
+  const actionsDisabled = deleteResource.isPending || shareResource.isPending;
+
+  const handleDeleteResource = (resourceId: string) => {
+    if (!window.confirm(t("resourceDetail.deleteResourceConfirm"))) {
+      return;
+    }
+    deleteResource.mutate(resourceId);
+  };
+
+  const handleShareResource = (resourceId: string) => {
+    shareResource.mutate(resourceId);
+  };
 
   return (
     <div className="space-y-6">
@@ -362,14 +419,24 @@ export default function LibraryPage() {
                           </DropdownMenuItem>
                           {resource.isOwned && (
                             <>
-                              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem
+                                disabled={actionsDisabled}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShareResource(resource.id);
+                                }}
+                              >
                                 <Share2 className="mr-2 h-4 w-4" />
                                 {t("common.share")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={(e) => e.stopPropagation()}
+                                variant="destructive"
+                                disabled={actionsDisabled}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteResource(resource.id);
+                                }}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 {t("common.delete")}
@@ -574,14 +641,24 @@ export default function LibraryPage() {
                     </DropdownMenuItem>
                     {resource.isOwned && (
                       <>
-                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem
+                          disabled={actionsDisabled}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareResource(resource.id);
+                          }}
+                        >
                           <Share2 className="mr-2 h-4 w-4" />
                           {t("common.share")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={(e) => e.stopPropagation()}
+                          variant="destructive"
+                          disabled={actionsDisabled}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteResource(resource.id);
+                          }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           {t("common.delete")}

@@ -3,12 +3,16 @@
 import { useCallback, useRef, useState } from "react";
 import { Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
+import { ACCEPTED_EXTENSIONS, ACCEPTED_MIME_TYPES } from "@/lib/file-parser";
 import { useLocale } from "@/hooks/use-locale";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-const ACCEPT_STRING = ACCEPTED_EXTENSIONS.join(",");
+const ACCEPT_STRING = [
+  ...ACCEPTED_EXTENSIONS,
+  ...ACCEPTED_MIME_TYPES,
+  "text/*",
+].join(",");
 
 interface FileUploadDropzoneProps {
   onTextExtracted: (text: string, fileName: string) => void;
@@ -39,12 +43,6 @@ export function FileUploadDropzone({
   const validateFile = useCallback((file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
       return t("upload.fileSizeExceeds");
-    }
-    const ext = file.name.lastIndexOf(".") !== -1
-      ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase()
-      : "";
-    if (!ACCEPTED_EXTENSIONS.includes(ext as typeof ACCEPTED_EXTENSIONS[number])) {
-      return t("upload.unsupportedType", { types: ACCEPTED_EXTENSIONS.join(", ") });
     }
     return null;
   }, [t]);
