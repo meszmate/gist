@@ -760,6 +760,7 @@
     "readyToGenerate": "Ready to generate",
     "contentMinLength": "Please provide at least 50 characters of content",
     "whatToGenerate": "What to Generate",
+    "whatToGenerateDesc": "Choose what kind of study materials to generate from your content",
     "selectTypes": "Select what type of study materials to create",
     "summary": "Summary",
     "summaryDesc": "Generate a concise summary of the key concepts",
@@ -781,6 +782,7 @@
     "textExtracted": "Text extracted successfully",
     "skipForNow": "Skip for now",
     "generateContent": "Generate Content",
+    "tokenLimitExceeded": "You've exceeded the token usage limit. Please try again later.",
     "resourceNotFound": "Resource not found",
     "resourceNotFoundDesc": "This resource may have been deleted or doesn't exist.",
     "backToLibrary": "Back to Library"

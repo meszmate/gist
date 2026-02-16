@@ -45,7 +45,7 @@ interface LessonEditorProps {
 }
 
 export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditorProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const queryClient = useQueryClient();
   const [lesson, setLesson] = useState(initialLesson);
   const [steps, setSteps] = useState(initialLesson.steps);
@@ -157,9 +157,19 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
     mutationFn: async (stepId: string) => {
       const res = await fetch(
         `/api/resources/${resourceId}/lessons/${lesson.id}/steps/${stepId}/improve`,
-        { method: "POST" }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale }),
+        }
       );
-      if (!res.ok) throw new Error("Failed to improve step");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+          throw new Error(t("generate.tokenLimitExceeded"));
+        }
+        throw new Error("Failed to improve step");
+      }
       return res.json();
     },
     onSuccess: (improved) => {
@@ -168,6 +178,9 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
       );
       setIsDirty(true);
       toast.success(t("lessonEditor.stepImproved"));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 

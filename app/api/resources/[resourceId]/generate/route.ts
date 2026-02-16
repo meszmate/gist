@@ -8,12 +8,15 @@ import {
   generateSummary,
   generateFlashcards,
   generateExtendedQuizQuestions,
+  MODEL,
 } from "@/lib/ai/openai";
+import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
 
 const generateSchema = z.object({
   type: z.enum(["summary", "flashcards", "quiz"]),
   sourceContent: z.string().min(1),
   count: z.number().min(1).max(50).optional(),
+  locale: z.string().optional(),
 });
 
 export async function POST(
@@ -24,6 +27,15 @@ export async function POST(
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check token limit
+    const { allowed, tokensUsed, tokenLimit } = await checkTokenLimit(session.user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Token usage limit exceeded", code: "TOKEN_LIMIT_EXCEEDED", tokensUsed, tokenLimit },
+        { status: 429 }
+      );
     }
 
     const { resourceId } = await params;
@@ -47,30 +59,44 @@ export async function POST(
 
     switch (data.type) {
       case "summary": {
-        const summary = await generateSummary(data.sourceContent);
+        const { result: summary, usage } = await generateSummary(data.sourceContent, data.locale);
+        if (!summary.trim()) {
+          return NextResponse.json(
+            { error: "No summary generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
+          );
+        }
         await db
           .update(studyMaterials)
           .set({ summary, updatedAt: new Date() })
           .where(eq(studyMaterials.id, resourceId));
+        await logTokenUsage(session.user.id, usage, "generate_summary", MODEL);
         return NextResponse.json({ summary });
       }
 
       case "flashcards": {
-        const generatedFlashcards = await generateFlashcards(
+        const { result: generatedFlashcards, usage } = await generateFlashcards(
           data.sourceContent,
-          data.count || 10
+          data.count || 10,
+          data.locale
         );
 
-        if (generatedFlashcards.length > 0) {
-          await db.insert(flashcards).values(
-            generatedFlashcards.map((card) => ({
-              studyMaterialId: resourceId,
-              front: card.front,
-              back: card.back,
-            }))
+        if (generatedFlashcards.length === 0) {
+          return NextResponse.json(
+            { error: "No flashcards generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
           );
         }
 
+        await db.insert(flashcards).values(
+          generatedFlashcards.map((card) => ({
+            studyMaterialId: resourceId,
+            front: card.front,
+            back: card.back,
+          }))
+        );
+
+        await logTokenUsage(session.user.id, usage, "generate_flashcards", MODEL);
         return NextResponse.json({
           flashcards: generatedFlashcards,
           count: generatedFlashcards.length,
@@ -78,34 +104,41 @@ export async function POST(
       }
 
       case "quiz": {
-        const generatedQuestions = await generateExtendedQuizQuestions(
+        const { result: generatedQuestions, usage } = await generateExtendedQuizQuestions(
           data.sourceContent,
           data.count || 5,
-          "mixed"
+          "mixed",
+          data.locale
         );
 
-        if (generatedQuestions.length > 0) {
-          await db.insert(quizQuestions).values(
-            generatedQuestions.map((q, index) => ({
-              studyMaterialId: resourceId,
-              question: q.question,
-              questionType: q.questionType,
-              questionConfig: q.questionConfig,
-              correctAnswerData: q.correctAnswerData,
-              points: String(q.points),
-              order: index,
-              explanation: q.explanation,
-              // Legacy fields for backward compatibility
-              options: q.questionType === "multiple_choice" && "options" in q.questionConfig
-                ? (q.questionConfig as { options: string[] }).options
-                : null,
-              correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
-                ? (q.correctAnswerData as { correctIndex: number }).correctIndex
-                : null,
-            }))
+        if (generatedQuestions.length === 0) {
+          return NextResponse.json(
+            { error: "No quiz questions generated", code: "EMPTY_GENERATION" },
+            { status: 422 }
           );
         }
 
+        await db.insert(quizQuestions).values(
+          generatedQuestions.map((q, index) => ({
+            studyMaterialId: resourceId,
+            question: q.question,
+            questionType: q.questionType,
+            questionConfig: q.questionConfig,
+            correctAnswerData: q.correctAnswerData,
+            points: String(q.points),
+            order: index,
+            explanation: q.explanation,
+            // Legacy fields for backward compatibility
+            options: q.questionType === "multiple_choice" && "options" in q.questionConfig
+              ? (q.questionConfig as { options: string[] }).options
+              : null,
+            correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
+              ? (q.correctAnswerData as { correctIndex: number }).correctIndex
+              : null,
+          }))
+        );
+
+        await logTokenUsage(session.user.id, usage, "generate_quiz", MODEL);
         return NextResponse.json({
           questions: generatedQuestions,
           count: generatedQuestions.length,

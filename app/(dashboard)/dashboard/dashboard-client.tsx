@@ -269,13 +269,20 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
           </CardHeader>
           <CardContent className="space-y-3">
             {hasCardsDue ? (
-              <Button asChild className="w-full justify-between group" size="lg">
+              <Button
+                asChild
+                className="w-full justify-between group"
+                size="lg"
+              >
                 <Link href="/study">
                   <span className="flex items-center">
                     <Brain className="mr-2 h-4 w-4" />
                     {t("dashboard.studyDueCards", { count: stats.flashcardsDue })}
                   </span>
-                  <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded">
+                  <kbd
+                    className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs border border-black/10 rounded"
+                    style={{ backgroundColor: "#fff", color: "#000" }}
+                  >
                     S
                   </kbd>
                 </Link>
@@ -292,7 +299,10 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
                   <BookOpen className="mr-2 h-4 w-4" />
                   {t("dashboard.browseLibrary")}
                 </span>
-                <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
+                <kbd
+                  className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs border border-black/10 rounded"
+                  style={{ backgroundColor: "#fff", color: "#000" }}
+                >
                   L
                 </kbd>
               </Link>
@@ -303,7 +313,10 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
                   <Plus className="mr-2 h-4 w-4" />
                   {t("dashboard.createResource")}
                 </span>
-                <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
+                <kbd
+                  className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs border border-black/10 rounded"
+                  style={{ backgroundColor: "#fff", color: "#000" }}
+                >
                   C
                 </kbd>
               </Link>
@@ -314,7 +327,10 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
                   <FileQuestion className="mr-2 h-4 w-4" />
                   {t("dashboard.takeQuiz")}
                 </span>
-                <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded border">
+                <kbd
+                  className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs border border-black/10 rounded"
+                  style={{ backgroundColor: "#fff", color: "#000" }}
+                >
                   Q
                 </kbd>
               </Link>

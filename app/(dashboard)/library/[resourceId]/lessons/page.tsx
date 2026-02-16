@@ -31,7 +31,7 @@ import type { Lesson } from "@/lib/types/lesson";
 export default function LessonsPage() {
   const params = useParams();
   const queryClient = useQueryClient();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const resourceId = params.resourceId as string;
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -66,9 +66,15 @@ export default function LessonsPage() {
       const res = await fetch(`/api/resources/${resourceId}/lessons/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ locale }),
       });
-      if (!res.ok) throw new Error("Failed to generate lesson");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+          throw new Error(t("generate.tokenLimitExceeded"));
+        }
+        throw new Error("Failed to generate lesson");
+      }
       return res.json();
     },
     onSuccess: (lesson) => {
@@ -76,7 +82,7 @@ export default function LessonsPage() {
       toast.success(t("resourceLessons.lessonGenerated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
-    onError: () => toast.error(t("resourceLessons.failedGenerate")),
+    onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
   });
 
   const deleteLesson = useMutation({
@@ -108,12 +114,12 @@ export default function LessonsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink href="/library">{t("nav.library")}</BreadcrumbLink>
-            <BreadcrumbSeparator />
           </BreadcrumbItem>
+          <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink href={`/library/${resourceId}`}>{t("resourceLessons.resource")}</BreadcrumbLink>
-            <BreadcrumbSeparator />
           </BreadcrumbItem>
+          <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbPage>{t("resourceLessons.lessons")}</BreadcrumbPage>
           </BreadcrumbItem>

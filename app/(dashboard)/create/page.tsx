@@ -187,8 +187,8 @@ export default function CreateResourcePage() {
 
       {/* Step Indicator */}
       <div className="relative">
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted hidden sm:block" />
-        <div className="flex justify-between relative">
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted hidden sm:block z-0" />
+        <div className="flex justify-between relative z-10">
           {steps.map((step, index) => (
             <div
               key={step.number}
@@ -200,7 +200,7 @@ export default function CreateResourcePage() {
             >
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 bg-background transition-all",
+                  "w-10 h-10 rounded-full flex items-center justify-center border-2 bg-background transition-all relative z-10",
                   index === 0
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted"

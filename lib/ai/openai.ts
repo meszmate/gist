@@ -8,6 +8,122 @@ import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
 
 export const openai = new OpenAI();
 
+export const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+
+export interface TokenUsageData {
+  total_tokens: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+}
+
+function extractUsage(completion: { usage?: { total_tokens: number; prompt_tokens: number; completion_tokens: number } | null }): TokenUsageData | null {
+  if (!completion.usage) return null;
+  return {
+    total_tokens: completion.usage.total_tokens,
+    prompt_tokens: completion.usage.prompt_tokens,
+    completion_tokens: completion.usage.completion_tokens,
+  };
+}
+
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", hu: "Hungarian" };
+const GENERATION_INPUT_MAX_CHARS = 24000;
+
+function getLanguageInstruction(locale?: string): string {
+  const lang = LANGUAGE_NAMES[locale || "en"] || "English";
+  return `\nIMPORTANT: Generate ALL content in ${lang}.`;
+}
+
+function prepareGenerationContent(content: string): string {
+  const trimmed = content.trim();
+  if (trimmed.length <= GENERATION_INPUT_MAX_CHARS) return trimmed;
+
+  const half = Math.floor(GENERATION_INPUT_MAX_CHARS / 2);
+  const head = trimmed.slice(0, half);
+  const tail = trimmed.slice(-half);
+  return `${head}\n\n[... middle section omitted due to length ...]\n\n${tail}`;
+}
+
+function parseJsonWithFallback(result: string): unknown {
+  try {
+    return JSON.parse(result);
+  } catch {
+    const objectStart = result.indexOf("{");
+    const objectEnd = result.lastIndexOf("}");
+    if (objectStart >= 0 && objectEnd > objectStart) {
+      try {
+        return JSON.parse(result.slice(objectStart, objectEnd + 1));
+      } catch {
+        // Continue to array fallback
+      }
+    }
+
+    const arrayStart = result.indexOf("[");
+    const arrayEnd = result.lastIndexOf("]");
+    if (arrayStart >= 0 && arrayEnd > arrayStart) {
+      try {
+        return JSON.parse(result.slice(arrayStart, arrayEnd + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function extractArray(parsed: unknown, keys: string[]): unknown[] {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object") {
+    const asRecord = parsed as Record<string, unknown>;
+    for (const key of keys) {
+      const value = asRecord[key];
+      if (Array.isArray(value)) return value;
+    }
+  }
+  return [];
+}
+
+function extractArrayDeep(parsed: unknown, keys: string[]): unknown[] {
+  const direct = extractArray(parsed, keys);
+  if (direct.length > 0) return direct;
+
+  if (parsed && typeof parsed === "object") {
+    for (const value of Object.values(parsed as Record<string, unknown>)) {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") {
+        const nested = extractArrayDeep(value, keys);
+        if (nested.length > 0) return nested;
+      }
+    }
+  }
+
+  return [];
+}
+
+function normalizeFlashcards(values: unknown[]): GeneratedFlashcard[] {
+  return values
+    .filter((card): card is Record<string, unknown> => !!card && typeof card === "object")
+    .map((card) => {
+      const front = String(
+        card.front ??
+        card.question ??
+        card.prompt ??
+        card.term ??
+        card.title ??
+        ""
+      ).trim();
+      const back = String(
+        card.back ??
+        card.answer ??
+        card.definition ??
+        card.explanation ??
+        card.description ??
+        ""
+      ).trim();
+      return { front, back };
+    })
+    .filter((card) => card.front.length > 0 && card.back.length > 0);
+}
+
 export const SUMMARY_SYSTEM_PROMPT = `You are an expert educator. Generate a clear, well-organized summary of the provided content.
 Focus on key concepts, main ideas, and important details.
 Use markdown formatting for better readability (headings, bullet points, etc.).
@@ -113,78 +229,130 @@ export interface ExtendedQuizQuestion {
 
 export type QuestionTypeFilter = QuestionTypeSlug | "all" | "mixed";
 
-export async function generateSummary(content: string): Promise<string> {
+function isExtendedQuizQuestion(value: unknown): value is ExtendedQuizQuestion {
+  if (!value || typeof value !== "object") return false;
+  const question = value as Record<string, unknown>;
+  return (
+    typeof question.question === "string" &&
+    typeof question.questionType === "string" &&
+    !!question.questionConfig &&
+    !!question.correctAnswerData
+  );
+}
+
+export async function generateSummary(content: string, locale?: string): Promise<{ result: string; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: SUMMARY_SYSTEM_PROMPT },
-      { role: "user", content: `Please summarize the following content:\n\n${content}` },
+      { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      { role: "user", content: `Please summarize the following content:\n\n${preparedContent}` },
     ],
-    max_tokens: 2000,
+    max_completion_tokens: 16000,
   });
 
-  return completion.choices[0].message.content || "";
+  return {
+    result: completion.choices[0].message.content || "",
+    usage: extractUsage(completion),
+  };
 }
 
 export async function generateFlashcards(
   content: string,
-  count: number = 10
-): Promise<GeneratedFlashcard[]> {
+  count: number = 10,
+  locale?: string
+): Promise<{ result: GeneratedFlashcard[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: FLASHCARD_SYSTEM_PROMPT },
+      { role: "system", content: FLASHCARD_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
-        content: `Generate ${count} flashcards from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
+        content: `Generate ${count} flashcards from the following content. Return ONLY JSON:\n\n${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
+
+  const parsed = parseJsonWithFallback(result);
+  const flashcards = extractArrayDeep(parsed, ["flashcards", "cards", "items", "questions"]);
+  const normalized = normalizeFlashcards(flashcards);
+
+  if (normalized.length > 0) {
+    return { result: normalized.slice(0, count), usage };
+  }
 
   try {
-    const parsed = JSON.parse(result);
-    // Handle both { flashcards: [...] } and direct array formats
-    const flashcards = Array.isArray(parsed) ? parsed : parsed.flashcards || [];
-    return flashcards.slice(0, count);
+    // Retry once with stricter output instructions when the first attempt is empty.
+    const retryCompletion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            `Return valid JSON ONLY in this exact format: {"flashcards":[{"front":"...","back":"..."}]}. ` +
+            `Create exactly ${count} flashcards.` +
+            getLanguageInstruction(locale),
+        },
+        {
+          role: "user",
+          content: `Create flashcards from this content:\n\n${preparedContent}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 16000,
+    });
+
+    const retryResult = retryCompletion.choices[0].message.content;
+    if (!retryResult) return { result: [], usage };
+
+    const retryParsed = parseJsonWithFallback(retryResult);
+    const retryFlashcards = extractArrayDeep(retryParsed, ["flashcards", "cards", "items", "questions"]);
+    const retryNormalized = normalizeFlashcards(retryFlashcards);
+    return { result: retryNormalized.slice(0, count), usage };
   } catch {
     console.error("Failed to parse flashcards:", result);
-    return [];
+    return { result: [], usage };
   }
 }
 
 export async function generateQuizQuestions(
   content: string,
-  count: number = 5
-): Promise<GeneratedQuizQuestion[]> {
+  count: number = 5,
+  locale?: string
+): Promise<{ result: GeneratedQuizQuestion[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: QUIZ_SYSTEM_PROMPT },
+      { role: "system", content: QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
-        content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY a JSON array, no other text:\n\n${content}`,
+        content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY JSON:\n\n${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 3000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
 
   try {
     const parsed = JSON.parse(result);
     // Handle both { questions: [...] } and direct array formats
     const questions = Array.isArray(parsed) ? parsed : parsed.questions || [];
-    return questions.slice(0, count);
+    return { result: questions.slice(0, count), usage };
   } catch {
     console.error("Failed to parse quiz questions:", result);
-    return [];
+    return { result: [], usage };
   }
 }
 
@@ -194,8 +362,10 @@ export async function generateQuizQuestions(
 export async function generateExtendedQuizQuestions(
   content: string,
   count: number = 10,
-  questionTypes: QuestionTypeFilter = "mixed"
-): Promise<ExtendedQuizQuestion[]> {
+  questionTypes: QuestionTypeFilter = "mixed",
+  locale?: string
+): Promise<{ result: ExtendedQuizQuestion[]; usage: TokenUsageData | null }> {
+  const preparedContent = prepareGenerationContent(content);
   let typeInstruction = "";
 
   if (questionTypes === "all" || questionTypes === "mixed") {
@@ -212,9 +382,9 @@ Aim for this distribution:
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: EXTENDED_QUIZ_SYSTEM_PROMPT },
+      { role: "system", content: EXTENDED_QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Generate ${count} quiz questions from the following content.
@@ -230,38 +400,34 @@ Important:
 - For fill_blank, use 1-2 blanks per question
 
 Content to generate questions from:
-${content}`,
+${preparedContent}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 4000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return [];
+  if (!result) return { result: [], usage };
 
   try {
-    const parsed = JSON.parse(result);
-    const questions = Array.isArray(parsed) ? parsed : parsed.questions || [];
+    const parsed = parseJsonWithFallback(result);
+    const questions = extractArray(parsed, ["questions", "items", "quizQuestions"]);
 
     // Validate and clean up questions
     const validQuestions = questions
-      .filter((q: ExtendedQuizQuestion) =>
-        q.question &&
-        q.questionType &&
-        q.questionConfig &&
-        q.correctAnswerData
-      )
-      .map((q: ExtendedQuizQuestion) => ({
+      .filter(isExtendedQuizQuestion)
+      .map((q) => ({
         ...q,
         points: q.points || 1,
         explanation: q.explanation || "",
       }));
 
-    return validQuestions.slice(0, count);
+    return { result: validQuestions.slice(0, count), usage };
   } catch (error) {
     console.error("Failed to parse extended quiz questions:", result, error);
-    return [];
+    return { result: [], usage };
   }
 }
 
@@ -305,12 +471,64 @@ export interface GeneratedLessonStep {
   hint: string | null;
 }
 
+function normalizeGeneratedLessonStep(step: GeneratedLessonStep): GeneratedLessonStep {
+  if (step.stepType !== "drag_match") return step;
+
+  const rawContent = (step.content as unknown as Record<string, unknown>) || {};
+  const rawPairs = Array.isArray(rawContent.pairs) ? rawContent.pairs : [];
+
+  const pairs = rawPairs
+    .map((pair, index) => {
+      const rawPair = (pair || {}) as Record<string, unknown>;
+      return {
+        id: String(rawPair.id ?? `${index + 1}`),
+        left: String(rawPair.left ?? rawPair.term ?? rawPair.concept ?? rawPair.title ?? ""),
+        right: String(
+          rawPair.right ??
+          rawPair.definition ??
+          rawPair.match ??
+          rawPair.value ??
+          rawPair.explanation ??
+          ""
+        ),
+      };
+    })
+    .filter((pair) => pair.left.trim().length > 0 || pair.right.trim().length > 0);
+
+  const rawAnswerData = (step.answerData || {}) as Record<string, unknown>;
+  const existingCorrectPairs =
+    rawAnswerData.correctPairs && typeof rawAnswerData.correctPairs === "object"
+      ? (rawAnswerData.correctPairs as Record<string, unknown>)
+      : {};
+
+  const normalizedCorrectPairs: Record<string, string> = {};
+  for (const [key, value] of Object.entries(existingCorrectPairs)) {
+    normalizedCorrectPairs[String(key)] = String(value ?? "");
+  }
+  for (const pair of pairs) {
+    if (pair.right.trim().length > 0 && !normalizedCorrectPairs[pair.id]) {
+      normalizedCorrectPairs[pair.id] = pair.right;
+    }
+  }
+
+  return {
+    ...step,
+    content: {
+      type: "drag_match",
+      instruction: String(rawContent.instruction ?? "Match each item with its definition"),
+      pairs,
+    },
+    answerData: { correctPairs: normalizedCorrectPairs },
+  };
+}
+
 export async function generateLesson(
   sourceContent: string,
   existingFlashcards?: { front: string; back: string }[],
   existingQuizQuestions?: { question: string; options?: string[] }[],
-  options?: { stepCount?: number; title?: string }
-): Promise<{ title: string; description: string; steps: GeneratedLessonStep[] }> {
+  options?: { stepCount?: number; title?: string },
+  locale?: string
+): Promise<{ result: { title: string; description: string; steps: GeneratedLessonStep[] }; usage: TokenUsageData | null }> {
   const stepCount = options?.stepCount || 14;
 
   let context = `Source material:\n${sourceContent}`;
@@ -328,71 +546,85 @@ export async function generateLesson(
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: LESSON_SYSTEM_PROMPT },
+      { role: "system", content: LESSON_SYSTEM_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}\n\nAlso provide a title and short description for the lesson.\n\nReturn JSON: { "title": "...", "description": "...", "steps": [...] }\n\n${context}`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 6000,
+    max_completion_tokens: 25000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return { title: "Untitled Lesson", description: "", steps: [] };
+  if (!result) return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
 
   try {
-    const parsed = JSON.parse(result);
+    const parsed = parseJsonWithFallback(result) as Record<string, unknown> | null;
+    const rawSteps = Array.isArray(parsed?.steps) ? parsed.steps : [];
     return {
-      title: parsed.title || options?.title || "Untitled Lesson",
-      description: parsed.description || "",
-      steps: (parsed.steps || []).map((s: GeneratedLessonStep) => ({
-        stepType: s.stepType,
-        content: s.content,
-        answerData: s.answerData || null,
-        explanation: s.explanation || null,
-        hint: s.hint || null,
-      })),
+      result: {
+        title: String(parsed?.title || options?.title || "Untitled Lesson"),
+        description: String(parsed?.description || ""),
+        steps: rawSteps.map((rawStep) => {
+          const s = (rawStep || {}) as Record<string, unknown>;
+          const base: GeneratedLessonStep = {
+            stepType: (s.stepType as StepType) || "explanation",
+            content: (s.content as StepContent) || ({ type: "explanation", markdown: "" } as StepContent),
+            answerData: (s.answerData as StepAnswerData) || null,
+            explanation: typeof s.explanation === "string" ? s.explanation : null,
+            hint: typeof s.hint === "string" ? s.hint : null,
+          };
+          return normalizeGeneratedLessonStep(base);
+        }),
+      },
+      usage,
     };
   } catch {
     console.error("Failed to parse lesson:", result);
-    return { title: "Untitled Lesson", description: "", steps: [] };
+    return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
   }
 }
 
 export async function improveLessonStep(
   step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
-  sourceContent?: string
-): Promise<GeneratedLessonStep> {
+  sourceContent?: string,
+  locale?: string
+): Promise<{ result: GeneratedLessonStep; usage: TokenUsageData | null }> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
-      { role: "system", content: LESSON_IMPROVE_PROMPT },
+      { role: "system", content: LESSON_IMPROVE_PROMPT + getLanguageInstruction(locale) },
       {
         role: "user",
         content: `Improve this lesson step:\n${JSON.stringify(step)}${sourceContent ? `\n\nOriginal source material for context:\n${sourceContent.slice(0, 2000)}` : ""}\n\nReturn the improved step as JSON with the same structure.`,
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 2000,
+    max_completion_tokens: 16000,
   });
 
+  const usage = extractUsage(completion);
   const result = completion.choices[0].message.content;
-  if (!result) return step as GeneratedLessonStep;
+  if (!result) return { result: step as GeneratedLessonStep, usage };
 
   try {
     const parsed = JSON.parse(result);
     return {
-      stepType: parsed.stepType || step.stepType,
-      content: parsed.content || step.content,
-      answerData: parsed.answerData ?? step.answerData,
-      explanation: parsed.explanation ?? step.explanation,
-      hint: parsed.hint ?? step.hint,
+      result: {
+        stepType: parsed.stepType || step.stepType,
+        content: parsed.content || step.content,
+        answerData: parsed.answerData ?? step.answerData,
+        explanation: parsed.explanation ?? step.explanation,
+        hint: parsed.hint ?? step.hint,
+      },
+      usage,
     };
   } catch {
-    return step as GeneratedLessonStep;
+    return { result: step as GeneratedLessonStep, usage };
   }
 }
 

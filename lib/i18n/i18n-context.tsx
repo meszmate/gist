@@ -64,33 +64,31 @@ export interface I18nContextValue {
 
 export const I18nContext = createContext<I18nContextValue | null>(null);
 
-function detectLocale(): Locale {
-  if (typeof window === "undefined") return DEFAULT_LOCALE;
-
-  // 1. Cookie
-  const cookieMatch = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
-  if (cookieMatch) {
-    const val = cookieMatch[1] as Locale;
-    if (LOCALES.includes(val)) return val;
-  }
-
-  // 2. localStorage
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored && LOCALES.includes(stored as Locale)) return stored as Locale;
-
-  // 3. Browser language
-  const browserLang = navigator.language.split("-")[0] as Locale;
-  if (LOCALES.includes(browserLang)) return browserLang;
-
-  return DEFAULT_LOCALE;
-}
-
 function setCookie(locale: Locale) {
   document.cookie = `${COOKIE_KEY}=${locale};path=/;max-age=31536000;SameSite=Lax`;
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(detectLocale);
+export function I18nProvider({ children, initialLocale }: { children: ReactNode; initialLocale?: string }) {
+  const validInitial = initialLocale && LOCALES.includes(initialLocale as Locale)
+    ? (initialLocale as Locale)
+    : DEFAULT_LOCALE;
+
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") return validInitial;
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && LOCALES.includes(stored as Locale)) {
+      return stored as Locale;
+    }
+
+    const hasCookie = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
+    if (hasCookie?.[1] && LOCALES.includes(hasCookie[1] as Locale)) {
+      return hasCookie[1] as Locale;
+    }
+
+    const browserLang = navigator.language.split("-")[0] as Locale;
+    return LOCALES.includes(browserLang) ? browserLang : validInitial;
+  });
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
@@ -99,12 +97,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = newLocale;
   }, []);
 
-  // Sync lang attribute on mount
+  // Sync lang attribute when locale changes
   useEffect(() => {
-    document.documentElement.lang = locale;
-    // Ensure cookie and localStorage are in sync
     localStorage.setItem(STORAGE_KEY, locale);
     setCookie(locale);
+    document.documentElement.lang = locale;
   }, [locale]);
 
   const t = useCallback(

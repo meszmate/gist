@@ -20,7 +20,26 @@ export function DragMatchRenderer({
   const currentPairs = (userAnswer as DragMatchUserAnswer)?.pairs || {};
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
 
-  const rightItems = content.pairs.map((p) => p.right);
+  const normalizedPairs = content.pairs.map((pair, index) => {
+    const raw = pair as unknown as Record<string, unknown>;
+    const left = String(
+      raw.left ?? raw.term ?? raw.concept ?? raw.title ?? `Item ${index + 1}`
+    );
+    const right = String(
+      raw.right ??
+      raw.definition ??
+      raw.match ??
+      raw.value ??
+      raw.explanation ??
+      answerData?.correctPairs?.[pair.id] ??
+      ""
+    );
+    return { id: pair.id, left, right };
+  });
+
+  const rightItems = normalizedPairs
+    .map((p) => p.right)
+    .filter((text) => text.trim().length > 0);
   const usedRight = new Set(Object.values(currentPairs));
 
   const handleLeftClick = (id: string) => {
@@ -48,7 +67,7 @@ export function DragMatchRenderer({
       <p className="text-sm text-muted-foreground">{t("stepRenderer.dragMatch")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          {content.pairs.map((pair) => {
+          {normalizedPairs.map((pair) => {
             const matched = currentPairs[pair.id];
             const isCorrectMatch = isChecked && answerData?.correctPairs[pair.id] === matched;
             const isWrongMatch = isChecked && matched && answerData?.correctPairs[pair.id] !== matched;
@@ -82,6 +101,11 @@ export function DragMatchRenderer({
           })}
         </div>
         <div className="space-y-2">
+          {rightItems.length === 0 && (
+            <div className="px-3 py-2.5 rounded-lg border text-sm text-muted-foreground">
+              No definitions available
+            </div>
+          )}
           {rightItems.map((right, i) => {
             const isUsed = usedRight.has(right);
             return (

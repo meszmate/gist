@@ -19,10 +19,9 @@ export function useColorTheme() {
   const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
     if (typeof window === "undefined") return "neutral";
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && COLOR_THEMES.includes(stored as ColorTheme)) {
-      return stored as ColorTheme;
-    }
-    return "neutral";
+    return stored && COLOR_THEMES.includes(stored as ColorTheme)
+      ? (stored as ColorTheme)
+      : "neutral";
   });
 
   const setColorTheme = useCallback((theme: ColorTheme) => {

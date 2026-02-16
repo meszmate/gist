@@ -760,6 +760,7 @@
     "readyToGenerate": "Kész a generálásra",
     "contentMinLength": "Legalább 50 karakter tartalom szükséges",
     "whatToGenerate": "Mit generáljunk",
+    "whatToGenerateDesc": "Válaszd ki, milyen tananyagot generáljunk a tartalmadból",
     "selectTypes": "Válaszd ki, milyen típusú tananyagot hozzunk létre",
     "summary": "Összefoglaló",
     "summaryDesc": "Tömör összefoglaló generálása a fő fogalmakról",
@@ -781,6 +782,7 @@
     "textExtracted": "Szöveg sikeresen kinyerve",
     "skipForNow": "Kihagyás most",
     "generateContent": "Tartalom generálása",
+    "tokenLimitExceeded": "Elérted a token használati limitet. Kérjük, próbáld újra később.",
     "resourceNotFound": "Anyag nem található",
     "resourceNotFoundDesc": "Ez az anyag törölve lett vagy nem létezik.",
     "backToLibrary": "Vissza a könyvtárba"

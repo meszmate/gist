@@ -65,12 +65,12 @@ export function FileUploadDropzone({
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
       return t("upload.fileSizeExceeds");
     }
     return null;
-  };
+  }, [t]);
 
   const uploadFile = useCallback(
     async (file: File) => {

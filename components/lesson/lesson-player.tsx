@@ -280,7 +280,7 @@ export function LessonPlayer({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 container max-w-2xl mx-auto px-4 py-8">
+      <div className="flex-1 container max-w-2xl mx-auto px-4 py-8 pb-32">
         {currentStep && StepRenderer && (
           <div
             key={stepKey}
@@ -333,7 +333,7 @@ export function LessonPlayer({
       </div>
 
       {/* Bottom actions — always visible */}
-      <div className="border-t p-4">
+      <div className="sticky bottom-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-4">
         <div className="container max-w-2xl mx-auto flex items-center justify-between">
           <div>
             <div className="text-sm font-medium">

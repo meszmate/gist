@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { lessonSteps, studyMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { improveLessonStep } from "@/lib/ai/openai";
+import { improveLessonStep, MODEL } from "@/lib/ai/openai";
+import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ resourceId: string; lessonId: string; stepId: string }> }
 ) {
   const session = await auth();
@@ -14,7 +15,18 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Check token limit
+  const { allowed, tokensUsed, tokenLimit } = await checkTokenLimit(session.user.id);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Token usage limit exceeded", code: "TOKEN_LIMIT_EXCEEDED", tokensUsed, tokenLimit },
+      { status: 429 }
+    );
+  }
+
   const { resourceId, lessonId, stepId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const locale = body.locale || "en";
 
   const [resource] = await db
     .select({ id: studyMaterials.id, sourceContent: studyMaterials.sourceContent })
@@ -32,7 +44,7 @@ export async function POST(
 
   if (!step) return NextResponse.json({ error: "Step not found" }, { status: 404 });
 
-  const improved = await improveLessonStep(
+  const { result: improved, usage } = await improveLessonStep(
     {
       stepType: step.stepType,
       content: step.content,
@@ -40,8 +52,11 @@ export async function POST(
       explanation: step.explanation,
       hint: step.hint,
     },
-    resource.sourceContent || undefined
+    resource.sourceContent || undefined,
+    locale
   );
+
+  await logTokenUsage(session.user.id, usage, "improve_lesson_step", MODEL);
 
   const [updated] = await db
     .update(lessonSteps)

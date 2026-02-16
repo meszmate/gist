@@ -71,7 +71,7 @@ export default function SettingsPage() {
   ];
 
   const colorSwatches: { value: ColorTheme; label: string; color: string }[] = [
-    { value: "neutral", label: t("settings.neutral"), color: "oklch(0.37 0 0)" },
+    { value: "neutral", label: t("settings.neutral"), color: "oklch(0.729 0.047 77)" },
     { value: "blue", label: t("settings.blue"), color: "oklch(0.55 0.2 250)" },
     { value: "violet", label: t("settings.violet"), color: "oklch(0.55 0.22 290)" },
     { value: "green", label: t("settings.green"), color: "oklch(0.55 0.17 155)" },
