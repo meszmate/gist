@@ -18,6 +18,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
+import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
 
 interface QuizQuestion {
   id: string;
@@ -77,6 +79,7 @@ export default function PublicQuizPage() {
   const params = useParams();
   const quizId = params.quizId as string;
   const { data: session, status: sessionStatus } = useSession();
+  const { t } = useLocale();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -96,7 +99,10 @@ export default function PublicQuizPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
       });
-      if (!res.ok) throw new Error("Failed to submit quiz");
+      if (!res.ok) {
+        const rawError = await getApiErrorMessage(res, "Failed to submit quiz");
+        throw new Error(localizeErrorMessage(rawError, t, "errors.failedToSubmit"));
+      }
       return res.json();
     },
     onSuccess: (data) => {
@@ -166,7 +172,7 @@ export default function PublicQuizPage() {
   if (isLoading || sessionStatus === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading quiz...</div>
+        <div className="animate-pulse text-muted-foreground">{t("publicQuiz.loadingQuiz")}</div>
       </div>
     );
   }
@@ -177,12 +183,12 @@ export default function PublicQuizPage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Quiz Not Available</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("publicQuiz.quizNotAvailable")}</h2>
             <p className="text-muted-foreground mb-4">
-              {(error as Error).message}
+              {localizeErrorMessage((error as Error).message, t, "errors.generic")}
             </p>
             <Button asChild>
-              <Link href="/">Go to gist</Link>
+              <Link href="/">{t("publicQuiz.goToGist")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -199,12 +205,12 @@ export default function PublicQuizPage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("publicQuiz.signInRequired")}</h2>
             <p className="text-muted-foreground mb-4">
-              You need to sign in to take this quiz.
+              {t("publicQuiz.signInRequiredDesc")}
             </p>
             <Button onClick={() => signIn("google")}>
-              Sign in with Google
+              {t("publicQuiz.signInWithGoogle")}
             </Button>
           </CardContent>
         </Card>
@@ -219,12 +225,12 @@ export default function PublicQuizPage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("publicQuiz.accessDenied")}</h2>
             <p className="text-muted-foreground mb-4">
-              You are not authorized to take this quiz.
+              {t("errors.notAuthorizedQuiz")}
             </p>
             <Button asChild>
-              <Link href="/">Go to gist</Link>
+              <Link href="/">{t("publicQuiz.goToGist")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -304,7 +310,7 @@ export default function PublicQuizPage() {
 
           <div className="text-center">
             <Button asChild>
-              <Link href="/">Go to gist</Link>
+              <Link href="/">{t("publicQuiz.goToGist")}</Link>
             </Button>
           </div>
         </div>

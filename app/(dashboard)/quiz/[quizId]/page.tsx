@@ -30,6 +30,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { getResultRenderer } from "@/components/quiz/question-renderers";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import Link from "next/link";
 import type {
   QuestionTypeSlug,
@@ -143,6 +144,7 @@ function CircularProgress({ value, size = 80, strokeWidth = 8 }: { value: number
 export default function QuizPage() {
   const params = useParams();
   const quizId = params.quizId as string;
+  const { t } = useLocale();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, UserAnswer>>({});
@@ -307,10 +309,10 @@ export default function QuizPage() {
     return (
       <EmptyState
         icon={<FileQuestion className="h-12 w-12" />}
-        title="Quiz not found"
-        description="This quiz may have been deleted or doesn't exist."
+        title={t("quizSettings.quizNotFound")}
+        description={t("quizSettings.quizNotFoundDesc")}
         action={{
-          label: "Back to Quizzes",
+          label: t("quizSettings.backToQuizzes"),
           href: "/quiz",
         }}
       />

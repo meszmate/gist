@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -35,6 +35,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { CustomTypeBuilder } from "@/components/quiz/custom-type-builder";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/use-locale";
+import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
 
 interface QuestionType {
   id: string;
@@ -48,12 +49,6 @@ interface QuestionType {
   createdAt: string;
 }
 
-async function fetchQuestionTypes(): Promise<{ questionTypes: QuestionType[] }> {
-  const res = await fetch("/api/question-types");
-  if (!res.ok) throw new Error("Failed to fetch question types");
-  return res.json();
-}
-
 export default function QuestionTypesPage() {
   const { t } = useLocale();
   const queryClient = useQueryClient();
@@ -62,10 +57,23 @@ export default function QuestionTypesPage() {
   const [editingType, setEditingType] = useState<QuestionType | null>(null);
   const [deleteType, setDeleteType] = useState<QuestionType | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["question-types"],
-    queryFn: fetchQuestionTypes,
+    queryFn: async (): Promise<{ questionTypes: QuestionType[] }> => {
+      const res = await fetch("/api/question-types");
+      if (!res.ok) {
+        const rawError = await getApiErrorMessage(res, "Failed to fetch question types");
+        throw new Error(localizeErrorMessage(rawError, t, "errors.failedToFetch"));
+      }
+      return res.json();
+    },
   });
+
+  useEffect(() => {
+    if (error instanceof Error) {
+      toast.error(localizeErrorMessage(error, t, "errors.failedToFetch"));
+    }
+  }, [error, t]);
 
   const createMutation = useMutation({
     mutationFn: async (typeData: {
@@ -81,8 +89,8 @@ export default function QuestionTypesPage() {
         body: JSON.stringify(typeData),
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create question type");
+        const rawError = await getApiErrorMessage(res, "Failed to create question type");
+        throw new Error(localizeErrorMessage(rawError, t, "questionTypes.failedCreate"));
       }
       return res.json();
     },
@@ -92,7 +100,7 @@ export default function QuestionTypesPage() {
       toast.success(t("questionTypes.created"));
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(localizeErrorMessage(error, t, "questionTypes.failedCreate"));
     },
   });
 
@@ -116,8 +124,8 @@ export default function QuestionTypesPage() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to update question type");
+        const rawError = await getApiErrorMessage(res, "Failed to update question type");
+        throw new Error(localizeErrorMessage(rawError, t, "questionTypes.failedUpdate"));
       }
       return res.json();
     },
@@ -127,7 +135,7 @@ export default function QuestionTypesPage() {
       toast.success(t("questionTypes.updated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(localizeErrorMessage(error, t, "questionTypes.failedUpdate"));
     },
   });
 
@@ -137,8 +145,8 @@ export default function QuestionTypesPage() {
         method: "DELETE",
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to delete question type");
+        const rawError = await getApiErrorMessage(res, "Failed to delete question type");
+        throw new Error(localizeErrorMessage(rawError, t, "questionTypes.failedDelete"));
       }
       return res.json();
     },
@@ -148,7 +156,7 @@ export default function QuestionTypesPage() {
       toast.success(t("questionTypes.deleted"));
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(localizeErrorMessage(error, t, "questionTypes.failedDelete"));
     },
   });
 
@@ -159,11 +167,17 @@ export default function QuestionTypesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive }),
       });
-      if (!res.ok) throw new Error("Failed to update question type");
+      if (!res.ok) {
+        const rawError = await getApiErrorMessage(res, "Failed to update question type");
+        throw new Error(localizeErrorMessage(rawError, t, "questionTypes.failedUpdate"));
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["question-types"] });
+    },
+    onError: (error: Error) => {
+      toast.error(localizeErrorMessage(error, t, "questionTypes.failedUpdate"));
     },
   });
 
