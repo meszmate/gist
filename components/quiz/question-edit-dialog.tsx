@@ -331,7 +331,7 @@ function QuestionEditDialogContent({
       </DialogHeader>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>{t("quiz.editDialog.questionType")}</Label>
             <Select value={questionType} onValueChange={setQuestionType}>
@@ -508,7 +508,7 @@ function QuestionEditDialogContent({
         )}
 
         {questionType === "year_range" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>{t("quiz.editDialog.correctYear")}</Label>
               <Input
@@ -532,7 +532,7 @@ function QuestionEditDialogContent({
         )}
 
         {questionType === "numeric_range" && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>{t("quiz.editDialog.correctValue")}</Label>
               <Input

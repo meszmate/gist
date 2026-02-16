@@ -548,14 +548,14 @@ export default function ResourcePage() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <InlineEditableField
               value={resource.title}
               onSave={(title) => updateResource.mutate({ title })}
               isSaving={updateResource.isPending}
-              className="text-3xl font-bold tracking-tight"
-              inputClassName="text-3xl font-bold tracking-tight h-auto py-1"
+              className="text-2xl font-bold tracking-tight sm:text-3xl"
+              inputClassName="h-auto py-1 text-2xl font-bold tracking-tight sm:text-3xl"
             />
             <InlineEditableField
               value={resource.description || ""}
@@ -567,7 +567,7 @@ export default function ResourcePage() {
               inputClassName="text-muted-foreground"
             />
           </div>
-          <div className="flex items-center gap-2 animate-fade-in shrink-0">
+          <div className="flex w-full flex-wrap items-center gap-2 animate-fade-in sm:w-auto sm:justify-end">
             {resource.completedAt ? (
               <Button
                 variant="outline"
@@ -659,12 +659,8 @@ export default function ResourcePage() {
         </Badge>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <BookOpen className="h-4 w-4" />
             {t("resourceDetail.overview")}
@@ -736,7 +732,7 @@ export default function ResourcePage() {
               <Card>
                 <CollapsibleTrigger asChild>
                   <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="flex flex-wrap items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
                         <BookOpen className="h-5 w-5" />
                         {t("resourceDetail.summary")}
@@ -860,11 +856,11 @@ export default function ResourcePage() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   {t("resourceDetail.flashcardCount", { count: resource.flashcards.length })}
                 </p>
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link href={`/study?resource=${resource.id}`}>
                     <Brain className="mr-2 h-4 w-4" />
                     {t("resourceDetail.startStudySession")}
@@ -915,11 +911,11 @@ export default function ResourcePage() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   {t("resourceDetail.questionCount", { count: resource.quizQuestions.length })}
                 </p>
-                <div className="flex gap-2">
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
                   <Button
                     variant="outline"
                     onClick={() => setCreateDialogOpen(true)}
@@ -1043,11 +1039,11 @@ export default function ResourcePage() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   {t("resourceDetail.lessonCount", { count: lessons.length })}
                 </p>
-                <Button asChild>
+                <Button asChild className="w-full sm:w-auto">
                   <Link href={`/library/${resource.id}/lessons`}>
                     <GraduationCap className="mr-2 h-4 w-4" />
                     {t("resourceDetail.manageLessons")}
@@ -1117,7 +1113,7 @@ export default function ResourcePage() {
           </DialogHeader>
           {shareUrl ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   value={shareUrl}
                   readOnly

@@ -96,7 +96,7 @@ export function DragMatchRenderer({
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{instruction}</h3>
       <p className="text-sm text-muted-foreground">{t("stepRenderer.dragMatch")}</p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           {displayPairs.map((pair) => {
             const matched = currentPairs[pair.id];

@@ -39,7 +39,7 @@ export function TrueFalseRenderer({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {options.map(({ value, label }) => {
         const isSelected = selectedValue === value;
         const isCorrectOption = correctValue === value;
@@ -113,7 +113,7 @@ export function TrueFalseResultRenderer({
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className={cn(
           "p-4 rounded-lg text-center",
           correctValue === true && "bg-green-500/10 border border-green-500/20",

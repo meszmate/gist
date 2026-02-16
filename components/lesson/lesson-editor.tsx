@@ -221,10 +221,11 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col">
       {/* Toolbar */}
-      <div className="border-b px-4 py-3 flex items-center justify-between bg-background shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="shrink-0 border-b bg-background px-4 py-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
           <Button asChild variant="ghost" size="icon">
             <Link href={`/library/${resourceId}`}>
               <ArrowLeft className="h-4 w-4" />
@@ -236,7 +237,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
               setLesson((l) => ({ ...l, title: e.target.value }));
               setIsDirty(true);
             }}
-            className="text-lg font-semibold border-none shadow-none h-auto py-1 px-2 focus-visible:ring-1 max-w-sm"
+            className="h-auto w-full max-w-full border-none px-2 py-1 text-lg font-semibold shadow-none focus-visible:ring-1 sm:max-w-sm"
           />
           <Badge variant={lesson.status === "published" ? "default" : "secondary"}>
             {lesson.status === "published" ? t("common.published") : t("common.draft")}
@@ -246,8 +247,8 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
               {t("common.unsavedChanges")}
             </Badge>
           )}
-        </div>
-        <div className="flex items-center gap-2">
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -283,13 +284,14 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
             )}
             {t("common.save")}
           </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         {/* Sidebar */}
-        <div className="w-64 border-r bg-muted/30 flex flex-col shrink-0">
-          <div className="p-3 border-b flex items-center justify-between">
+        <div className="flex w-full shrink-0 flex-col border-b bg-muted/30 lg:w-64 lg:border-r lg:border-b-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b p-3">
             <span className="text-sm font-medium">{t("lessonEditor.stepsCount", { count: steps.length })}</span>
             <Button
               variant="outline"
@@ -300,7 +302,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
               {t("lessonEditor.add")}
             </Button>
           </div>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="max-h-56 flex-1 lg:max-h-none">
             <div className="p-2 space-y-1">
               {steps.map((step, index) => {
                 const meta = STEP_TYPE_META[step.stepType as StepType];
@@ -338,7 +340,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
         <div className="flex-1 overflow-y-auto">
           {selectedStep ? (
             <div className="max-w-2xl mx-auto p-6 space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
                     {STEP_TYPE_META[selectedStep.stepType as StepType]?.label || selectedStep.stepType}
@@ -347,7 +349,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                     <Badge variant="secondary" className="text-xs">{t("lessonEditor.interactiveLabel")}</Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"

@@ -358,7 +358,7 @@ function StudyContent() {
             </div>
           </div>
           <CardContent className="p-6">
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="text-center p-4 rounded-lg bg-muted/50">
                 <div className="text-3xl font-bold text-primary">{reviewedCount}</div>
                 <div className="text-sm text-muted-foreground">{t("study.cardsReviewed")}</div>
@@ -409,8 +409,9 @@ function StudyContent() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Continuation Banner */}
       {showContinuationBanner && (
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex items-center justify-between animate-slide-up">
-          <div className="flex items-center gap-3">
+        <div className="animate-slide-up rounded-lg border border-orange-500/30 bg-orange-500/10 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             <div>
               <p className="font-medium text-sm">
@@ -420,26 +421,27 @@ function StudyContent() {
                 {t("study.roundInfo", { round: continuationRound + 1 })}
               </p>
             </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={finishSession} className="w-full sm:w-auto">
+              {t("study.finishSession")}
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={finishSession}>
-            {t("study.finishSession")}
-          </Button>
         </div>
       )}
 
       {/* Collapsible Header */}
       <Collapsible open={!headerCollapsed} onOpenChange={(open) => setHeaderCollapsed(!open)}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
               <Link href={resourceId ? `/library/${resourceId}` : "/dashboard"}>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
             <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors">
-                <div>
-                  <h1 className="text-xl font-bold flex items-center gap-2">
+              <button className="flex min-w-0 items-center gap-2 rounded-lg p-2 -m-2 transition-colors hover:bg-muted/50">
+                <div className="min-w-0">
+                  <h1 className="flex items-center gap-2 truncate text-xl font-bold">
                     <Brain className="h-5 w-5 text-primary" />
                     {t("study.title")}
                     {continuationRound > 0 && (
@@ -463,7 +465,7 @@ function StudyContent() {
               </button>
             </CollapsibleTrigger>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Switch
                 id="practice-mode"
@@ -494,7 +496,7 @@ function StudyContent() {
         </div>
 
         <CollapsibleContent className="mt-4">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Check className="h-4 w-4 text-green-500" />
               {t("study.reviewed", { count: reviewedCount })}
@@ -577,7 +579,7 @@ function StudyContent() {
           <p className="text-center text-sm text-muted-foreground">
             {t("study.howWellDidYouKnow")}
           </p>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([1, 2, 3, 4] as Rating[]).map((rating) => (
               <Button
                 key={rating}
@@ -593,7 +595,7 @@ function StudyContent() {
               </Button>
             ))}
           </div>
-          <div className="flex justify-center gap-6 text-xs text-muted-foreground">
+          <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground sm:grid-cols-4">
             {([1, 2, 3, 4] as Rating[]).map((rating) => (
               <div key={rating} className="text-center">
                 <kbd className="px-1.5 py-0.5 bg-muted rounded border">{rating}</kbd>

@@ -196,7 +196,7 @@ export function CustomTypeBuilder({
     <div className="space-y-6">
       {/* Basic Info */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="slug">{t("customTypeBuilder.slugLabel")}</Label>
             <Input
@@ -236,7 +236,7 @@ export function CustomTypeBuilder({
       {/* Config Schema */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base">{t("customTypeBuilder.questionConfig")}</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -270,7 +270,7 @@ export function CustomTypeBuilder({
       {/* Answer Schema */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base">{t("customTypeBuilder.answerSchema")}</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -307,7 +307,7 @@ export function CustomTypeBuilder({
           <CardTitle className="text-base">{t("customTypeBuilder.schemaPreview")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium mb-2">{t("customTypeBuilder.configSchema")}</p>
               <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">
@@ -333,7 +333,7 @@ export function CustomTypeBuilder({
       </Card>
 
       {/* Actions */}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onCancel}>
           {t("customTypeBuilder.cancel")}
         </Button>
@@ -354,10 +354,10 @@ interface SchemaFieldEditorProps {
 function SchemaFieldEditor({ field, onChange, onRemove }: SchemaFieldEditorProps) {
   const { t } = useLocale();
   return (
-    <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
+    <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-start">
       <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-grab" />
 
-      <div className="flex-1 grid grid-cols-4 gap-2">
+      <div className="grid flex-1 grid-cols-1 gap-2 md:grid-cols-4">
         <div className="space-y-1">
           <Label className="text-xs">{t("customTypeBuilder.fieldName")}</Label>
           <Input
@@ -419,12 +419,7 @@ function SchemaFieldEditor({ field, onChange, onRemove }: SchemaFieldEditorProps
         </div>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 mt-5"
-        onClick={onRemove}
-      >
+      <Button variant="ghost" size="icon" className="h-8 w-8 sm:mt-5" onClick={onRemove}>
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>

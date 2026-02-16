@@ -66,8 +66,8 @@ export function QuestionCard({
     <Card className={cn("animate-fade-in", className)}>
       <CardContent className="p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-xs">
               Q{questionNumber}
             </Badge>
@@ -88,7 +88,7 @@ export function QuestionCard({
               size="icon"
               onClick={onToggleFlag}
               className={cn(
-                "shrink-0",
+                "self-end shrink-0 sm:self-auto",
                 isFlagged && "text-yellow-500"
               )}
             >

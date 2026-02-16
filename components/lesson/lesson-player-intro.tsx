@@ -26,7 +26,7 @@ export function LessonPlayerIntro({ lesson, onStart }: LessonPlayerIntroProps) {
         <GraduationCap className="h-8 w-8 text-primary" />
       </div>
       <div className="space-y-2 max-w-lg">
-        <h1 className="text-3xl font-bold">{lesson.title}</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{lesson.title}</h1>
         {lesson.description && (
           <p className="text-muted-foreground">{lesson.description}</p>
         )}
@@ -49,7 +49,7 @@ export function LessonPlayerIntro({ lesson, onStart }: LessonPlayerIntroProps) {
           </Badge>
         )}
       </div>
-      <Button size="lg" onClick={onStart} className="mt-4 px-8">
+      <Button size="lg" onClick={onStart} className="mt-4 w-full px-8 sm:w-auto">
         {t("lessons.startLesson")}
       </Button>
     </div>

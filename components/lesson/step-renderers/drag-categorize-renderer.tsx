@@ -67,7 +67,7 @@ export function DragCategorizeRenderer({
       )}
 
       {/* Categories */}
-      <div className={cn("grid gap-3", content.categories.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+      <div className={cn("grid grid-cols-1 gap-3", content.categories.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
         {content.categories.map((category) => {
           const itemsInCategory = content.items.filter((i) => currentMapping[i.id] === category.id);
           return (

@@ -277,7 +277,7 @@ export default function QuizSettingsPage() {
                 name="timeLimitMinutes"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <FormLabel>{t("quizSettings.timeLimit")}</FormLabel>
                       <span className="text-sm font-medium">
                         {field.value === 0 ? t("quizSettings.noLimit") : t("quizSettings.minFormat", { count: field.value ?? 0 })}
@@ -306,7 +306,7 @@ export default function QuizSettingsPage() {
                 name="maxAttempts"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <FormLabel>{t("quizSettings.maxAttempts")}</FormLabel>
                       <span className="text-sm font-medium">
                         {field.value === 0 ? t("quizSettings.unlimited") : field.value}
@@ -348,7 +348,7 @@ export default function QuizSettingsPage() {
                 control={form.control}
                 name="requireSignin"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                  <FormItem className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
                         {t("quizSettings.requireSignIn")}
@@ -406,7 +406,7 @@ export default function QuizSettingsPage() {
                 control={form.control}
                 name="shuffleQuestions"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                  <FormItem className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
                         {t("quizSettings.shuffleQuestions")}
@@ -429,7 +429,7 @@ export default function QuizSettingsPage() {
                 control={form.control}
                 name="showCorrectAnswers"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                  <FormItem className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer flex items-center gap-2">
                         <Eye className="h-4 w-4" />
@@ -498,7 +498,7 @@ export default function QuizSettingsPage() {
                 name="passThreshold"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <FormLabel>{t("quizSettings.passThreshold")}</FormLabel>
                       <span className="text-sm font-medium">{field.value}%</span>
                     </div>
@@ -524,7 +524,7 @@ export default function QuizSettingsPage() {
                 control={form.control}
                 name="showPointValues"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                  <FormItem className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
                         {t("quizSettings.showPointValues")}
@@ -547,7 +547,7 @@ export default function QuizSettingsPage() {
                 control={form.control}
                 name="partialCreditEnabled"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                  <FormItem className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base cursor-pointer">
                         {t("quizSettings.partialCredit")}
@@ -618,7 +618,7 @@ export default function QuizSettingsPage() {
             </CardHeader>
             <CardContent>
               {shareUrl ? (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Input value={shareUrl} readOnly className="flex-1 font-mono text-sm" />
                   <Button type="button" size="icon" onClick={copyShareLink} className="shrink-0">
                     {copied ? (
@@ -652,7 +652,7 @@ export default function QuizSettingsPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" asChild>
               <Link href={`/quiz/${quizId}`}>{t("common.cancel")}</Link>
             </Button>

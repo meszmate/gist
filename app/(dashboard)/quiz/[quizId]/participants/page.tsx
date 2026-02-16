@@ -153,7 +153,7 @@ export default function ParticipantsPage() {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 bg-muted rounded animate-pulse" />
           ))}
@@ -190,7 +190,7 @@ export default function ParticipantsPage() {
           { label: "Participants" },
         ]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
             <Button variant="outline" asChild>
               <Link href={`/quiz/${quizId}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -296,8 +296,8 @@ export default function ParticipantsPage() {
       )}
 
       {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or email..."
@@ -431,13 +431,13 @@ export default function ParticipantsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
                 {Math.min(pagination.page * pagination.pageSize, pagination.total)} of{" "}
                 {pagination.total} participants
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 sm:justify-end">
                 <Button
                   variant="outline"
                   size="sm"

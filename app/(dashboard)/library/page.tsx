@@ -262,8 +262,8 @@ export default function LibraryPage() {
       />
 
       {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("library.searchPlaceholder")}
@@ -276,9 +276,9 @@ export default function LibraryPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v as FilterOption)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px]">
               <Users2 className="mr-2 h-4 w-4" />
               <SelectValue />
             </SelectTrigger>
@@ -294,7 +294,7 @@ export default function LibraryPage() {
 
           {folders.length > 0 && (
             <Select value={folderFilter} onValueChange={setFolderFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <Folder className="mr-2 h-4 w-4" />
                 <SelectValue placeholder={t("library.allFolders")} />
               </SelectTrigger>
@@ -310,7 +310,7 @@ export default function LibraryPage() {
           )}
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-full sm:w-[130px]">
               <SortAsc className="mr-2 h-4 w-4" />
               <SelectValue />
             </SelectTrigger>
@@ -491,7 +491,7 @@ export default function LibraryPage() {
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
                         {resource.flashcardCount > 0 && (
                           <span className="flex items-center gap-1">
@@ -570,9 +570,9 @@ export default function LibraryPage() {
               onClick={() => router.push(`/library/${resource.id}`)}
               onMouseEnter={() => setSelectedIndex(index)}
             >
-              <CardContent className="p-4 flex items-center gap-4">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium truncate">{resource.title}</h3>
                     {resource.completedAt && (
                       <Badge variant="secondary" className="gap-1 shrink-0 text-xs bg-green-500/10 text-green-700 dark:text-green-400">
@@ -604,7 +604,7 @@ export default function LibraryPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   {resource.difficulty && (
                     <Badge className={getDifficultyColor(resource.difficulty)}>
                       {getDifficultyLabel(resource.difficulty)}

@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
           </Link>
         </Button>
 
-        <h1 className="text-4xl font-bold mb-2">Terms of Service</h1>
+        <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Terms of Service</h1>
         <p className="text-muted-foreground mb-8">
           Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
         </p>

@@ -138,7 +138,7 @@ export function SharedFlashcardStudy({
             {t("flashcard.studiedCards", { count: cards.length })}
           </p>
         </div>
-        <div className="flex justify-center gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
           <div className="text-center">
             <p className="text-3xl font-bold text-green-600">{correctCount}</p>
             <p className="text-sm text-muted-foreground">{t("flashcard.gotIt")}</p>
@@ -148,7 +148,7 @@ export function SharedFlashcardStudy({
             <p className="text-sm text-muted-foreground">{t("flashcard.needsReview")}</p>
           </div>
         </div>
-        <div className="flex justify-center gap-3">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={restart} variant="outline">
             <RotateCcw className="mr-2 h-4 w-4" />
             {t("flashcard.studyAgain")}
@@ -166,11 +166,11 @@ export function SharedFlashcardStudy({
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Progress */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span className="text-muted-foreground">
             {t("flashcard.cardOf", { current: currentIndex + 1, total: cards.length })}
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {correctCount > 0 && (
               <Badge
                 variant="outline"
@@ -251,18 +251,19 @@ export function SharedFlashcardStudy({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant="outline"
           onClick={goToPrev}
           disabled={currentIndex === 0}
+          className="w-full sm:w-auto"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
           {t("flashcard.previous")}
         </Button>
 
         {isFlipped ? (
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
             <Button
               variant="outline"
               className="border-green-500/30 text-green-700 hover:bg-green-500/10"
@@ -281,12 +282,12 @@ export function SharedFlashcardStudy({
             </Button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-center text-sm text-muted-foreground">
             {t("flashcard.tapToReveal")}
           </p>
         )}
 
-        <Button variant="outline" onClick={goToNext}>
+        <Button variant="outline" onClick={goToNext} className="w-full sm:w-auto">
           {currentIndex === cards.length - 1 ? t("flashcard.finish") : t("quiz.next")}
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>

@@ -377,7 +377,7 @@ export default function QuizPage() {
             </div>
           </div>
           <CardContent className="p-6">
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="text-center p-3 rounded-lg bg-green-500/10">
                 <div className="text-2xl font-bold text-green-600">{result.score}</div>
                 <div className="text-sm text-muted-foreground">Correct</div>
@@ -393,7 +393,7 @@ export default function QuizPage() {
                 <div className="text-sm text-muted-foreground">Total</div>
               </div>
             </div>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -581,7 +581,7 @@ export default function QuizPage() {
 
             <div className="bg-muted/50 rounded-lg p-4">
               <h3 className="font-medium mb-2">Keyboard shortcuts</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+              <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                 <div>
                   <kbd className="px-1.5 py-0.5 bg-background rounded border">1-4</kbd>{" "}
                   Select answer
@@ -643,15 +643,15 @@ export default function QuizPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/quiz">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">{quiz.title}</h1>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold">{quiz.title}</h1>
             <p className="text-sm text-muted-foreground">
               Question {currentIndex + 1} of {questions.length}
             </p>
@@ -731,24 +731,25 @@ export default function QuizPage() {
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant="outline"
           onClick={prevQuestion}
           disabled={currentIndex === 0}
+          className="w-full sm:w-auto"
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-center text-sm text-muted-foreground">
           {answeredCount} of {questions.length} answered
         </span>
         {currentIndex === questions.length - 1 ? (
-          <Button onClick={handleSubmit} disabled={submitQuiz.isPending}>
+          <Button onClick={handleSubmit} disabled={submitQuiz.isPending} className="w-full sm:w-auto">
             {submitQuiz.isPending ? "Submitting..." : "Submit Quiz"}
           </Button>
         ) : (
-          <Button onClick={nextQuestion}>
+          <Button onClick={nextQuestion} className="w-full sm:w-auto">
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>

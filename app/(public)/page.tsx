@@ -57,12 +57,12 @@ export default function LandingPage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
+        <div className="container flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:py-0">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <GistLogo className="h-6 w-6" />
             gist
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {process.env.NEXT_PUBLIC_REPOSITORY_URL && (
               <Button variant="outline" size="sm" asChild>
                 <a
@@ -104,7 +104,7 @@ export default function LandingPage() {
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t("landing.heroDescription")}
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             <Button size="lg" asChild>
               <Link href="/login">
                 {t("landing.startLearning")}
@@ -201,7 +201,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t py-8 px-4">
-        <div className="container flex items-center justify-between">
+        <div className="container flex flex-col items-center justify-between gap-2 sm:flex-row">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <GistLogo className="h-4 w-4" />
             gist

@@ -203,11 +203,11 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
         <Alert className="border-primary/50 bg-primary/5 animate-slide-up">
           <Brain className="h-4 w-4 text-primary" />
           <AlertTitle className="text-primary">{t("dashboard.readyToStudy")}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {t("dashboard.flashcardsDue", { count: stats.flashcardsDue })}
             </span>
-            <Button asChild size="sm" className="ml-4">
+            <Button asChild size="sm" className="w-full sm:ml-4 sm:w-auto">
               <Link href="/study">
                 {t("dashboard.startSession")}
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -341,7 +341,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
         {/* Weekly Progress */}
         <Card className="lg:col-span-2 animate-slide-up" style={{ animationDelay: "50ms" }}>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>{t("dashboard.weeklyProgress")}</CardTitle>
               <Badge variant="secondary" className="font-normal">
                 {t("dashboard.reviewsThisWeek", { count: totalWeeklyReviews })}
@@ -357,7 +357,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       {/* Recent Activity */}
       <Card className="animate-slide-up" style={{ animationDelay: "100ms" }}>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("dashboard.recentQuizAttempts")}</CardTitle>
             {stats.recentAttempts.length > 0 && (
               <Button asChild variant="ghost" size="sm">

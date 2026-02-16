@@ -91,7 +91,7 @@ export default function SettingsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t("settings.profile")}</span>
@@ -120,7 +120,7 @@ export default function SettingsPage() {
               <CardDescription>{t("settings.accountDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? ""} />
                   <AvatarFallback className="text-xl">{initials || "U"}</AvatarFallback>
@@ -199,7 +199,7 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {themeOptions.map((option) => (
                   <button
                     key={option.value}
@@ -284,13 +284,13 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-2 sm:gap-4">
                   <Button>{t("settings.primary")}</Button>
                   <Button variant="secondary">{t("settings.secondary")}</Button>
                   <Button variant="outline">{t("settings.outline")}</Button>
                   <Button variant="destructive">{t("settings.destructive")}</Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Badge>{t("settings.default")}</Badge>
                   <Badge variant="secondary">{t("settings.secondary")}</Badge>
                   <Badge variant="outline">{t("settings.outline")}</Badge>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
                   <div
                     key={index}
                     className={cn(
-                      "flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors animate-slide-up",
+                      "flex flex-col items-start gap-2 rounded-lg px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between animate-slide-up",
                     )}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
@@ -368,7 +368,7 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="font-medium">{t("settings.exportData")}</h4>
                   <p className="text-sm text-muted-foreground">
@@ -379,7 +379,7 @@ export default function SettingsPage() {
                   {t("common.comingSoon")}
                 </Button>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="font-medium">{t("settings.importData")}</h4>
                   <p className="text-sm text-muted-foreground">

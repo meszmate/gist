@@ -361,13 +361,13 @@ export default function PublicQuizPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-3xl mx-auto py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
               <GistLogo className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">gist</span>
             </div>
-            <h1 className="text-xl font-bold">{quiz.title}</h1>
+            <h1 className="truncate text-xl font-bold">{quiz.title}</h1>
             <p className="text-sm text-muted-foreground">
               Question {currentIndex + 1} of {questions.length}
             </p>
@@ -375,7 +375,7 @@ export default function PublicQuizPage() {
           {timeRemaining !== null && (
             <Badge
               variant={timeRemaining < 60 ? "destructive" : "secondary"}
-              className="text-lg px-3 py-1"
+              className="self-start px-3 py-1 text-base sm:text-lg"
             >
               <Clock className="h-4 w-4 mr-1" />
               {formatTime(timeRemaining)}
@@ -408,26 +408,28 @@ export default function PublicQuizPage() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             variant="outline"
             onClick={prevQuestion}
             disabled={currentIndex === 0}
+            className="w-full sm:w-auto"
           >
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-center text-sm text-muted-foreground">
             {answeredCount} of {questions.length} answered
           </span>
           {currentIndex === questions.length - 1 ? (
             <Button
               onClick={handleSubmit}
               disabled={submitQuiz.isPending}
+              className="w-full sm:w-auto"
             >
               {submitQuiz.isPending ? "Submitting..." : "Submit Quiz"}
             </Button>
           ) : (
-            <Button onClick={nextQuestion}>Next</Button>
+            <Button onClick={nextQuestion} className="w-full sm:w-auto">Next</Button>
           )}
         </div>
       </div>

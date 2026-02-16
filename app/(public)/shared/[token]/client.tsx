@@ -252,7 +252,7 @@ export function SharedResourceClient({
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       <div className="container max-w-5xl py-8 px-4 sm:px-6 lg:px-8 mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <Link
             href="/"
             className="text-sm text-muted-foreground hover:underline"
@@ -289,7 +289,7 @@ export function SharedResourceClient({
                 {resource.description}
               </p>
             )}
-            <div className="flex items-center gap-2 mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               {resource.difficulty && (
                 <Badge variant="secondary">{resource.difficulty}</Badge>
               )}
@@ -315,7 +315,7 @@ export function SharedResourceClient({
             value={activeTab}
             onValueChange={setActiveTab}
           >
-            <TabsList>
+            <TabsList className="h-auto w-full flex-wrap justify-start">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.icon}
@@ -360,11 +360,11 @@ export function SharedResourceClient({
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                       {t("shared.flashcardsAvailable", { count: resource.flashcards.length })}
                     </p>
-                    <Button onClick={() => setStudyMode(true)}>
+                    <Button onClick={() => setStudyMode(true)} className="w-full sm:w-auto">
                       <Brain className="mr-2 h-4 w-4" />
                       {t("shared.startStudySession")}
                     </Button>
@@ -410,11 +410,11 @@ export function SharedResourceClient({
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                       {t("shared.questions", { count: resource.quizQuestions.length })}
                     </p>
-                    <Button onClick={() => setQuizMode(true)}>
+                    <Button onClick={() => setQuizMode(true)} className="w-full sm:w-auto">
                       <FileQuestion className="mr-2 h-4 w-4" />
                       {t("shared.takeQuiz")}
                     </Button>
@@ -455,7 +455,7 @@ export function SharedResourceClient({
                 <div className="space-y-3">
                   {resource.lessons.map((lesson) => (
                     <Card key={lesson.id} className="hover:border-primary/30 transition-colors">
-                      <CardContent className="p-4 flex items-center gap-4">
+                      <CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                           <GraduationCap className="h-5 w-5 text-primary" />
                         </div>
