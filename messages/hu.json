@@ -557,7 +557,7 @@
     "uploadAnother": "Másik fájl feltöltése",
     "dropFileHere": "Húzd ide a fájlt",
     "dropOrBrowse": "Húzz ide egy fájlt vagy kattints a böngészéshez",
-    "acceptedFormats": "PDF, DOCX, PPTX, TXT, MD, CSV (max 10MB)",
+    "acceptedFormats": "PDF, Word/Prezentáció/Táblázat (DOCX, DOCM, PPTX, PPTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP) és szöveges formátumok (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
     "fileSizeExceeds": "A fájl mérete meghaladja a 10MB-os limitet",
     "unsupportedType": "Nem támogatott fájltípus. Elfogadott: {types}"
   },

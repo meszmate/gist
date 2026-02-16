@@ -557,7 +557,7 @@
     "uploadAnother": "Upload another file",
     "dropFileHere": "Drop file here",
     "dropOrBrowse": "Drop a file here or click to browse",
-    "acceptedFormats": "PDF, DOCX, PPTX, TXT, MD, CSV (max 10MB)",
+    "acceptedFormats": "PDF, Word/Slides/Sheets (DOCX, DOCM, PPTX, PPTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP), and text formats (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
     "fileSizeExceeds": "File size exceeds 10MB limit",
     "unsupportedType": "Unsupported file type. Accepted: {types}"
   },

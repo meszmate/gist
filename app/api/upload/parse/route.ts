@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import {
   parseFileToText,
-  getFileExtension,
-  isAcceptedExtension,
+  UnsupportedFileTypeError,
   MAX_FILE_SIZE,
   ACCEPTED_EXTENSIONS,
 } from "@/lib/file-parser";
@@ -30,17 +29,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file extension
-    const ext = getFileExtension(file.name);
-    if (!isAcceptedExtension(ext)) {
-      return NextResponse.json(
-        {
-          error: `Unsupported file type. Accepted types: ${ACCEPTED_EXTENSIONS.join(", ")}`,
-        },
-        { status: 400 }
-      );
-    }
-
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await parseFileToText(buffer, file.name, file.type);
 
@@ -54,15 +42,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       text: result.text,
       fileName: file.name,
-      fileType: ext,
+      fileType: result.detectedType,
       characterCount: result.text.length,
       pageCount: result.pageCount,
     });
   } catch (error) {
+    if (error instanceof UnsupportedFileTypeError) {
+      return NextResponse.json(
+        {
+          error: `Unsupported file type. Accepted types: ${ACCEPTED_EXTENSIONS.join(", ")}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof Error) {
+      console.error("File parse error:", error.message);
+      return NextResponse.json(
+        {
+          error:
+            "The file type is supported, but readable text could not be extracted. The file may be scanned, password-protected, corrupted, or mostly image-based.",
+        },
+        { status: 422 }
+      );
+    }
+
     console.error("File parse error:", error);
-    return NextResponse.json(
-      { error: "Failed to parse file" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to parse file" }, { status: 500 });
   }
 }
