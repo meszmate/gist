@@ -590,7 +590,7 @@
     "uploadAnother": "Másik fájl feltöltése",
     "dropFileHere": "Húzd ide a fájlt",
     "dropOrBrowse": "Húzz ide egy fájlt vagy kattints a böngészéshez",
-    "acceptedFormats": "PDF, Word/Prezentáció/Táblázat (DOCX, DOCM, PPTX, PPTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP) és szöveges formátumok (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
+    "acceptedFormats": "PDF, Word/Prezentáció/Táblázat (DOCX, DOCM, DOTX, DOTM, PPTX, PPTM, PPSX, PPSM, POTX, POTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP) és szöveges formátumok (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
     "unauthorized": "Nincs jogosultságod. Jelentkezz be, majd próbáld újra.",
     "noFileProvided": "Nem lett fájl megadva.",
     "fileSizeExceeds": "A fájl mérete meghaladja a 10MB-os limitet",

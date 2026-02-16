@@ -590,7 +590,7 @@
     "uploadAnother": "Upload another file",
     "dropFileHere": "Drop file here",
     "dropOrBrowse": "Drop a file here or click to browse",
-    "acceptedFormats": "PDF, Word/Slides/Sheets (DOCX, DOCM, PPTX, PPTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP), and text formats (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
+    "acceptedFormats": "PDF, Word/Slides/Sheets (DOCX, DOCM, DOTX, DOTM, PPTX, PPTM, PPSX, PPSM, POTX, POTM, XLSX, XLSM), OpenDocument (ODT, ODS, ODP), and text formats (TXT, MD, CSV, TSV, JSON, XML, HTML, RTF, YAML) (max 10MB)",
     "unauthorized": "You are not authorized. Please sign in and try again.",
     "noFileProvided": "No file was provided.",
     "fileSizeExceeds": "File size exceeds 10MB limit",

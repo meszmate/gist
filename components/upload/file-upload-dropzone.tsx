@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
 import { useLocale } from "@/hooks/use-locale";
 import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
+import { parseOfficeFileInBrowser } from "@/lib/client-office-parser";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -86,6 +87,14 @@ export function FileUploadDropzone({
       setFileName(file.name);
 
       try {
+        // Parse Office files client-side first to avoid serverless runtime constraints.
+        const clientParsed = await parseOfficeFileInBrowser(file).catch(() => null);
+        if (clientParsed?.text?.trim()) {
+          setState("success");
+          onTextExtracted(clientParsed.text, file.name);
+          return;
+        }
+
         const uploadWithName = async (name: string) => {
           const formData = new FormData();
           formData.append("file", file, name);
