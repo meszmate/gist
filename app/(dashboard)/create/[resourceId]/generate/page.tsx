@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
 
 function createGenerateSchema(t: (key: string) => string) {
   return z.object({
@@ -136,7 +137,10 @@ export default function GeneratePage() {
     queryKey: ["resource", resourceId],
     queryFn: async () => {
       const res = await fetch(`/api/resources/${resourceId}`);
-      if (!res.ok) throw new Error("Resource not found");
+      if (!res.ok) {
+        const rawError = await getApiErrorMessage(res, "Resource not found");
+        throw new Error(localizeErrorMessage(rawError, t, "generate.resourceNotFound"));
+      }
       return res.json();
     },
   });
@@ -165,11 +169,15 @@ export default function GeneratePage() {
 
       // First, save the source content
       setGeneratingStep(t("generate.savingContent"));
-      await fetch(`/api/resources/${resourceId}`, {
+      const saveRes = await fetch(`/api/resources/${resourceId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceContent: data.sourceContent }),
       });
+      if (!saveRes.ok) {
+        const rawError = await getApiErrorMessage(saveRes, "Failed to update resource");
+        throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
+      }
 
       // Generate each type of content
       for (const step of steps) {
@@ -192,7 +200,8 @@ export default function GeneratePage() {
         });
 
         if (!res.ok) {
-          throw new Error(`Failed to generate ${step}`);
+          const rawError = await getApiErrorMessage(res, `Failed to generate ${step}`);
+          throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
         }
 
         currentProgress += progressPerStep;
@@ -207,7 +216,7 @@ export default function GeneratePage() {
       router.push(`/library/${resourceId}`);
     },
     onError: (error) => {
-      toast.error(error.message || t("generate.failedToGenerate"));
+      toast.error(localizeErrorMessage(error, t, "generate.failedGenerate"));
       setProgress(0);
       setGeneratingStep(null);
     },

@@ -3,16 +3,41 @@
 import { useCallback, useRef, useState } from "react";
 import { Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ACCEPTED_EXTENSIONS, ACCEPTED_MIME_TYPES } from "@/lib/file-parser";
+import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
 import { useLocale } from "@/hooks/use-locale";
+import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const ACCEPT_STRING = [
   ...ACCEPTED_EXTENSIONS,
-  ...ACCEPTED_MIME_TYPES,
   "text/*",
 ].join(",");
+
+function sanitizeUploadFileName(fileName: string): string {
+  const normalized = fileName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const lastDot = normalized.lastIndexOf(".");
+  const ext = lastDot > 0 ? normalized.slice(lastDot).toLowerCase() : "";
+  const base = lastDot > 0 ? normalized.slice(0, lastDot) : normalized;
+
+  const sanitizedBase = base
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const safeBase = sanitizedBase || "upload";
+  const maxBaseLength = Math.max(1, 120 - ext.length);
+  return `${safeBase.slice(0, maxBaseLength)}${ext}`;
+}
+
+function isExpectedPatternError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /string (does not|did not) match the expected pattern/i.test(error.message)
+  );
+}
 
 interface FileUploadDropzoneProps {
   onTextExtracted: (text: string, fileName: string) => void;
@@ -61,30 +86,45 @@ export function FileUploadDropzone({
       setFileName(file.name);
 
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        const uploadWithName = async (name: string) => {
+          const formData = new FormData();
+          formData.append("file", file, name);
 
-        const res = await fetch("/api/upload/parse", {
-          method: "POST",
-          body: formData,
-        });
+          return fetch("/api/upload/parse", {
+            method: "POST",
+            body: formData,
+          });
+        };
 
-        const data = await res.json();
+        const fallbackName = sanitizeUploadFileName(file.name);
+        let res: Response;
+
+        try {
+          res = await uploadWithName(file.name);
+        } catch (error) {
+          if (!isExpectedPatternError(error) || fallbackName === file.name) {
+            throw error;
+          }
+          res = await uploadWithName(fallbackName);
+        }
 
         if (!res.ok) {
-          throw new Error(data.error || "Failed to parse file");
+          const rawError = await getApiErrorMessage(res, "Failed to parse file");
+          throw new Error(localizeErrorMessage(rawError, t, "upload.failedToParse"));
         }
+
+        const data = await res.json();
 
         setState("success");
         onTextExtracted(data.text, data.fileName);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to parse file";
+        const message = localizeErrorMessage(err, t, "upload.failedToParse");
         setState("error");
         setErrorMessage(message);
         onError(message);
       }
     },
-    [onTextExtracted, onError]
+    [onTextExtracted, onError, t]
   );
 
   const handleDrop = useCallback(
