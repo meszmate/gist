@@ -4,6 +4,7 @@ import type { StepRendererProps } from "./types";
 import type { FillBlanksContent, FillBlanksAnswerData, FillBlanksUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { parseFillBlankTemplate } from "@/lib/quiz/fill-blank-template";
 
 export function FillBlanksRenderer({
   step,
@@ -12,11 +13,15 @@ export function FillBlanksRenderer({
   isChecked,
   disabled,
 }: StepRendererProps) {
-  const content = step.content as FillBlanksContent;
-  const answerData = step.answerData as FillBlanksAnswerData;
+  const content =
+    (step.content as FillBlanksContent) ??
+    ({ type: "fill_blanks", template: "", blanks: [] } as FillBlanksContent);
+  const answerData =
+    (step.answerData as FillBlanksAnswerData) ?? ({ correctBlanks: {} } as FillBlanksAnswerData);
+  const template = typeof content.template === "string" ? content.template : "";
+  const blanks = Array.isArray(content.blanks) ? content.blanks : [];
   const currentBlanks = (userAnswer as FillBlanksUserAnswer)?.blanks || {};
-
-  const parts = content.template.split(/(\{\{[^}]+\}\})/g);
+  const parts = parseFillBlankTemplate(template, blanks);
 
   const handleChange = (blankId: string, value: string) => {
     const newBlanks = { ...currentBlanks, [blankId]: value };
@@ -27,10 +32,9 @@ export function FillBlanksRenderer({
     <div className="space-y-4">
       <div className="text-lg leading-relaxed flex flex-wrap items-baseline gap-1">
         {parts.map((part, i) => {
-          const match = part.match(/^\{\{(.+)\}\}$/);
-          if (!match) return <span key={i}>{part}</span>;
-
-          const blankId = match[1];
+          if (part.type !== "blank") return <span key={i}>{part.content}</span>;
+          const blankId = part.blankId;
+          if (!blankId) return <span key={i}>{part.content}</span>;
           const value = currentBlanks[blankId] || "";
           const correctAnswers = answerData?.correctBlanks[blankId] || [];
           const isCorrectBlank = isChecked && correctAnswers.some(

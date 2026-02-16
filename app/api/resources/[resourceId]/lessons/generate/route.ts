@@ -5,6 +5,7 @@ import { studyMaterials, flashcards, quizQuestions, lessons, lessonSteps } from 
 import { eq, and } from "drizzle-orm";
 import { generateLesson, MODEL } from "@/lib/ai/openai";
 import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
+import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
 
 export async function POST(
   req: NextRequest,
@@ -92,8 +93,22 @@ export async function POST(
 
   // Create the steps
   if (generated.steps.length > 0) {
+    const normalizedSteps = generated.steps.map((step) => {
+      const normalized = normalizeLessonStepPayload({
+        stepType: step.stepType,
+        content: step.content,
+        answerData: step.answerData,
+      });
+      return {
+        ...step,
+        stepType: normalized.stepType as typeof step.stepType,
+        content: normalized.content,
+        answerData: normalized.answerData,
+      };
+    });
+
     await db.insert(lessonSteps).values(
-      generated.steps.map((step, index) => ({
+      normalizedSteps.map((step, index) => ({
         lessonId: lesson.id,
         order: index,
         stepType: step.stepType,
@@ -112,5 +127,23 @@ export async function POST(
     .where(eq(lessonSteps.lessonId, lesson.id))
     .orderBy(lessonSteps.order);
 
-  return NextResponse.json({ ...lesson, steps }, { status: 201 });
+  const normalizedFetchedSteps = steps.map((step) => {
+    const normalized = normalizeLessonStepPayload({
+      stepType: step.stepType,
+      content: step.content,
+      answerData: step.answerData,
+    });
+
+    return {
+      ...step,
+      stepType: normalized.stepType,
+      content: normalized.content,
+      answerData: normalized.answerData,
+    };
+  });
+
+  return NextResponse.json(
+    { ...lesson, steps: normalizedFetchedSteps },
+    { status: 201 }
+  );
 }

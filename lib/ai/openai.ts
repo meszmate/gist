@@ -5,6 +5,7 @@ import type {
   CorrectAnswerData,
 } from "@/lib/types/quiz";
 import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
+import { extractFillBlankIds, replaceGenericBlankPlaceholders } from "@/lib/quiz/fill-blank-template";
 
 export const openai = new OpenAI();
 
@@ -178,29 +179,29 @@ multiple_choice:
 
 true_false:
   questionConfig: { trueLabel: "True", falseLabel: "False" }
-  correctAnswerData: { isTrue: true }
+  correctAnswerData: { correctValue: true }
 
 text_input:
-  questionConfig: { caseSensitive: false, acceptedKeywords: ["keyword1", "keyword2"], minLength: 1 }
-  correctAnswerData: { exactMatch: "correct answer", keywords: ["key", "words"] }
+  questionConfig: { caseSensitive: false, trimWhitespace: true, placeholder: "Type your answer" }
+  correctAnswerData: { acceptedAnswers: ["correct answer"], keywords: ["key", "words"] }
 
 year_range:
-  questionConfig: { minYear: 1900, maxYear: 2024, toleranceYears: 5 }
-  correctAnswerData: { exactYear: 1969, toleranceYears: 5 }
+  questionConfig: { minYear: 1900, maxYear: 2024, tolerance: 5 }
+  correctAnswerData: { correctYear: 1969 }
 
 numeric_range:
-  questionConfig: { minValue: 0, maxValue: 1000, tolerancePercent: 10, unit: "km" }
-  correctAnswerData: { exactValue: 384400, tolerancePercent: 5 }
+  questionConfig: { min: 0, max: 1000, tolerance: 10, toleranceType: "percentage", unit: "km" }
+  correctAnswerData: { correctValue: 384400 }
 
 matching:
   questionConfig: { leftColumn: ["Term1", "Term2"], rightColumn: ["Def1", "Def2"], shuffleRight: true }
-  correctAnswerData: { correctPairs: [[0, 0], [1, 1]] }
+  correctAnswerData: { correctPairs: { "Term1": "Def1", "Term2": "Def2" } }
 
 fill_blank:
-  question: "Fill in the blank to complete the sentence:"
-  questionConfig: { template: "The {{blank}} is the capital of France.", blanks: [{ id: "blank_0", acceptedAnswers: ["Paris", "paris"] }], caseSensitive: false }
+  question: "Complete the sentence:"
+  questionConfig: { template: "The {{blank_0}} is the capital of France.", blanks: [{ id: "blank_0", acceptedAnswers: ["Paris", "paris"] }], caseSensitive: false }
   correctAnswerData: { blanks: { "blank_0": ["Paris", "paris"] } }
-  NOTE: Use {{blank}} as placeholder in template, NOT ___ or other formats. The question field should be instructions, template goes in questionConfig.
+  NOTE: Use {{blank_0}}, {{blank_1}}, etc. as placeholders in template (or {{blank}}). Do NOT use ___ or other formats.
 
 multi_select:
   questionConfig: { options: ["A", "B", "C", "D"], minSelections: 1, maxSelections: 4 }
@@ -238,6 +239,512 @@ function isExtendedQuizQuestion(value: unknown): value is ExtendedQuizQuestion {
     !!question.questionConfig &&
     !!question.correctAnswerData
   );
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item ?? "").trim())
+      .filter((item) => item.length > 0);
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const normalized = String(value).trim();
+    return normalized.length > 0 ? [normalized] : [];
+  }
+  return [];
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function detectOneBasedIndexing(
+  rawPairs: unknown[],
+  position: 0 | 1,
+  listLength: number
+): boolean {
+  if (listLength <= 0) return false;
+  const numericValues = rawPairs
+    .filter((entry) => Array.isArray(entry) && entry.length > position)
+    .map((entry) => toNumber((entry as unknown[])[position]))
+    .filter((value): value is number => value !== null)
+    .map((value) => Math.round(value));
+
+  if (numericValues.length === 0) return false;
+  const hasZero = numericValues.some((value) => value === 0);
+  const allWithinOneBased = numericValues.every(
+    (value) => value >= 1 && value <= listLength
+  );
+  return allWithinOneBased && !hasZero;
+}
+
+function resolveListIndex(
+  value: unknown,
+  listLength: number,
+  preferOneBased: boolean
+): number | null {
+  const numeric = toNumber(value);
+  if (numeric === null || listLength <= 0) return null;
+
+  const rounded = Math.round(numeric);
+  if (preferOneBased && rounded >= 1 && rounded <= listLength) {
+    return rounded - 1;
+  }
+  if (rounded >= 0 && rounded < listLength) {
+    return rounded;
+  }
+  if (!preferOneBased && rounded >= 1 && rounded <= listLength) {
+    return rounded - 1;
+  }
+  return null;
+}
+
+function resolveListValue(
+  value: unknown,
+  values: string[],
+  preferOneBased: boolean
+): string | null {
+  const index = resolveListIndex(value, values.length, preferOneBased);
+  if (index !== null && values[index] !== undefined) {
+    return values[index];
+  }
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+function toBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+  return null;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
+}
+
+function normalizeQuestionType(questionType: unknown): QuestionTypeSlug {
+  const raw = String(questionType ?? "multiple_choice").trim().toLowerCase();
+  switch (raw) {
+    case "multiple choice":
+    case "multiple-choice":
+    case "multi_choice":
+    case "mcq":
+      return "multiple_choice";
+    case "truefalse":
+    case "boolean":
+      return "true_false";
+    case "text":
+    case "short_answer":
+    case "shortanswer":
+    case "free_text":
+      return "text_input";
+    case "year":
+      return "year_range";
+    case "numeric":
+    case "number":
+    case "number_range":
+      return "numeric_range";
+    case "match":
+    case "matching_pairs":
+      return "matching";
+    case "fill_in_blank":
+    case "fill_blanks":
+    case "fill-in-the-blank":
+      return "fill_blank";
+    case "multi-select":
+    case "multi select":
+    case "multiple_select":
+      return "multi_select";
+    default:
+      return raw as QuestionTypeSlug;
+  }
+}
+
+function normalizeExtendedQuizQuestion(question: ExtendedQuizQuestion): ExtendedQuizQuestion | null {
+  const questionText = String(question.question || "").trim();
+  if (!questionText) return null;
+
+  const questionType = normalizeQuestionType(question.questionType);
+  const config = asRecord(question.questionConfig);
+  const answerData = asRecord(question.correctAnswerData);
+  const points = Math.max(1, Math.min(3, Math.round(toNumber(question.points) ?? 1)));
+  const explanation = typeof question.explanation === "string" ? question.explanation : "";
+
+  switch (questionType) {
+    case "multiple_choice": {
+      const options = uniqueStrings(
+        toStringArray(config.options ?? config.choices ?? config.answers)
+      );
+
+      let correctIndex =
+        toNumber(answerData.correctIndex ?? answerData.correctAnswer ?? answerData.answerIndex);
+      if (correctIndex === null && typeof answerData.correctOption === "string") {
+        correctIndex = options.indexOf(answerData.correctOption);
+      }
+      if (correctIndex === null) correctIndex = 0;
+
+      if (options.length > 0) {
+        correctIndex = Math.max(0, Math.min(options.length - 1, Math.round(correctIndex)));
+      } else {
+        correctIndex = 0;
+      }
+
+      return {
+        question: questionText,
+        questionType: "multiple_choice",
+        questionConfig: {
+          options,
+          shuffleOptions: toBoolean(config.shuffleOptions) ?? true,
+        },
+        correctAnswerData: { correctIndex },
+        points,
+        explanation,
+      };
+    }
+
+    case "true_false": {
+      const trueLabel = typeof config.trueLabel === "string" ? config.trueLabel : undefined;
+      const falseLabel = typeof config.falseLabel === "string" ? config.falseLabel : undefined;
+
+      return {
+        question: questionText,
+        questionType: "true_false",
+        questionConfig: { trueLabel, falseLabel },
+        correctAnswerData: {
+          correctValue: toBoolean(answerData.correctValue ?? answerData.isTrue ?? answerData.answer) ?? false,
+        },
+        points,
+        explanation,
+      };
+    }
+
+    case "text_input": {
+      const acceptedAnswers = uniqueStrings(
+        toStringArray(
+          answerData.acceptedAnswers ??
+          answerData.answers ??
+          answerData.correctAnswers ??
+          (typeof answerData.exactMatch === "string" ? [answerData.exactMatch] : [])
+        )
+      );
+      const keywords = uniqueStrings(
+        toStringArray(answerData.keywords ?? config.acceptedKeywords)
+      );
+
+      const normalizedConfig: Record<string, unknown> = {
+        caseSensitive: toBoolean(config.caseSensitive) ?? false,
+      };
+      const trimWhitespace = toBoolean(config.trimWhitespace);
+      if (trimWhitespace !== null) normalizedConfig.trimWhitespace = trimWhitespace;
+      if (typeof config.placeholder === "string") normalizedConfig.placeholder = config.placeholder;
+      const maxLength = toNumber(config.maxLength);
+      if (maxLength !== null && maxLength > 0) normalizedConfig.maxLength = Math.round(maxLength);
+
+      const normalizedAnswers: Record<string, unknown> = {
+        acceptedAnswers: acceptedAnswers.length > 0 ? acceptedAnswers : (keywords.length > 0 ? [keywords[0]] : []),
+      };
+      if (keywords.length > 0) normalizedAnswers.keywords = keywords;
+
+      return {
+        question: questionText,
+        questionType: "text_input",
+        questionConfig: normalizedConfig as QuestionConfig,
+        correctAnswerData: normalizedAnswers as CorrectAnswerData,
+        points,
+        explanation,
+      };
+    }
+
+    case "year_range": {
+      const normalizedConfig: Record<string, unknown> = {};
+      const minYear = toNumber(config.minYear ?? config.min);
+      const maxYear = toNumber(config.maxYear ?? config.max);
+      const tolerance = toNumber(config.tolerance ?? config.toleranceYears ?? answerData.toleranceYears);
+      if (minYear !== null) normalizedConfig.minYear = Math.round(minYear);
+      if (maxYear !== null) normalizedConfig.maxYear = Math.round(maxYear);
+      if (tolerance !== null) normalizedConfig.tolerance = Math.max(0, Math.round(tolerance));
+      if (typeof config.placeholder === "string") normalizedConfig.placeholder = config.placeholder;
+
+      return {
+        question: questionText,
+        questionType: "year_range",
+        questionConfig: normalizedConfig as QuestionConfig,
+        correctAnswerData: {
+          correctYear: Math.round(
+            toNumber(answerData.correctYear ?? answerData.exactYear ?? answerData.year) ??
+            new Date().getUTCFullYear()
+          ),
+        } as CorrectAnswerData,
+        points,
+        explanation,
+      };
+    }
+
+    case "numeric_range": {
+      const normalizedConfig: Record<string, unknown> = {};
+      let tolerance = toNumber(config.tolerance);
+      let toleranceType =
+        config.toleranceType === "percentage" || config.toleranceType === "absolute"
+          ? config.toleranceType
+          : undefined;
+
+      const tolerancePercent = toNumber(config.tolerancePercent ?? answerData.tolerancePercent);
+      if (tolerance === null && tolerancePercent !== null) {
+        tolerance = tolerancePercent;
+        toleranceType = "percentage";
+      }
+
+      if (tolerance !== null) {
+        normalizedConfig.tolerance = Math.max(0, tolerance);
+        normalizedConfig.toleranceType = toleranceType ?? "absolute";
+      }
+
+      const min = toNumber(config.min ?? config.minValue);
+      const max = toNumber(config.max ?? config.maxValue);
+      const stepValue = toNumber(config.step);
+      if (min !== null) normalizedConfig.min = min;
+      if (max !== null) normalizedConfig.max = max;
+      if (stepValue !== null && stepValue > 0) normalizedConfig.step = stepValue;
+      if (typeof config.unit === "string") normalizedConfig.unit = config.unit;
+      if (typeof config.placeholder === "string") normalizedConfig.placeholder = config.placeholder;
+
+      return {
+        question: questionText,
+        questionType: "numeric_range",
+        questionConfig: normalizedConfig as QuestionConfig,
+        correctAnswerData: {
+          correctValue: toNumber(answerData.correctValue ?? answerData.exactValue ?? answerData.value) ?? 0,
+        } as CorrectAnswerData,
+        points,
+        explanation,
+      };
+    }
+
+    case "matching": {
+      const leftColumn = uniqueStrings(
+        toStringArray(config.leftColumn ?? config.leftItems ?? config.left)
+      );
+      const rightColumn = uniqueStrings(
+        toStringArray(config.rightColumn ?? config.rightItems ?? config.right)
+      );
+
+      const rawPairs = Array.isArray(config.pairs) ? config.pairs : [];
+      for (const pair of rawPairs) {
+        const rawPair = asRecord(pair);
+        const left = String(rawPair.left ?? rawPair.term ?? rawPair.prompt ?? "").trim();
+        const right = String(rawPair.right ?? rawPair.definition ?? rawPair.match ?? "").trim();
+        if (left && !leftColumn.includes(left)) leftColumn.push(left);
+        if (right && !rightColumn.includes(right)) rightColumn.push(right);
+      }
+
+      const normalizedPairs: Record<string, string> = {};
+      const rawCorrectPairs = answerData.correctPairs ?? answerData.pairs ?? answerData.matches;
+      const rawCorrectPairsArray = Array.isArray(rawCorrectPairs)
+        ? rawCorrectPairs
+        : [];
+      const useOneBasedLeft = detectOneBasedIndexing(
+        rawCorrectPairsArray,
+        0,
+        leftColumn.length
+      );
+      const useOneBasedRight = detectOneBasedIndexing(
+        rawCorrectPairsArray,
+        1,
+        rightColumn.length
+      );
+
+      const resolveLeft = (value: unknown): string | null =>
+        resolveListValue(value, leftColumn, useOneBasedLeft);
+      const resolveRight = (value: unknown): string | null =>
+        resolveListValue(value, rightColumn, useOneBasedRight);
+
+      if (Array.isArray(rawCorrectPairs)) {
+        for (const entry of rawCorrectPairs) {
+          if (Array.isArray(entry) && entry.length >= 2) {
+            const left = resolveLeft(entry[0]);
+            const right = resolveRight(entry[1]);
+            if (left && right) normalizedPairs[left] = right;
+            continue;
+          }
+
+          const pair = asRecord(entry);
+          const left = resolveLeft(pair.left ?? pair.leftItem ?? pair.from);
+          const right = resolveRight(pair.right ?? pair.rightItem ?? pair.to);
+          if (left && right) normalizedPairs[left] = right;
+        }
+      } else if (rawCorrectPairs && typeof rawCorrectPairs === "object") {
+        for (const [leftRaw, rightRaw] of Object.entries(rawCorrectPairs as Record<string, unknown>)) {
+          const left = resolveLeft(leftRaw);
+          const right = resolveRight(rightRaw);
+          if (left && right) normalizedPairs[left] = right;
+        }
+      }
+
+      if (Object.keys(normalizedPairs).length === 0 && leftColumn.length === rightColumn.length) {
+        for (let index = 0; index < leftColumn.length; index += 1) {
+          if (rightColumn[index]) {
+            normalizedPairs[leftColumn[index]] = rightColumn[index];
+          }
+        }
+      }
+
+      for (const [left, right] of Object.entries(normalizedPairs)) {
+        if (!leftColumn.includes(left)) leftColumn.push(left);
+        if (!rightColumn.includes(right)) rightColumn.push(right);
+      }
+
+      return {
+        question: questionText,
+        questionType: "matching",
+        questionConfig: {
+          leftColumn,
+          rightColumn,
+          shuffleRight: toBoolean(config.shuffleRight) ?? true,
+        },
+        correctAnswerData: { correctPairs: normalizedPairs },
+        points,
+        explanation,
+      };
+    }
+
+    case "fill_blank": {
+      const rawTemplate = String(config.template ?? "").trim();
+      const rawBlanks = Array.isArray(config.blanks) ? config.blanks : [];
+
+      const acceptedById: Record<string, string[]> = {};
+      const blankDefinitions = rawBlanks.map((blank, index) => {
+        const rawBlank = asRecord(blank);
+        const id = String(rawBlank.id ?? `blank_${index}`).trim();
+        const acceptedAnswers = uniqueStrings(
+          toStringArray(rawBlank.acceptedAnswers ?? rawBlank.answers ?? rawBlank.answer)
+        );
+        if (id.length > 0) acceptedById[id] = acceptedAnswers;
+        return { id, acceptedAnswers };
+      });
+
+      const rawAnswerBlanks = asRecord(answerData.blanks ?? answerData.correctBlanks);
+      for (const [id, answers] of Object.entries(rawAnswerBlanks)) {
+        acceptedById[id] = uniqueStrings(toStringArray(answers));
+      }
+
+      let blankIds = extractFillBlankIds(rawTemplate, blankDefinitions.map((blank) => ({ id: blank.id })));
+      if (blankIds.length === 0) blankIds = blankDefinitions.map((blank) => blank.id);
+      if (blankIds.length === 0) blankIds = Object.keys(acceptedById);
+      if (blankIds.length === 0) blankIds = ["blank_0"];
+
+      let normalizedTemplate = rawTemplate;
+      if (!normalizedTemplate) {
+        normalizedTemplate = blankIds.map((id) => `{{${id}}}`).join(" ");
+      } else {
+        normalizedTemplate = replaceGenericBlankPlaceholders(normalizedTemplate, blankIds);
+      }
+
+      const blanks = blankIds.map((id, index) => ({
+        id,
+        acceptedAnswers:
+          acceptedById[id] ||
+          blankDefinitions.find((blank) => blank.id === id)?.acceptedAnswers ||
+          blankDefinitions[index]?.acceptedAnswers ||
+          [],
+      }));
+
+      const normalizedAnswerBlanks: Record<string, string[]> = {};
+      for (const blank of blanks) {
+        normalizedAnswerBlanks[blank.id] = blank.acceptedAnswers;
+      }
+
+      return {
+        question: questionText,
+        questionType: "fill_blank",
+        questionConfig: {
+          template: normalizedTemplate,
+          blanks,
+          caseSensitive: toBoolean(config.caseSensitive) ?? false,
+        },
+        correctAnswerData: { blanks: normalizedAnswerBlanks },
+        points,
+        explanation,
+      };
+    }
+
+    case "multi_select": {
+      const options = uniqueStrings(toStringArray(config.options ?? config.choices));
+      const correctIndices = Array.isArray(answerData.correctIndices)
+        ? answerData.correctIndices
+        : Array.isArray(answerData.indices)
+          ? answerData.indices
+          : [];
+
+      const normalizedCorrectIndices = uniqueStrings(
+        correctIndices
+          .map((value) => {
+            const numeric = toNumber(value);
+            return numeric === null ? "" : String(Math.round(numeric));
+          })
+          .filter((value) => value.length > 0)
+      )
+        .map((value) => Number(value))
+        .filter((index) => index >= 0 && index < options.length);
+
+      if (normalizedCorrectIndices.length === 0 && Array.isArray(answerData.correctAnswers)) {
+        for (const answerOption of toStringArray(answerData.correctAnswers)) {
+          const index = options.indexOf(answerOption);
+          if (index >= 0 && !normalizedCorrectIndices.includes(index)) {
+            normalizedCorrectIndices.push(index);
+          }
+        }
+      }
+
+      const normalizedConfig: Record<string, unknown> = { options };
+      const shuffleOptions = toBoolean(config.shuffleOptions);
+      const minSelections = toNumber(config.minSelections);
+      const maxSelections = toNumber(config.maxSelections);
+      if (shuffleOptions !== null) normalizedConfig.shuffleOptions = shuffleOptions;
+      if (minSelections !== null) normalizedConfig.minSelections = Math.max(0, Math.round(minSelections));
+      if (maxSelections !== null) normalizedConfig.maxSelections = Math.max(1, Math.round(maxSelections));
+
+      return {
+        question: questionText,
+        questionType: "multi_select",
+        questionConfig: normalizedConfig as QuestionConfig,
+        correctAnswerData: { correctIndices: normalizedCorrectIndices },
+        points,
+        explanation,
+      };
+    }
+
+    default:
+      return {
+        question: questionText,
+        questionType,
+        questionConfig: config as QuestionConfig,
+        correctAnswerData: answerData as CorrectAnswerData,
+        points,
+        explanation,
+      };
+  }
 }
 
 export async function generateSummary(content: string, locale?: string): Promise<{ result: string; usage: TokenUsageData | null }> {
@@ -415,14 +922,10 @@ ${preparedContent}`,
     const parsed = parseJsonWithFallback(result);
     const questions = extractArray(parsed, ["questions", "items", "quizQuestions"]);
 
-    // Validate and clean up questions
     const validQuestions = questions
       .filter(isExtendedQuizQuestion)
-      .map((q) => ({
-        ...q,
-        points: q.points || 1,
-        explanation: q.explanation || "",
-      }));
+      .map((q) => normalizeExtendedQuizQuestion(q))
+      .filter((q): q is ExtendedQuizQuestion => q !== null);
 
     return { result: validQuestions.slice(0, count), usage };
   } catch (error) {
@@ -472,54 +975,251 @@ export interface GeneratedLessonStep {
 }
 
 function normalizeGeneratedLessonStep(step: GeneratedLessonStep): GeneratedLessonStep {
-  if (step.stepType !== "drag_match") return step;
+  const rawContent = asRecord(step.content);
+  const rawAnswerData = asRecord(step.answerData);
 
-  const rawContent = (step.content as unknown as Record<string, unknown>) || {};
-  const rawPairs = Array.isArray(rawContent.pairs) ? rawContent.pairs : [];
+  if (step.stepType === "drag_match") {
+    const rawPairs = Array.isArray(rawContent.pairs)
+      ? rawContent.pairs
+      : (Array.isArray(rawContent.items) ? rawContent.items : []);
 
-  const pairs = rawPairs
-    .map((pair, index) => {
-      const rawPair = (pair || {}) as Record<string, unknown>;
-      return {
-        id: String(rawPair.id ?? `${index + 1}`),
-        left: String(rawPair.left ?? rawPair.term ?? rawPair.concept ?? rawPair.title ?? ""),
-        right: String(
-          rawPair.right ??
-          rawPair.definition ??
-          rawPair.match ??
-          rawPair.value ??
-          rawPair.explanation ??
-          ""
-        ),
-      };
-    })
-    .filter((pair) => pair.left.trim().length > 0 || pair.right.trim().length > 0);
+    let pairs = rawPairs
+      .map((pair, index) => {
+        const rawPair = asRecord(pair);
+        return {
+          id: String(rawPair.id ?? `${index + 1}`),
+          left: String(rawPair.left ?? rawPair.term ?? rawPair.concept ?? rawPair.title ?? "").trim(),
+          right: String(
+            rawPair.right ??
+            rawPair.definition ??
+            rawPair.match ??
+            rawPair.value ??
+            rawPair.explanation ??
+            ""
+          ).trim(),
+        };
+      })
+      .filter((pair) => pair.left.length > 0 || pair.right.length > 0);
 
-  const rawAnswerData = (step.answerData || {}) as Record<string, unknown>;
-  const existingCorrectPairs =
-    rawAnswerData.correctPairs && typeof rawAnswerData.correctPairs === "object"
-      ? (rawAnswerData.correctPairs as Record<string, unknown>)
-      : {};
-
-  const normalizedCorrectPairs: Record<string, string> = {};
-  for (const [key, value] of Object.entries(existingCorrectPairs)) {
-    normalizedCorrectPairs[String(key)] = String(value ?? "");
-  }
-  for (const pair of pairs) {
-    if (pair.right.trim().length > 0 && !normalizedCorrectPairs[pair.id]) {
-      normalizedCorrectPairs[pair.id] = pair.right;
+    if (pairs.length === 0) {
+      const leftItems = toStringArray(rawContent.leftItems);
+      const rightItems = toStringArray(rawContent.rightItems);
+      pairs = leftItems.map((left, index) => ({
+        id: String(index + 1),
+        left,
+        right: rightItems[index] || "",
+      }));
     }
+
+    const normalizedCorrectPairs: Record<string, string> = {};
+    const rawCorrectPairs = rawAnswerData.correctPairs ?? rawAnswerData.pairs;
+    const rightPool = [
+      ...pairs.map((pair) => pair.right).filter((value) => value.length > 0),
+      ...toStringArray(rawContent.rightItems),
+    ];
+    const rawCorrectPairsArray = Array.isArray(rawCorrectPairs)
+      ? rawCorrectPairs
+      : [];
+    const useOneBasedLeft = detectOneBasedIndexing(
+      rawCorrectPairsArray,
+      0,
+      pairs.length
+    );
+    const useOneBasedRight = detectOneBasedIndexing(
+      rawCorrectPairsArray,
+      1,
+      rightPool.length
+    );
+
+    if (Array.isArray(rawCorrectPairs)) {
+      for (const entry of rawCorrectPairs) {
+        if (Array.isArray(entry) && entry.length >= 2) {
+          const leftIndex = resolveListIndex(
+            entry[0],
+            pairs.length,
+            useOneBasedLeft
+          );
+          const rightIndex = resolveListIndex(
+            entry[1],
+            rightPool.length,
+            useOneBasedRight
+          );
+
+          let pairId: string | null = null;
+          if (leftIndex !== null && pairs[leftIndex]) {
+            pairId = pairs[leftIndex].id;
+          } else {
+            const leftText = String(entry[0] ?? "").trim();
+            const foundPair = pairs.find((pair) => pair.id === leftText || pair.left === leftText);
+            pairId = foundPair?.id || (leftText.length > 0 ? leftText : null);
+          }
+
+          let rightText = "";
+          if (rightIndex !== null && rightPool[rightIndex] !== undefined) {
+            rightText = rightPool[rightIndex];
+          } else {
+            rightText = String(entry[1] ?? "").trim();
+          }
+
+          if (pairId && rightText) {
+            normalizedCorrectPairs[pairId] = rightText;
+          }
+          continue;
+        }
+
+        const rawPair = asRecord(entry);
+        const leftText = String(rawPair.left ?? rawPair.leftId ?? rawPair.from ?? "").trim();
+        const rightText = String(rawPair.right ?? rawPair.rightText ?? rawPair.to ?? "").trim();
+        if (leftText && rightText) normalizedCorrectPairs[leftText] = rightText;
+      }
+    } else if (rawCorrectPairs && typeof rawCorrectPairs === "object") {
+      for (const [rawLeft, rawRight] of Object.entries(rawCorrectPairs as Record<string, unknown>)) {
+        const leftIndex = resolveListIndex(
+          rawLeft,
+          pairs.length,
+          useOneBasedLeft
+        );
+        const leftKey =
+          leftIndex !== null && pairs[leftIndex]
+            ? pairs[leftIndex].id
+            : String(rawLeft ?? "").trim();
+        const rightIndex = resolveListIndex(
+          rawRight,
+          rightPool.length,
+          useOneBasedRight
+        );
+        const rightValue =
+          rightIndex !== null && rightPool[rightIndex] !== undefined
+            ? rightPool[rightIndex]
+            : String(rawRight ?? "").trim();
+        if (leftKey && rightValue) normalizedCorrectPairs[leftKey] = rightValue;
+      }
+    }
+
+    const reconciledCorrectPairs: Record<string, string> = {};
+    for (const [rawKey, rightText] of Object.entries(normalizedCorrectPairs)) {
+      if (!rightText) continue;
+
+      const byId = pairs.find((pair) => pair.id === rawKey);
+      if (byId) {
+        reconciledCorrectPairs[byId.id] = rightText;
+        continue;
+      }
+
+      const byLeft = pairs.find((pair) => pair.left === rawKey);
+      if (byLeft) {
+        reconciledCorrectPairs[byLeft.id] = rightText;
+        continue;
+      }
+
+      const generatedId = rawKey || String(pairs.length + 1);
+      pairs.push({
+        id: generatedId,
+        left: rawKey || generatedId,
+        right: rightText,
+      });
+      reconciledCorrectPairs[generatedId] = rightText;
+    }
+
+    pairs = pairs
+      .map((pair) => {
+        const right = pair.right || reconciledCorrectPairs[pair.id] || "";
+        return { ...pair, right };
+      })
+      .filter((pair) => pair.left.trim().length > 0 && pair.right.trim().length > 0);
+
+    for (const pair of pairs) {
+      if (!reconciledCorrectPairs[pair.id]) {
+        reconciledCorrectPairs[pair.id] = pair.right;
+      }
+    }
+
+    return {
+      ...step,
+      content: {
+        type: "drag_match",
+        instruction: String(rawContent.instruction ?? "Match each item with its definition"),
+        pairs,
+      },
+      answerData: { correctPairs: reconciledCorrectPairs },
+    };
   }
 
-  return {
-    ...step,
-    content: {
-      type: "drag_match",
-      instruction: String(rawContent.instruction ?? "Match each item with its definition"),
-      pairs,
-    },
-    answerData: { correctPairs: normalizedCorrectPairs },
-  };
+  if (step.stepType === "fill_blanks") {
+    const rawTemplate = String(rawContent.template ?? rawContent.text ?? "").trim();
+    const rawBlanks = Array.isArray(rawContent.blanks) ? rawContent.blanks : [];
+
+    const acceptedById: Record<string, string[]> = {};
+    const blankDefinitions = rawBlanks.map((blank, index) => {
+      const rawBlank = asRecord(blank);
+      const id = String(rawBlank.id ?? `b${index + 1}`).trim();
+      const acceptedAnswers = uniqueStrings(
+        toStringArray(rawBlank.acceptedAnswers ?? rawBlank.answers ?? rawBlank.answer)
+      );
+      if (id.length > 0) acceptedById[id] = acceptedAnswers;
+      return { id, acceptedAnswers };
+    });
+
+    const rawCorrectBlanks = asRecord(rawAnswerData.correctBlanks ?? rawAnswerData.blanks);
+    for (const [id, answers] of Object.entries(rawCorrectBlanks)) {
+      acceptedById[id] = uniqueStrings(toStringArray(answers));
+    }
+
+    let blankIds = extractFillBlankIds(rawTemplate, blankDefinitions.map((blank) => ({ id: blank.id })));
+    if (blankIds.length === 0) blankIds = blankDefinitions.map((blank) => blank.id);
+    if (blankIds.length === 0) blankIds = Object.keys(acceptedById);
+    if (blankIds.length === 0) blankIds = ["b1"];
+
+    let template = rawTemplate;
+    if (!template) {
+      template = blankIds.map((id) => `{{${id}}}`).join(" ");
+    } else {
+      template = replaceGenericBlankPlaceholders(template, blankIds);
+    }
+
+    const blanks = blankIds.map((id, index) => ({
+      id,
+      acceptedAnswers:
+        acceptedById[id] ||
+        blankDefinitions.find((blank) => blank.id === id)?.acceptedAnswers ||
+        blankDefinitions[index]?.acceptedAnswers ||
+        [],
+    }));
+
+    const correctBlanks: Record<string, string[]> = {};
+    for (const blank of blanks) {
+      correctBlanks[blank.id] = blank.acceptedAnswers;
+    }
+
+    return {
+      ...step,
+      content: {
+        type: "fill_blanks",
+        template,
+        blanks,
+      },
+      answerData: { correctBlanks },
+    };
+  }
+
+  if (step.stepType === "type_answer") {
+    const acceptedAnswers = uniqueStrings(
+      toStringArray(rawAnswerData.acceptedAnswers ?? rawAnswerData.answers ?? rawAnswerData.correctAnswers)
+    );
+
+    return {
+      ...step,
+      content: {
+        type: "type_answer",
+        question: String(rawContent.question ?? ""),
+        placeholder: typeof rawContent.placeholder === "string" ? rawContent.placeholder : undefined,
+        caseSensitive: toBoolean(rawContent.caseSensitive) ?? false,
+      },
+      answerData: { acceptedAnswers },
+    };
+  }
+
+  return step;
 }
 
 export async function generateLesson(
@@ -612,15 +1312,17 @@ export async function improveLessonStep(
   if (!result) return { result: step as GeneratedLessonStep, usage };
 
   try {
-    const parsed = JSON.parse(result);
+    const parsed = parseJsonWithFallback(result) as Record<string, unknown> | null;
+    const improved: GeneratedLessonStep = {
+      stepType: ((parsed?.stepType as StepType) || (step.stepType as StepType)),
+      content: (parsed?.content as StepContent) || step.content,
+      answerData: (parsed?.answerData as StepAnswerData) ?? step.answerData,
+      explanation: typeof parsed?.explanation === "string" ? parsed.explanation : step.explanation,
+      hint: typeof parsed?.hint === "string" ? parsed.hint : step.hint,
+    };
+
     return {
-      result: {
-        stepType: parsed.stepType || step.stepType,
-        content: parsed.content || step.content,
-        answerData: parsed.answerData ?? step.answerData,
-        explanation: parsed.explanation ?? step.explanation,
-        hint: parsed.hint ?? step.hint,
-      },
+      result: normalizeGeneratedLessonStep(improved),
       usage,
     };
   } catch {

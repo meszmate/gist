@@ -10,12 +10,19 @@ import { useLocale } from "@/hooks/use-locale";
 
 export function DragMatchEditor({ content, answerData, onChange }: StepEditorProps) {
   const { t } = useLocale();
-  const c = content as DragMatchContent;
+  const c =
+    (content as DragMatchContent) ??
+    ({ type: "drag_match", instruction: "", pairs: [] } as DragMatchContent);
+  const instruction = typeof c.instruction === "string" ? c.instruction : "";
+  const pairs = Array.isArray(c.pairs) ? c.pairs : [];
 
   const updatePairs = (pairs: DragMatchContent["pairs"]) => {
     const correctPairs: Record<string, string> = {};
     pairs.forEach((p) => { correctPairs[p.id] = p.right; });
-    onChange({ ...c, pairs }, { correctPairs } as DragMatchAnswerData);
+    onChange(
+      { ...c, type: "drag_match", instruction, pairs },
+      { correctPairs } as DragMatchAnswerData
+    );
   };
 
   return (
@@ -23,8 +30,10 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
       <div>
         <Label>{t("stepEditor.instruction")}</Label>
         <Input
-          value={c.instruction}
-          onChange={(e) => onChange({ ...c, instruction: e.target.value }, answerData)}
+          value={instruction}
+          onChange={(e) =>
+            onChange({ ...c, type: "drag_match", instruction: e.target.value }, answerData)
+          }
           placeholder={t("stepEditor.matchItemsPlaceholder")}
           className="mt-1.5"
         />
@@ -36,22 +45,22 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
             variant="outline"
             size="sm"
             onClick={() => {
-              const id = String(c.pairs.length + 1);
-              updatePairs([...c.pairs, { id, left: "", right: "" }]);
+              const id = String(pairs.length + 1);
+              updatePairs([...pairs, { id, left: "", right: "" }]);
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
             {t("stepEditor.addPair")}
           </Button>
         </div>
-        {c.pairs.map((pair, i) => (
+        {pairs.map((pair, i) => (
           <div key={pair.id} className="flex items-center gap-2 mb-2">
             <Input
               value={pair.left}
               onChange={(e) => {
-                const pairs = [...c.pairs];
-                pairs[i] = { ...pairs[i], left: e.target.value };
-                updatePairs(pairs);
+                const nextPairs = [...pairs];
+                nextPairs[i] = { ...nextPairs[i], left: e.target.value };
+                updatePairs(nextPairs);
               }}
               placeholder={t("stepEditor.leftItem")}
               className="flex-1"
@@ -60,9 +69,9 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
             <Input
               value={pair.right}
               onChange={(e) => {
-                const pairs = [...c.pairs];
-                pairs[i] = { ...pairs[i], right: e.target.value };
-                updatePairs(pairs);
+                const nextPairs = [...pairs];
+                nextPairs[i] = { ...nextPairs[i], right: e.target.value };
+                updatePairs(nextPairs);
               }}
               placeholder={t("stepEditor.rightItem")}
               className="flex-1"
@@ -70,7 +79,7 @@ export function DragMatchEditor({ content, answerData, onChange }: StepEditorPro
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => updatePairs(c.pairs.filter((_, j) => j !== i))}
+              onClick={() => updatePairs(pairs.filter((_, j) => j !== i))}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>

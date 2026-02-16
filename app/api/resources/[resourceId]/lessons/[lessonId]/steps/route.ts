@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { lessonSteps, lessons, studyMaterials } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
 
 export async function GET(
   _req: NextRequest,
@@ -30,7 +31,22 @@ export async function GET(
     .where(eq(lessonSteps.lessonId, lessonId))
     .orderBy(asc(lessonSteps.order));
 
-  return NextResponse.json(steps);
+  const normalizedSteps = steps.map((step) => {
+    const normalized = normalizeLessonStepPayload({
+      stepType: step.stepType,
+      content: step.content,
+      answerData: step.answerData,
+    });
+
+    return {
+      ...step,
+      stepType: normalized.stepType,
+      content: normalized.content,
+      answerData: normalized.answerData,
+    };
+  });
+
+  return NextResponse.json(normalizedSteps);
 }
 
 export async function POST(
@@ -61,15 +77,20 @@ export async function POST(
   if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
 
   const body = await req.json();
+  const normalized = normalizeLessonStepPayload({
+    stepType: body.stepType,
+    content: body.content,
+    answerData: body.answerData,
+  });
 
   const [step] = await db
     .insert(lessonSteps)
     .values({
       lessonId,
       order: body.order ?? 0,
-      stepType: body.stepType,
-      content: body.content,
-      answerData: body.answerData || null,
+      stepType: normalized.stepType,
+      content: normalized.content,
+      answerData: normalized.answerData,
       explanation: body.explanation || null,
       hint: body.hint || null,
       imageUrl: body.imageUrl || null,

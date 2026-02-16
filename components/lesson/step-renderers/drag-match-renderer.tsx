@@ -15,12 +15,30 @@ export function DragMatchRenderer({
   disabled,
 }: StepRendererProps) {
   const { t } = useLocale();
-  const content = step.content as DragMatchContent;
-  const answerData = step.answerData as DragMatchAnswerData;
+  const content =
+    (step.content as DragMatchContent) ??
+    ({ type: "drag_match", instruction: "", pairs: [] } as DragMatchContent);
+  const answerData =
+    (step.answerData as DragMatchAnswerData) ?? ({ correctPairs: {} } as DragMatchAnswerData);
   const currentPairs = (userAnswer as DragMatchUserAnswer)?.pairs || {};
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
+  const rawContent =
+    step.content && typeof step.content === "object"
+      ? (step.content as unknown as Record<string, unknown>)
+      : {};
+  const rawPairs = Array.isArray(rawContent.pairs) ? rawContent.pairs : [];
+  const fallbackLeft = Array.isArray(rawContent.leftItems) ? rawContent.leftItems : [];
+  const fallbackRight = Array.isArray(rawContent.rightItems) ? rawContent.rightItems : [];
 
-  const normalizedPairs = content.pairs.map((pair, index) => {
+  const basePairs = rawPairs.length > 0
+    ? rawPairs
+    : fallbackLeft.map((left, index) => ({
+      id: String(index + 1),
+      left: String(left ?? ""),
+      right: String(fallbackRight[index] ?? ""),
+    }));
+
+  const normalizedPairs = basePairs.map((pair, index) => {
     const raw = pair as unknown as Record<string, unknown>;
     const left = String(
       raw.left ?? raw.term ?? raw.concept ?? raw.title ?? `Item ${index + 1}`
@@ -34,10 +52,23 @@ export function DragMatchRenderer({
       answerData?.correctPairs?.[pair.id] ??
       ""
     );
-    return { id: pair.id, left, right };
-  });
+    return { id: String(raw.id ?? index + 1), left, right };
+  }).filter((pair) => pair.left.trim().length > 0 || pair.right.trim().length > 0);
 
-  const rightItems = normalizedPairs
+  const fallbackFromAnswer = normalizedPairs.length === 0
+    ? Object.entries(answerData?.correctPairs || {}).map(([id, right]) => ({
+      id,
+      left: id,
+      right: String(right ?? ""),
+    }))
+    : [];
+
+  const displayPairs = fallbackFromAnswer.length > 0 ? fallbackFromAnswer : normalizedPairs;
+  const instruction = String(
+    rawContent.instruction ?? content.instruction ?? "Match each item with its definition"
+  );
+
+  const rightItems = displayPairs
     .map((p) => p.right)
     .filter((text) => text.trim().length > 0);
   const usedRight = new Set(Object.values(currentPairs));
@@ -63,11 +94,11 @@ export function DragMatchRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{content.instruction}</h3>
+      <h3 className="text-lg font-medium">{instruction}</h3>
       <p className="text-sm text-muted-foreground">{t("stepRenderer.dragMatch")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          {normalizedPairs.map((pair) => {
+          {displayPairs.map((pair) => {
             const matched = currentPairs[pair.id];
             const isCorrectMatch = isChecked && answerData?.correctPairs[pair.id] === matched;
             const isWrongMatch = isChecked && matched && answerData?.correctPairs[pair.id] !== matched;

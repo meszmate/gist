@@ -133,7 +133,7 @@ export function FileUploadDropzone({
         onError(message);
       }
     },
-    [onTextExtracted, onError, t]
+    [onTextExtracted, onError, t, validateFile]
   );
 
   const handleDrop = useCallback(

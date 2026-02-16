@@ -19,6 +19,7 @@ import type {
   MultiSelectConfig,
   MultiSelectAnswer,
 } from "@/lib/types/quiz";
+import { parseFillBlankTemplate } from "@/lib/quiz/fill-blank-template";
 
 export interface PdfQuestionRendererProps {
   config: QuestionConfig;
@@ -251,39 +252,7 @@ function FillBlankPdfRenderer({
     ? (correctAnswerData as FillBlankAnswer)?.blanks || {}
     : {};
 
-  // Parse template and replace blanks
-  const parts: { type: "text" | "blank"; content: string; blankId?: string }[] =
-    [];
-  let currentIndex = 0;
-  let blankIndex = 0;
-  const regex = /\{\{blank\}\}/g;
-  let match;
-
-  while ((match = regex.exec(template)) !== null) {
-    if (match.index > currentIndex) {
-      parts.push({
-        type: "text",
-        content: template.slice(currentIndex, match.index),
-      });
-    }
-
-    const blankDef = blanks[blankIndex];
-    parts.push({
-      type: "blank",
-      content: "",
-      blankId: blankDef?.id || `blank_${blankIndex}`,
-    });
-
-    currentIndex = match.index + match[0].length;
-    blankIndex++;
-  }
-
-  if (currentIndex < template.length) {
-    parts.push({
-      type: "text",
-      content: template.slice(currentIndex),
-    });
-  }
+  const parts = parseFillBlankTemplate(template, blanks);
 
   return (
     <View style={pdfStyles.fillBlankText}>
@@ -293,7 +262,10 @@ function FillBlankPdfRenderer({
             return part.content;
           }
 
-          const blankId = part.blankId!;
+          const blankId = part.blankId;
+          if (!blankId) {
+            return part.content;
+          }
           const answer = correctBlanks[blankId]?.[0];
 
           if (showAnswerKey && answer) {

@@ -5,6 +5,7 @@ import { lessonSteps, studyMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { improveLessonStep, MODEL } from "@/lib/ai/openai";
 import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
+import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
 
 export async function POST(
   req: NextRequest,
@@ -57,12 +58,17 @@ export async function POST(
   );
 
   await logTokenUsage(session.user.id, usage, "improve_lesson_step", MODEL);
+  const normalized = normalizeLessonStepPayload({
+    stepType: step.stepType,
+    content: improved.content,
+    answerData: improved.answerData,
+  });
 
   const [updated] = await db
     .update(lessonSteps)
     .set({
-      content: improved.content,
-      answerData: improved.answerData,
+      content: normalized.content,
+      answerData: normalized.answerData,
       explanation: improved.explanation,
       hint: improved.hint,
       updatedAt: new Date(),
