@@ -11,13 +11,17 @@ import { useLocale } from "@/hooks/use-locale";
 
 export function FillBlanksEditor({ content, answerData, onChange }: StepEditorProps) {
   const { t } = useLocale();
-  const c = content as FillBlanksContent;
+  const c =
+    (content as FillBlanksContent) ??
+    ({ type: "fill_blanks", template: "", blanks: [] } as FillBlanksContent);
+  const template = typeof c.template === "string" ? c.template : "";
+  const blanks = Array.isArray(c.blanks) ? c.blanks : [];
   const ad = (answerData as FillBlanksAnswerData) || { correctBlanks: {} };
 
   const updateBlanks = (blanks: FillBlanksContent["blanks"]) => {
     const correctBlanks: Record<string, string[]> = {};
     blanks.forEach((b) => { correctBlanks[b.id] = b.acceptedAnswers; });
-    onChange({ ...c, blanks }, { correctBlanks });
+    onChange({ ...c, type: "fill_blanks", template, blanks }, { correctBlanks });
   };
 
   return (
@@ -25,8 +29,10 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
       <div>
         <Label>{t("stepEditor.template")}</Label>
         <Textarea
-          value={c.template}
-          onChange={(e) => onChange({ ...c, template: e.target.value }, ad)}
+          value={template}
+          onChange={(e) =>
+            onChange({ ...c, type: "fill_blanks", template: e.target.value }, ad)
+          }
           placeholder={t("stepEditor.templatePlaceholder")}
           rows={3}
           className="mt-1.5 font-mono text-sm"
@@ -42,26 +48,26 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
             variant="outline"
             size="sm"
             onClick={() => {
-              const id = `b${c.blanks.length + 1}`;
-              updateBlanks([...c.blanks, { id, acceptedAnswers: [""] }]);
+              const id = `b${blanks.length + 1}`;
+              updateBlanks([...blanks, { id, acceptedAnswers: [""] }]);
             }}
           >
             <Plus className="mr-1 h-3.5 w-3.5" />
             {t("stepEditor.addBlank")}
           </Button>
         </div>
-        {c.blanks.map((blank, i) => (
+        {blanks.map((blank, i) => (
           <div key={blank.id} className="flex items-center gap-2 mb-2">
             <span className="text-sm font-mono text-muted-foreground w-12">{`{{${blank.id}}}`}</span>
             <Input
               value={blank.acceptedAnswers.join(", ")}
               onChange={(e) => {
-                const blanks = [...c.blanks];
-                blanks[i] = {
-                  ...blanks[i],
+                const nextBlanks = [...blanks];
+                nextBlanks[i] = {
+                  ...nextBlanks[i],
                   acceptedAnswers: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                 };
-                updateBlanks(blanks);
+                updateBlanks(nextBlanks);
               }}
               placeholder={t("stepEditor.acceptedAnswersCommaSeparated")}
               className="flex-1"
@@ -69,7 +75,7 @@ export function FillBlanksEditor({ content, answerData, onChange }: StepEditorPr
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => updateBlanks(c.blanks.filter((_, j) => j !== i))}
+              onClick={() => updateBlanks(blanks.filter((_, j) => j !== i))}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>

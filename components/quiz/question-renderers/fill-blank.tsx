@@ -8,52 +8,7 @@ import { Check, X } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { FillBlankConfig, FillBlankAnswer, FillBlankUserAnswer } from "@/lib/types/quiz";
-
-interface ParsedTemplate {
-  type: 'text' | 'blank';
-  content: string;
-  blankId?: string;
-}
-
-function parseTemplate(template: string, blanks: FillBlankConfig['blanks']): ParsedTemplate[] {
-  const parts: ParsedTemplate[] = [];
-  let currentIndex = 0;
-  let blankIndex = 0;
-
-  const regex = /\{\{blank\}\}/g;
-  let match;
-
-  while ((match = regex.exec(template)) !== null) {
-    // Add text before the blank
-    if (match.index > currentIndex) {
-      parts.push({
-        type: 'text',
-        content: template.slice(currentIndex, match.index),
-      });
-    }
-
-    // Add the blank
-    const blankDef = blanks[blankIndex];
-    parts.push({
-      type: 'blank',
-      content: '',
-      blankId: blankDef?.id || `blank_${blankIndex}`,
-    });
-
-    currentIndex = match.index + match[0].length;
-    blankIndex++;
-  }
-
-  // Add remaining text
-  if (currentIndex < template.length) {
-    parts.push({
-      type: 'text',
-      content: template.slice(currentIndex),
-    });
-  }
-
-  return parts;
-}
+import { parseFillBlankTemplate } from "@/lib/quiz/fill-blank-template";
 
 export function FillBlankRenderer({
   config,
@@ -64,15 +19,29 @@ export function FillBlankRenderer({
   correctAnswerData,
 }: QuestionRendererProps) {
   const { t } = useLocale();
-  const fillConfig = config as FillBlankConfig;
+  const fillConfig =
+    ((config as FillBlankConfig) ||
+      ({ template: "", blanks: [] } as FillBlankConfig)) as FillBlankConfig;
   const template = fillConfig.template || '';
   const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
   const correctBlanks = (correctAnswerData as FillBlankAnswer)?.blanks || {};
 
   const parsedTemplate = useMemo(
-    () => parseTemplate(template, blanks),
+    () => parseFillBlankTemplate(template, blanks),
     [template, blanks]
   );
+  const templateBlankIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const part of parsedTemplate) {
+      if (part.type !== "blank" || !part.blankId || seen.has(part.blankId)) {
+        continue;
+      }
+      seen.add(part.blankId);
+      ids.push(part.blankId);
+    }
+    return ids;
+  }, [parsedTemplate]);
 
   const currentValues = (userAnswer as FillBlankUserAnswer)?.blanks || {};
   const currentValuesKey = JSON.stringify(currentValues);
@@ -117,7 +86,8 @@ export function FillBlankRenderer({
             return <span key={index}>{part.content}</span>;
           }
 
-          const blankId = part.blankId!;
+          const blankId = part.blankId;
+          if (!blankId) return <span key={index}>{part.content}</span>;
           const isCorrect = checkBlankCorrect(blankId);
 
           return (
@@ -147,7 +117,10 @@ export function FillBlankRenderer({
 
       {showResult && (
         <div className="text-sm text-muted-foreground">
-          {t("quizRenderer.blanksCorrect", { count: Object.entries(values).filter(([id]) => checkBlankCorrect(id)).length, total: blanks.length })}
+          {t("quizRenderer.blanksCorrect", {
+            count: templateBlankIds.filter((id) => checkBlankCorrect(id)).length,
+            total: templateBlankIds.length,
+          })}
         </div>
       )}
     </div>
@@ -162,16 +135,31 @@ export function FillBlankResultRenderer({
   explanation,
 }: ResultRendererProps) {
   const { t } = useLocale();
-  const fillConfig = config as FillBlankConfig;
+  const fillConfig =
+    ((config as FillBlankConfig) ||
+      ({ template: "", blanks: [] } as FillBlankConfig)) as FillBlankConfig;
   const template = fillConfig.template || '';
   const blanks = useMemo(() => fillConfig.blanks || [], [fillConfig.blanks]);
   const correctBlanks = (correctAnswerData as FillBlankAnswer)?.blanks || {};
   const userBlanks = (userAnswer as FillBlankUserAnswer)?.blanks || {};
 
   const parsedTemplate = useMemo(
-    () => parseTemplate(template, blanks),
+    () => parseFillBlankTemplate(template, blanks),
     [template, blanks]
   );
+  const blankIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const part of parsedTemplate) {
+      if (part.type !== "blank" || !part.blankId || seen.has(part.blankId)) {
+        continue;
+      }
+      seen.add(part.blankId);
+      ids.push(part.blankId);
+    }
+    if (ids.length > 0) return ids;
+    return blanks.map((blank) => blank.id);
+  }, [parsedTemplate, blanks]);
 
   const normalize = (str: string) => {
     let result = str.trim();
@@ -195,7 +183,8 @@ export function FillBlankResultRenderer({
             return <span key={index}>{part.content}</span>;
           }
 
-          const blankId = part.blankId!;
+          const blankId = part.blankId;
+          if (!blankId) return <span key={index}>{part.content}</span>;
           const userValue = userBlanks[blankId] || '';
           const isCorrect = checkBlankCorrect(blankId);
           const acceptedAnswers = correctBlanks[blankId] || [];
@@ -232,11 +221,11 @@ export function FillBlankResultRenderer({
       <div className="space-y-2">
         <div className="text-sm font-medium">{t("quizRenderer.acceptedForBlanks")}</div>
         <div className="grid gap-2">
-          {blanks.map((blank, index) => (
-            <div key={blank.id} className="flex items-center gap-2 text-sm">
+          {blankIds.map((blankId, index) => (
+            <div key={blankId} className="flex items-center gap-2 text-sm">
               <Badge variant="outline">{t("quizRenderer.blank", { index: index + 1 })}</Badge>
               <div className="flex flex-wrap gap-1">
-                {correctBlanks[blank.id]?.map((answer, i) => (
+                {correctBlanks[blankId]?.map((answer, i) => (
                   <Badge key={i} variant="secondary" className="bg-green-500/20">
                     {answer}
                   </Badge>

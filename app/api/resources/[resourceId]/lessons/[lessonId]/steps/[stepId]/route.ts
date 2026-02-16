@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { lessonSteps, studyMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
 
 export async function PATCH(
   req: NextRequest,
@@ -24,12 +25,30 @@ export async function PATCH(
 
   if (!resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const [existingStep] = await db
+    .select({
+      stepType: lessonSteps.stepType,
+      content: lessonSteps.content,
+      answerData: lessonSteps.answerData,
+    })
+    .from(lessonSteps)
+    .where(and(eq(lessonSteps.id, stepId), eq(lessonSteps.lessonId, lessonId)));
+
+  if (!existingStep) return NextResponse.json({ error: "Step not found" }, { status: 404 });
+
   const body = await req.json();
+  const normalized = normalizeLessonStepPayload({
+    stepType: body.stepType ?? existingStep.stepType,
+    content: body.content ?? existingStep.content,
+    answerData: body.answerData ?? existingStep.answerData,
+  });
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.stepType !== undefined) updateData.stepType = body.stepType;
-  if (body.content !== undefined) updateData.content = body.content;
-  if (body.answerData !== undefined) updateData.answerData = body.answerData;
+  if (body.stepType !== undefined || body.content !== undefined || body.answerData !== undefined) {
+    updateData.stepType = normalized.stepType;
+    updateData.content = normalized.content;
+    updateData.answerData = normalized.answerData;
+  }
   if (body.explanation !== undefined) updateData.explanation = body.explanation;
   if (body.hint !== undefined) updateData.hint = body.hint;
   if (body.imageUrl !== undefined) updateData.imageUrl = body.imageUrl;

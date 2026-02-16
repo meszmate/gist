@@ -8,9 +8,8 @@ import { gradeQuiz, type QuestionData } from "@/lib/quiz/grading-service";
 import type {
   UserAnswer,
   AnswersData,
-  MultipleChoiceConfig,
-  MultipleChoiceAnswer,
 } from "@/lib/types/quiz";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 const submitAttemptSchema = z.object({
   answers: z.record(z.string(), z.any()), // Accept both legacy (number) and new (object) formats
@@ -69,35 +68,30 @@ export async function POST(
       .from(gradingConfigs)
       .where(eq(gradingConfigs.studyMaterialId, quizId));
 
+    const normalizedQuestionsById = new Map<
+      string,
+      ReturnType<typeof normalizeQuestionPayload>
+    >();
+
     // Prepare questions for grading service
     const questionData: QuestionData[] = questions.map((q) => {
-      // Check if this is a legacy question (has options but no correctAnswerData)
-      const isLegacy = q.correctAnswerData === null && q.options !== null && q.correctAnswer !== null;
-
-      if (isLegacy) {
-        return {
-          id: q.id,
-          questionType: 'multiple_choice',
-          questionConfig: {
-            options: q.options || [],
-          } as MultipleChoiceConfig,
-          correctAnswerData: {
-            correctIndex: q.correctAnswer!,
-          } as MultipleChoiceAnswer,
-          points: parseFloat(q.points || '1'),
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-        };
-      }
+      const normalized = normalizeQuestionPayload({
+        questionType: q.questionType,
+        questionConfig: q.questionConfig,
+        correctAnswerData: q.correctAnswerData,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+      });
+      normalizedQuestionsById.set(q.id, normalized);
 
       return {
         id: q.id,
-        questionType: q.questionType,
-        questionConfig: q.questionConfig || {},
-        correctAnswerData: q.correctAnswerData,
+        questionType: normalized.questionType,
+        questionConfig: normalized.questionConfig,
+        correctAnswerData: normalized.correctAnswerData,
         points: parseFloat(q.points || '1'),
-        options: q.options,
-        correctAnswer: q.correctAnswer,
+        options: normalized.options,
+        correctAnswer: normalized.correctAnswer,
       };
     });
 
@@ -117,6 +111,7 @@ export async function POST(
     const results = questions.map((q) => {
       const questionResult = gradeResult.questionResults.find(r => r.questionId === q.id);
       const userAnswer = data.answers[q.id];
+      const normalized = normalizedQuestionsById.get(q.id);
 
       // For legacy format, convert selectedIndex/number back to the answer index
       let selectedAnswer: UserAnswer = userAnswer;
@@ -129,11 +124,14 @@ export async function POST(
       return {
         questionId: q.id,
         question: q.question,
-        questionType: q.questionType || 'multiple_choice',
+        questionType: normalized?.questionType || q.questionType || 'multiple_choice',
         selectedAnswer,
-        correctAnswer: questionResult?.correctAnswer || { correctIndex: q.correctAnswer },
-        options: q.options,
-        config: q.questionConfig || { options: q.options },
+        correctAnswer:
+          questionResult?.correctAnswer ||
+          normalized?.correctAnswerData ||
+          { correctIndex: normalized?.correctAnswer ?? q.correctAnswer },
+        options: normalized?.options,
+        config: normalized?.questionConfig || q.questionConfig || { options: normalized?.options || q.options },
         explanation: q.explanation,
         isCorrect: questionResult?.isCorrect ?? false,
         pointsEarned: questionResult?.pointsEarned ?? 0,

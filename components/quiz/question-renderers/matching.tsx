@@ -15,6 +15,11 @@ import { useLocale } from "@/hooks/use-locale";
 import type { QuestionRendererProps, ResultRendererProps } from "./types";
 import type { MatchingConfig, MatchingAnswer, MatchingUserAnswer } from "@/lib/types/quiz";
 
+const EMPTY_MATCHING_CONFIG: MatchingConfig = {
+  leftColumn: [],
+  rightColumn: [],
+};
+
 function shuffleArray<T>(array: T[], seed?: number): T[] {
   const shuffled = [...array];
   let currentSeed = seed || Date.now();
@@ -36,9 +41,28 @@ export function MatchingRenderer({
   correctAnswerData,
 }: QuestionRendererProps) {
   const { t } = useLocale();
-  const matchingConfig = config as MatchingConfig;
-  const leftColumn = matchingConfig.leftColumn || [];
-  const rightColumn = useMemo(() => matchingConfig.rightColumn || [], [matchingConfig.rightColumn]);
+  const matchingConfig =
+    (config as MatchingConfig | null | undefined) ?? EMPTY_MATCHING_CONFIG;
+  const derivedPairs = useMemo(() => {
+    const rawConfig = matchingConfig as unknown as Record<string, unknown>;
+    const rawPairs = Array.isArray(rawConfig.pairs) ? rawConfig.pairs : [];
+    return rawPairs
+      .map((pair) => {
+        const rawPair = (pair || {}) as Record<string, unknown>;
+        const left = String(rawPair.left ?? rawPair.term ?? rawPair.prompt ?? "").trim();
+        const right = String(rawPair.right ?? rawPair.match ?? rawPair.definition ?? "").trim();
+        return { left, right };
+      })
+      .filter((pair) => pair.left.length > 0 && pair.right.length > 0);
+  }, [matchingConfig]);
+
+  const leftColumn = matchingConfig.leftColumn?.length
+    ? matchingConfig.leftColumn
+    : derivedPairs.map((pair) => pair.left);
+  const rightColumn = useMemo(() => {
+    if (matchingConfig.rightColumn?.length) return matchingConfig.rightColumn;
+    return derivedPairs.map((pair) => pair.right);
+  }, [matchingConfig.rightColumn, derivedPairs]);
 
   // Shuffle right column options if enabled
   const shuffledRight = useMemo(() => {
@@ -145,8 +169,22 @@ export function MatchingResultRenderer({
   explanation,
 }: ResultRendererProps) {
   const { t } = useLocale();
-  const matchingConfig = config as MatchingConfig;
-  const leftColumn = matchingConfig.leftColumn || [];
+  const matchingConfig =
+    (config as MatchingConfig | null | undefined) ?? EMPTY_MATCHING_CONFIG;
+  const derivedPairs = useMemo(() => {
+    const rawConfig = matchingConfig as unknown as Record<string, unknown>;
+    const rawPairs = Array.isArray(rawConfig.pairs) ? rawConfig.pairs : [];
+    return rawPairs
+      .map((pair) => {
+        const rawPair = (pair || {}) as Record<string, unknown>;
+        const left = String(rawPair.left ?? rawPair.term ?? rawPair.prompt ?? "").trim();
+        return left;
+      })
+      .filter((left) => left.length > 0);
+  }, [matchingConfig]);
+  const leftColumn = matchingConfig.leftColumn?.length
+    ? matchingConfig.leftColumn
+    : derivedPairs;
   const correctPairs = (correctAnswerData as MatchingAnswer)?.correctPairs || {};
   const userPairs = (userAnswer as MatchingUserAnswer)?.pairs || {};
 

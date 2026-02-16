@@ -38,6 +38,7 @@ import type {
   MultiSelectConfig,
   MultiSelectAnswer,
 } from "@/lib/types/quiz";
+import { extractFillBlankIds } from "@/lib/quiz/fill-blank-template";
 
 interface QuestionBuilderProps {
   onSave: (question: {
@@ -127,9 +128,19 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
   const [fillBlankTemplate, setFillBlankTemplate] = useState<string>(
     (initialData?.questionConfig as FillBlankConfig)?.template || ''
   );
-  const [fillBlankAnswers, setFillBlankAnswers] = useState<Record<string, string[]>>(
-    (initialData?.correctAnswerData as FillBlankAnswer)?.blanks || {}
-  );
+  const [fillBlankAnswers, setFillBlankAnswers] = useState<Record<string, string[]>>(() => {
+    const fromAnswerData = (initialData?.correctAnswerData as FillBlankAnswer)?.blanks || {};
+    if (Object.keys(fromAnswerData).length > 0) {
+      return fromAnswerData;
+    }
+
+    const fromConfig = (initialData?.questionConfig as FillBlankConfig)?.blanks || [];
+    const mapped: Record<string, string[]> = {};
+    for (const blank of fromConfig) {
+      mapped[blank.id] = blank.acceptedAnswers || [];
+    }
+    return mapped;
+  });
 
   // Multi-select state
   const [msOptions, setMsOptions] = useState<string[]>(
@@ -184,13 +195,26 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         break;
 
       case 'fill_blank':
-        const blankCount = (fillBlankTemplate.match(/\{\{blank\}\}/g) || []).length;
-        const blanks: FillBlankConfig['blanks'] = [];
-        for (let i = 0; i < blankCount; i++) {
-          blanks.push({ id: `blank_${i}`, acceptedAnswers: fillBlankAnswers[`blank_${i}`] || [] });
-        }
+        const blankDefinitions = Object.keys(fillBlankAnswers).map((id) => ({ id }));
+        const parsedBlankIds = extractFillBlankIds(
+          fillBlankTemplate,
+          blankDefinitions
+        );
+        const blankIds = parsedBlankIds.length > 0
+          ? parsedBlankIds
+          : Object.keys(fillBlankAnswers);
+        const blanks: FillBlankConfig['blanks'] = blankIds.map((id) => ({
+          id,
+          acceptedAnswers: (fillBlankAnswers[id] || []).filter((answer) => answer.trim()),
+        }));
+
+        const normalizedBlankAnswers: Record<string, string[]> = {};
+        blanks.forEach((blank) => {
+          normalizedBlankAnswers[blank.id] = blank.acceptedAnswers;
+        });
+
         config = { template: fillBlankTemplate, blanks } as FillBlankConfig;
-        correctAnswer = { blanks: fillBlankAnswers } as FillBlankAnswer;
+        correctAnswer = { blanks: normalizedBlankAnswers } as FillBlankAnswer;
         break;
 
       case 'multi_select':
@@ -476,7 +500,14 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
         );
 
       case 'fill_blank':
-        const blankCount = (fillBlankTemplate.match(/\{\{blank\}\}/g) || []).length;
+        const blankDefinitions = Object.keys(fillBlankAnswers).map((id) => ({ id }));
+        const parsedBlankIds = extractFillBlankIds(
+          fillBlankTemplate,
+          blankDefinitions
+        );
+        const blankIds = parsedBlankIds.length > 0
+          ? parsedBlankIds
+          : Object.keys(fillBlankAnswers);
         return (
           <div className="space-y-4">
             <div>
@@ -491,18 +522,18 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
                 rows={3}
               />
             </div>
-            {blankCount > 0 && (
+            {blankIds.length > 0 && (
               <div className="space-y-3">
                 <Label>{t("questionBuilder.blanksAnswers")}</Label>
-                {Array.from({ length: blankCount }).map((_, index) => (
-                  <div key={index} className="space-y-2">
+                {blankIds.map((blankId, index) => (
+                  <div key={blankId} className="space-y-2">
                     <Label className="text-sm">{t("questionBuilder.blankIndex", { index: index + 1 })}</Label>
                     <Input
-                      value={(fillBlankAnswers[`blank_${index}`] || []).join(', ')}
+                      value={(fillBlankAnswers[blankId] || []).join(', ')}
                       onChange={(e) => {
                         setFillBlankAnswers({
                           ...fillBlankAnswers,
-                          [`blank_${index}`]: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
+                          [blankId]: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
                         });
                       }}
                       placeholder={t("questionBuilder.separateCommas")}

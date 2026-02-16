@@ -9,7 +9,7 @@ import {
   resourceAccessLogs,
 } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import type { MultipleChoiceConfig } from "@/lib/types/quiz";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 export async function GET(
   req: Request,
@@ -92,25 +92,20 @@ export async function GET(
 
     // Transform questions for response
     const transformedQuestions = questions.map((q) => {
-      let config = q.questionConfig;
-
-      // For legacy questions without questionConfig, build from options
-      if (!config || Object.keys(config).length === 0) {
-        if (q.options) {
-          config = { options: q.options } as MultipleChoiceConfig;
-        } else {
-          config = {};
-        }
-      }
+      const normalized = normalizeQuestionPayload({
+        questionType: q.questionType,
+        questionConfig: q.questionConfig,
+        options: q.options,
+      });
 
       return {
         id: q.id,
         question: q.question,
-        questionType: q.questionType || 'multiple_choice',
-        config,
+        questionType: normalized.questionType,
+        config: normalized.questionConfig,
         points: parseFloat(q.points || '1'),
         order: q.order,
-        options: q.options || (config as MultipleChoiceConfig)?.options || [],
+        options: normalized.options || [],
       };
     });
 

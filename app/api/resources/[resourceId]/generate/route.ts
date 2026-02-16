@@ -11,6 +11,7 @@ import {
   MODEL,
 } from "@/lib/ai/openai";
 import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 const generateSchema = z.object({
   type: z.enum(["summary", "flashcards", "quiz"]),
@@ -118,30 +119,46 @@ export async function POST(
           );
         }
 
-        await db.insert(quizQuestions).values(
-          generatedQuestions.map((q, index) => ({
-            studyMaterialId: resourceId,
-            question: q.question,
+        const normalizedQuestions = generatedQuestions.map((q) => {
+          const normalized = normalizeQuestionPayload({
             questionType: q.questionType,
             questionConfig: q.questionConfig,
             correctAnswerData: q.correctAnswerData,
-            points: String(q.points),
-            order: index,
+          });
+
+          return {
+            question: q.question,
+            questionType: normalized.questionType,
+            questionConfig: normalized.questionConfig,
+            correctAnswerData: normalized.correctAnswerData,
+            points: q.points,
             explanation: q.explanation,
-            // Legacy fields for backward compatibility
-            options: q.questionType === "multiple_choice" && "options" in q.questionConfig
-              ? (q.questionConfig as { options: string[] }).options
-              : null,
-            correctAnswer: q.questionType === "multiple_choice" && "correctIndex" in q.correctAnswerData
-              ? (q.correctAnswerData as { correctIndex: number }).correctIndex
-              : null,
-          }))
+            options: normalized.options,
+            correctAnswer: normalized.correctAnswer,
+          };
+        });
+
+        await db.insert(quizQuestions).values(
+          normalizedQuestions.map((q, index) => {
+            return {
+              studyMaterialId: resourceId,
+              question: q.question,
+              questionType: q.questionType,
+              questionConfig: q.questionConfig,
+              correctAnswerData: q.correctAnswerData,
+              points: String(q.points),
+              order: index,
+              explanation: q.explanation,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+            };
+          })
         );
 
         await logTokenUsage(session.user.id, usage, "generate_quiz", MODEL);
         return NextResponse.json({
-          questions: generatedQuestions,
-          count: generatedQuestions.length,
+          questions: normalizedQuestions,
+          count: normalizedQuestions.length,
         });
       }
     }

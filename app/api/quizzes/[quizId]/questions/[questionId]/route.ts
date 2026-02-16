@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { studyMaterials, quizQuestions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 const updateQuestionSchema = z.object({
   question: z.string().min(1).optional(),
@@ -60,7 +61,22 @@ export async function GET(
       return NextResponse.json({ error: "Question not found" }, { status: 404 });
     }
 
-    return NextResponse.json(question);
+    const normalized = normalizeQuestionPayload({
+      questionType: question.questionType,
+      questionConfig: question.questionConfig,
+      correctAnswerData: question.correctAnswerData,
+      options: question.options,
+      correctAnswer: question.correctAnswer,
+    });
+
+    return NextResponse.json({
+      ...question,
+      questionType: normalized.questionType,
+      questionConfig: normalized.questionConfig,
+      correctAnswerData: normalized.correctAnswerData,
+      options: normalized.options,
+      correctAnswer: normalized.correctAnswer,
+    });
   } catch (error) {
     console.error("Error fetching question:", error);
     return NextResponse.json(
@@ -114,20 +130,27 @@ export async function PUT(
     if (!existing) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 });
     }
+    const normalized = normalizeQuestionPayload({
+      questionType: data.questionType ?? existing.questionType,
+      questionConfig: data.questionConfig ?? existing.questionConfig,
+      correctAnswerData: data.correctAnswerData ?? existing.correctAnswerData,
+      options: data.options ?? existing.options,
+      correctAnswer: data.correctAnswer ?? existing.correctAnswer,
+    });
 
     // Update the question
     const [updated] = await db
       .update(quizQuestions)
       .set({
         question: data.question ?? existing.question,
-        questionType: data.questionType ?? existing.questionType,
-        questionConfig: data.questionConfig ?? existing.questionConfig,
-        correctAnswerData: data.correctAnswerData ?? existing.correctAnswerData,
+        questionType: normalized.questionType,
+        questionConfig: normalized.questionConfig,
+        correctAnswerData: normalized.correctAnswerData,
         points: data.points?.toString() ?? existing.points,
         order: data.order ?? existing.order,
         explanation: data.explanation !== undefined ? data.explanation : existing.explanation,
-        options: data.options ?? existing.options,
-        correctAnswer: data.correctAnswer ?? existing.correctAnswer,
+        options: normalized.options,
+        correctAnswer: normalized.correctAnswer,
         updatedAt: new Date(),
       })
       .where(eq(quizQuestions.id, questionId))

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { lessons, lessonSteps, studyMaterials } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
 
 export async function GET(
   _req: NextRequest,
@@ -44,7 +45,22 @@ export async function GET(
     .where(eq(lessonSteps.lessonId, lessonId))
     .orderBy(asc(lessonSteps.order));
 
-  return NextResponse.json({ ...lesson, steps });
+  const normalizedSteps = steps.map((step) => {
+    const normalized = normalizeLessonStepPayload({
+      stepType: step.stepType,
+      content: step.content,
+      answerData: step.answerData,
+    });
+
+    return {
+      ...step,
+      stepType: normalized.stepType,
+      content: normalized.content,
+      answerData: normalized.answerData,
+    };
+  });
+
+  return NextResponse.json({ ...lesson, steps: normalizedSteps });
 }
 
 export async function PATCH(

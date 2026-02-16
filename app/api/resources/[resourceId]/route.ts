@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizQuestions, savedResources } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 const updateResourceSchema = z.object({
   title: z.string().min(1).max(255).optional(),
@@ -95,10 +96,29 @@ export async function GET(
       .from(quizQuestions)
       .where(eq(quizQuestions.studyMaterialId, resourceId));
 
+    const normalizedQuizQuestions = resourceQuizQuestions.map((question) => {
+      const normalized = normalizeQuestionPayload({
+        questionType: question.questionType,
+        questionConfig: question.questionConfig,
+        correctAnswerData: question.correctAnswerData,
+        options: question.options,
+        correctAnswer: question.correctAnswer,
+      });
+
+      return {
+        ...question,
+        questionType: normalized.questionType,
+        questionConfig: normalized.questionConfig,
+        correctAnswerData: normalized.correctAnswerData,
+        options: normalized.options,
+        correctAnswer: normalized.correctAnswer,
+      };
+    });
+
     return NextResponse.json({
       ...resource,
       flashcards: resourceFlashcards,
-      quizQuestions: resourceQuizQuestions,
+      quizQuestions: normalizedQuizQuestions,
       isOwned: isOwner,
     });
   } catch (error) {

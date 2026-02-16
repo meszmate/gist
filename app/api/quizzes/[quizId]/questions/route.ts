@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { studyMaterials, quizQuestions } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 const createQuestionSchema = z.object({
   question: z.string().min(1),
@@ -62,7 +63,26 @@ export async function GET(
       .where(eq(quizQuestions.studyMaterialId, quizId))
       .orderBy(asc(quizQuestions.order), asc(quizQuestions.createdAt));
 
-    return NextResponse.json({ questions });
+    return NextResponse.json({
+      questions: questions.map((question) => {
+        const normalized = normalizeQuestionPayload({
+          questionType: question.questionType,
+          questionConfig: question.questionConfig,
+          correctAnswerData: question.correctAnswerData,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+        });
+
+        return {
+          ...question,
+          questionType: normalized.questionType,
+          questionConfig: normalized.questionConfig,
+          correctAnswerData: normalized.correctAnswerData,
+          options: normalized.options,
+          correctAnswer: normalized.correctAnswer,
+        };
+      }),
+    });
   } catch (error) {
     console.error("Error fetching questions:", error);
     return NextResponse.json(
@@ -113,6 +133,13 @@ export async function POST(
       (max, q) => Math.max(max, q.order || 0),
       0
     );
+    const normalized = normalizeQuestionPayload({
+      questionType: data.questionType,
+      questionConfig: data.questionConfig,
+      correctAnswerData: data.correctAnswerData,
+      options: data.options,
+      correctAnswer: data.correctAnswer,
+    });
 
     // Create the question
     const [newQuestion] = await db
@@ -120,14 +147,14 @@ export async function POST(
       .values({
         studyMaterialId: quizId,
         question: data.question,
-        questionType: data.questionType,
-        questionConfig: data.questionConfig,
-        correctAnswerData: data.correctAnswerData,
+        questionType: normalized.questionType,
+        questionConfig: normalized.questionConfig,
+        correctAnswerData: normalized.correctAnswerData,
         points: data.points.toString(),
         order: data.order ?? maxOrder + 1,
         explanation: data.explanation,
-        options: data.options,
-        correctAnswer: data.correctAnswer,
+        options: normalized.options,
+        correctAnswer: normalized.correctAnswer,
       })
       .returning();
 

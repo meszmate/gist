@@ -40,6 +40,7 @@ import type {
   MultiSelectConfig,
   MultiSelectAnswer,
 } from "@/lib/types/quiz";
+import { extractFillBlankIds } from "@/lib/quiz/fill-blank-template";
 
 interface QuestionEditDialogProps {
   open: boolean;
@@ -182,11 +183,56 @@ function QuestionEditDialogContent({
   const [template, setTemplate] = useState(
     (initialData?.questionConfig as FillBlankConfig)?.template || ""
   );
-  const [blanks, setBlanks] = useState<Array<{ id: string; acceptedAnswers: string[] }>>(
-    (initialData?.questionConfig as FillBlankConfig)?.blanks || [
-      { id: "blank1", acceptedAnswers: [""] },
-    ]
-  );
+  const [blanks, setBlanks] = useState<Array<{ id: string; acceptedAnswers: string[] }>>(() => {
+    const templateFromConfig =
+      (initialData?.questionConfig as FillBlankConfig)?.template || "";
+    const configBlanks = (initialData?.questionConfig as FillBlankConfig)?.blanks || [];
+    const answerBlanks = (initialData?.correctAnswerData as FillBlankAnswer)?.blanks || {};
+    const templateIds = extractFillBlankIds(
+      templateFromConfig,
+      configBlanks.map((blank) => ({ id: blank.id }))
+    );
+
+    const mergedIds =
+      templateIds.length > 0
+        ? templateIds
+        : Array.from(
+            new Set([...configBlanks.map((blank) => blank.id), ...Object.keys(answerBlanks)])
+          );
+
+    if (mergedIds.length > 0) {
+      return mergedIds.map((id, index) => ({
+        id,
+        acceptedAnswers:
+          answerBlanks[id] ||
+          configBlanks.find((blank) => blank.id === id)?.acceptedAnswers ||
+          configBlanks[index]?.acceptedAnswers ||
+          [""],
+      }));
+    }
+    return [{ id: "blank_0", acceptedAnswers: [""] }];
+  });
+  const fillBlankIds = (() => {
+    const parsedIds = extractFillBlankIds(
+      template,
+      blanks.map((blank) => ({ id: blank.id }))
+    );
+    if (parsedIds.length > 0) return parsedIds;
+    return blanks.map((blank) => blank.id);
+  })();
+
+  const upsertBlankAcceptedAnswers = (blankId: string, acceptedAnswers: string[]) => {
+    setBlanks((prev) => {
+      const existingIndex = prev.findIndex((blank) => blank.id === blankId);
+      if (existingIndex === -1) {
+        return [...prev, { id: blankId, acceptedAnswers }];
+      }
+
+      const next = [...prev];
+      next[existingIndex] = { ...next[existingIndex], acceptedAnswers };
+      return next;
+    });
+  };
 
   const handleSave = () => {
     let questionConfig: QuestionConfig;
@@ -236,16 +282,22 @@ function QuestionEditDialogContent({
         correctAnswerData = { correctPairs: pairs } as MatchingAnswer;
         break;
       case "fill_blank":
+        const normalizedBlanks = fillBlankIds.map((blankId) => {
+          const existing =
+            blanks.find((blank) => blank.id === blankId)?.acceptedAnswers || [];
+          return {
+            id: blankId,
+            acceptedAnswers: existing.filter((answer) => answer.trim()),
+          };
+        });
+
         questionConfig = {
           template,
-          blanks: blanks.map((b) => ({
-            id: b.id,
-            acceptedAnswers: b.acceptedAnswers.filter((a) => a.trim()),
-          })),
+          blanks: normalizedBlanks,
         } as FillBlankConfig;
         const blankAnswers: Record<string, string[]> = {};
-        blanks.forEach((b) => {
-          blankAnswers[b.id] = b.acceptedAnswers.filter((a) => a.trim());
+        normalizedBlanks.forEach((blank) => {
+          blankAnswers[blank.id] = blank.acceptedAnswers;
         });
         correctAnswerData = { blanks: blankAnswers } as FillBlankAnswer;
         break;
@@ -579,19 +631,25 @@ function QuestionEditDialogContent({
             </div>
             <div className="space-y-2">
               <Label>{t("quiz.editDialog.blankAnswers")}</Label>
-              {blanks.map((blank, i) => (
-                <div key={blank.id} className="space-y-1">
+              {fillBlankIds.map((blankId, i) => {
+                const storedAcceptedAnswers =
+                  blanks.find((blank) => blank.id === blankId)?.acceptedAnswers || [];
+                const acceptedAnswers =
+                  storedAcceptedAnswers.length > 0 ? storedAcceptedAnswers : [""];
+
+                return (
+                <div key={blankId} className="space-y-1">
                   <p className="text-xs text-muted-foreground">
-                    Blank {i + 1} ({blank.id})
+                    Blank {i + 1} ({blankId})
                   </p>
-                  {blank.acceptedAnswers.map((ans, j) => (
+                  {acceptedAnswers.map((ans, j) => (
                     <div key={j} className="flex items-center gap-2">
                       <Input
                         value={ans}
                         onChange={(e) => {
-                          const newBlanks = [...blanks];
-                          newBlanks[i].acceptedAnswers[j] = e.target.value;
-                          setBlanks(newBlanks);
+                          const nextAnswers = [...acceptedAnswers];
+                          nextAnswers[j] = e.target.value;
+                          upsertBlankAcceptedAnswers(blankId, nextAnswers);
                         }}
                         placeholder={t("quiz.editDialog.acceptedAnswer")}
                         className="flex-1"
@@ -602,16 +660,15 @@ function QuestionEditDialogContent({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const newBlanks = [...blanks];
-                      newBlanks[i].acceptedAnswers.push("");
-                      setBlanks(newBlanks);
+                      upsertBlankAcceptedAnswers(blankId, [...acceptedAnswers, ""]);
                     }}
                   >
                     <Plus className="mr-1 h-3 w-3" />
                     {t("quiz.editDialog.addAcceptedAnswer")}
                   </Button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         )}

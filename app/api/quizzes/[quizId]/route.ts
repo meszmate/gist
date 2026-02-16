@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, quizQuestions, quizSettings, gradingConfigs } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
-import type { MultipleChoiceConfig } from "@/lib/types/quiz";
+import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
 
 export async function GET(
   req: Request,
@@ -73,27 +73,20 @@ export async function GET(
 
     // Transform questions for response
     const transformedQuestions = questions.map((q) => {
-      // Determine the config to use
-      let config = q.questionConfig;
-
-      // For legacy questions without questionConfig, build from options
-      if (!config || Object.keys(config).length === 0) {
-        if (q.options) {
-          config = { options: q.options } as MultipleChoiceConfig;
-        } else {
-          config = {};
-        }
-      }
+      const normalized = normalizeQuestionPayload({
+        questionType: q.questionType,
+        questionConfig: q.questionConfig,
+        options: q.options,
+      });
 
       return {
         id: q.id,
         question: q.question,
-        questionType: q.questionType || 'multiple_choice',
-        config,
+        questionType: normalized.questionType,
+        config: normalized.questionConfig,
         points: parseFloat(q.points || '1'),
         order: q.order,
-        // Legacy field for backward compatibility with old UI
-        options: q.options || (config as MultipleChoiceConfig)?.options || [],
+        options: normalized.options || [],
       };
     });
 

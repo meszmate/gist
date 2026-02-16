@@ -97,7 +97,7 @@ function validateTrueFalse(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _config: QuestionConfig
 ): ValidationResult {
-  const correctAnswer = correctAnswerData as TrueFalseAnswer;
+  const correctAnswer = correctAnswerData as TrueFalseAnswer & { isTrue?: boolean };
 
   let selectedValue: boolean;
   if (typeof userAnswer === 'boolean') {
@@ -108,7 +108,13 @@ function validateTrueFalse(
     return { isCorrect: false, creditPercent: 0, feedback: 'Invalid answer format' };
   }
 
-  const isCorrect = selectedValue === correctAnswer.correctValue;
+  const expectedValue =
+    typeof correctAnswer.correctValue === "boolean"
+      ? correctAnswer.correctValue
+      : typeof correctAnswer.isTrue === "boolean"
+        ? correctAnswer.isTrue
+        : false;
+  const isCorrect = selectedValue === expectedValue;
   return {
     isCorrect,
     creditPercent: isCorrect ? 100 : 0,
@@ -122,6 +128,12 @@ function validateTextInput(
 ): ValidationResult {
   const correctAnswer = correctAnswerData as TextInputAnswer;
   const textConfig = config as TextInputConfig;
+  const acceptedAnswers = Array.isArray(correctAnswer.acceptedAnswers)
+    ? correctAnswer.acceptedAnswers
+    : [];
+  const keywords = Array.isArray(correctAnswer.keywords)
+    ? correctAnswer.keywords
+    : [];
 
   let userText: string;
   if (typeof userAnswer === 'string') {
@@ -148,29 +160,29 @@ function validateTextInput(
   const normalizedUserText = normalize(userText);
 
   // Check for exact match with any accepted answer
-  for (const accepted of correctAnswer.acceptedAnswers) {
+  for (const accepted of acceptedAnswers) {
     if (normalize(accepted) === normalizedUserText) {
       return { isCorrect: true, creditPercent: 100 };
     }
   }
 
   // Check for keyword-based partial credit
-  if (correctAnswer.keywords && correctAnswer.keywords.length > 0) {
-    const matchedKeywords = correctAnswer.keywords.filter(keyword =>
+  if (keywords.length > 0) {
+    const matchedKeywords = keywords.filter(keyword =>
       normalizedUserText.includes(normalize(keyword))
     );
 
-    const threshold = correctAnswer.keywordMatchThreshold || Math.ceil(correctAnswer.keywords.length / 2);
+    const threshold = correctAnswer.keywordMatchThreshold || Math.ceil(keywords.length / 2);
 
     if (matchedKeywords.length >= threshold) {
       const creditPercent = Math.min(
-        (matchedKeywords.length / correctAnswer.keywords.length) * 100,
+        (matchedKeywords.length / keywords.length) * 100,
         75 // Cap partial credit at 75%
       );
       return {
         isCorrect: false,
         creditPercent,
-        feedback: `Partial credit: matched ${matchedKeywords.length} of ${correctAnswer.keywords.length} key concepts`,
+        feedback: `Partial credit: matched ${matchedKeywords.length} of ${keywords.length} key concepts`,
       };
     }
   }
@@ -183,7 +195,7 @@ function validateYearRange(
   correctAnswerData: CorrectAnswerData,
   config: QuestionConfig
 ): ValidationResult {
-  const correctAnswer = correctAnswerData as YearRangeAnswer;
+  const correctAnswer = correctAnswerData as YearRangeAnswer & { exactYear?: number; year?: number };
   const yearConfig = config as YearRangeConfig;
 
   let userYear: number;
@@ -203,7 +215,15 @@ function validateYearRange(
     return { isCorrect: false, creditPercent: 0, feedback: `Year must be at most ${yearConfig.maxYear}` };
   }
 
-  const difference = Math.abs(userYear - correctAnswer.correctYear);
+  const expectedYear =
+    correctAnswer.correctYear ??
+    correctAnswer.exactYear ??
+    correctAnswer.year;
+  if (expectedYear === undefined) {
+    return { isCorrect: false, creditPercent: 0, feedback: 'No correct year configured' };
+  }
+
+  const difference = Math.abs(userYear - expectedYear);
 
   // Exact match
   if (difference === 0) {
@@ -234,11 +254,11 @@ function validateYearRange(
     };
   }
 
-  return {
-    isCorrect: false,
-    creditPercent: 0,
-    feedback: `The correct year was ${correctAnswer.correctYear}`,
-  };
+    return {
+      isCorrect: false,
+      creditPercent: 0,
+      feedback: `The correct year was ${expectedYear}`,
+    };
 }
 
 function validateNumericRange(
@@ -246,7 +266,7 @@ function validateNumericRange(
   correctAnswerData: CorrectAnswerData,
   config: QuestionConfig
 ): ValidationResult {
-  const correctAnswer = correctAnswerData as NumericRangeAnswer;
+  const correctAnswer = correctAnswerData as NumericRangeAnswer & { exactValue?: number; value?: number };
   const numericConfig = config as NumericRangeConfig;
 
   let userValue: number;
@@ -266,7 +286,15 @@ function validateNumericRange(
     return { isCorrect: false, creditPercent: 0, feedback: `Value must be at most ${numericConfig.max}` };
   }
 
-  const difference = Math.abs(userValue - correctAnswer.correctValue);
+  const expectedValue =
+    correctAnswer.correctValue ??
+    correctAnswer.exactValue ??
+    correctAnswer.value;
+  if (expectedValue === undefined) {
+    return { isCorrect: false, creditPercent: 0, feedback: 'No correct value configured' };
+  }
+
+  const difference = Math.abs(userValue - expectedValue);
 
   // Exact match (with floating point tolerance)
   if (difference < 0.0001) {
@@ -277,7 +305,7 @@ function validateNumericRange(
   if (correctAnswer.partialCreditRanges) {
     for (const range of correctAnswer.partialCreditRanges.sort((a, b) => a.tolerance - b.tolerance)) {
       const toleranceValue = range.toleranceType === 'percentage'
-        ? (range.tolerance / 100) * Math.abs(correctAnswer.correctValue)
+      ? (range.tolerance / 100) * Math.abs(expectedValue)
         : range.tolerance;
 
       if (difference <= toleranceValue) {
@@ -294,7 +322,7 @@ function validateNumericRange(
   const tolerance = numericConfig.tolerance || 0;
   if (tolerance > 0) {
     const toleranceValue = numericConfig.toleranceType === 'percentage'
-      ? (tolerance / 100) * Math.abs(correctAnswer.correctValue)
+      ? (tolerance / 100) * Math.abs(expectedValue)
       : tolerance;
 
     if (difference <= toleranceValue) {
@@ -310,7 +338,7 @@ function validateNumericRange(
   return {
     isCorrect: false,
     creditPercent: 0,
-    feedback: `The correct answer was ${correctAnswer.correctValue}${numericConfig.unit ? ` ${numericConfig.unit}` : ''}`,
+    feedback: `The correct answer was ${expectedValue}${numericConfig.unit ? ` ${numericConfig.unit}` : ''}`,
   };
 }
 
@@ -326,9 +354,19 @@ function validateMatching(
     return { isCorrect: false, creditPercent: 0, feedback: 'Invalid answer format' };
   }
 
-  const userPairs = userAnswer.pairs;
-  const correctPairs = correctAnswer.correctPairs;
-  const totalPairs = matchingConfig.leftColumn.length;
+  const userPairs = userAnswer.pairs && typeof userAnswer.pairs === 'object'
+    ? userAnswer.pairs
+    : {};
+  const correctPairs = correctAnswer.correctPairs && typeof correctAnswer.correctPairs === 'object'
+    ? correctAnswer.correctPairs
+    : {};
+  const totalPairs = Array.isArray(matchingConfig.leftColumn) && matchingConfig.leftColumn.length > 0
+    ? matchingConfig.leftColumn.length
+    : Object.keys(correctPairs).length;
+
+  if (totalPairs === 0) {
+    return { isCorrect: false, creditPercent: 0, feedback: 'No matching pairs configured' };
+  }
 
   let correctCount = 0;
   for (const [leftItem, rightItem] of Object.entries(userPairs)) {
@@ -375,8 +413,14 @@ function validateFillBlank(
   }
 
   const userBlanks = userAnswer.blanks;
-  const correctBlanks = correctAnswer.blanks;
+  const correctBlanks = correctAnswer.blanks && typeof correctAnswer.blanks === 'object'
+    ? correctAnswer.blanks
+    : {};
   const totalBlanks = Object.keys(correctBlanks).length;
+
+  if (totalBlanks === 0) {
+    return { isCorrect: false, creditPercent: 0, feedback: 'No blanks configured' };
+  }
 
   const normalize = (str: string) => {
     let result = str.trim();
@@ -389,9 +433,16 @@ function validateFillBlank(
   let correctCount = 0;
   for (const [blankId, acceptedAnswers] of Object.entries(correctBlanks)) {
     const userValue = userBlanks[blankId];
+    const normalizedAcceptedAnswers = Array.isArray(acceptedAnswers)
+      ? acceptedAnswers
+          .map((answer) => String(answer ?? "").trim())
+          .filter((answer) => answer.length > 0)
+      : typeof acceptedAnswers === "string" || typeof acceptedAnswers === "number"
+        ? [String(acceptedAnswers).trim()].filter((answer) => answer.length > 0)
+        : [];
     if (userValue) {
       const normalizedUser = normalize(userValue);
-      const isMatch = acceptedAnswers.some(accepted => normalize(accepted) === normalizedUser);
+      const isMatch = normalizedAcceptedAnswers.some(accepted => normalize(accepted) === normalizedUser);
       if (isMatch) {
         correctCount++;
       }
