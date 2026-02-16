@@ -27,7 +27,7 @@ export function TrueFalseRenderer({
       <div className="p-6 bg-muted/50 rounded-xl border">
         <p className="text-lg font-medium leading-relaxed">{content.statement}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map((option) => {
           const isSelected = selected === option.value;
           const isCorrectOpt = isChecked && answerData?.correctValue === option.value;

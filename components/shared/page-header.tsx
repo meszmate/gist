@@ -32,7 +32,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-3", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumb>
           <BreadcrumbList>
@@ -53,9 +53,9 @@ export function PageHeader({
           </BreadcrumbList>
         </Breadcrumb>
       )}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+          <h1 className="text-2xl font-bold tracking-tight animate-fade-in sm:text-3xl">
             {title}
           </h1>
           {description && (
@@ -65,7 +65,7 @@ export function PageHeader({
           )}
         </div>
         {actions && (
-          <div className="flex items-center gap-2 animate-fade-in">
+          <div className="flex w-full flex-wrap items-center gap-2 animate-fade-in sm:w-auto sm:justify-end">
             {actions}
           </div>
         )}

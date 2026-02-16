@@ -97,7 +97,7 @@ export function MatchingRenderer({
   return (
     <div className="space-y-4">
       {matchingConfig.leftColumnLabel && matchingConfig.rightColumnLabel && (
-        <div className="grid grid-cols-2 gap-4 text-sm font-medium text-muted-foreground">
+        <div className="grid grid-cols-1 gap-2 text-sm font-medium text-muted-foreground sm:grid-cols-2 sm:gap-4">
           <div>{matchingConfig.leftColumnLabel}</div>
           <div>{matchingConfig.rightColumnLabel}</div>
         </div>
@@ -113,7 +113,7 @@ export function MatchingRenderer({
             <div
               key={index}
               className={cn(
-                "grid grid-cols-2 gap-4 items-center p-3 rounded-lg border",
+                "grid grid-cols-1 gap-3 items-center rounded-lg border p-3 sm:grid-cols-2 sm:gap-4",
                 showResult && isCorrect && "border-green-500 bg-green-500/10",
                 showResult && isWrong && "border-red-500 bg-red-500/10",
                 !showResult && "border-muted"
@@ -191,7 +191,7 @@ export function MatchingResultRenderer({
   return (
     <div className="space-y-4">
       {matchingConfig.leftColumnLabel && matchingConfig.rightColumnLabel && (
-        <div className="grid grid-cols-3 gap-4 text-sm font-medium text-muted-foreground">
+        <div className="grid grid-cols-1 gap-2 text-sm font-medium text-muted-foreground sm:grid-cols-3 sm:gap-4">
           <div>{matchingConfig.leftColumnLabel}</div>
           <div>{t("quizRenderer.yourMatch")}</div>
           <div>{t("quizRenderer.correctMatch")}</div>
@@ -208,7 +208,7 @@ export function MatchingResultRenderer({
             <div
               key={index}
               className={cn(
-                "grid grid-cols-3 gap-4 items-center p-3 rounded-lg border",
+                "grid grid-cols-1 gap-3 items-center rounded-lg border p-3 sm:grid-cols-3 sm:gap-4",
                 isCorrect ? "border-green-500/50 bg-green-500/5" : "border-red-500/50 bg-red-500/5"
               )}
             >

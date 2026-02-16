@@ -235,7 +235,7 @@ export default function QuestionsEditorPage() {
           { label: t("questionsEditor.editQuestions") },
         ]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
             <Button variant="outline" asChild>
               <Link href={`/quiz/${quizId}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />

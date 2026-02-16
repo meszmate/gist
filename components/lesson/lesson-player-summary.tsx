@@ -49,13 +49,13 @@ export function LessonPlayerSummary({
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">{t("lessons.lessonComplete")}</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{t("lessons.lessonComplete")}</h1>
         <div className={cn("text-lg font-semibold", masteryConfig[mastery].color)}>
           {masteryConfig[mastery].label}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+      <div className="grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold">{score}%</div>
@@ -118,12 +118,12 @@ export function LessonPlayerSummary({
         </CardContent>
       </Card>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="gap-2">
+      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+        <Button variant="outline" onClick={onBack} className="w-full gap-2 sm:w-auto">
           <ArrowLeft className="h-4 w-4" />
           {t("common.back")}
         </Button>
-        <Button onClick={onRetake} className="gap-2">
+        <Button onClick={onRetake} className="w-full gap-2 sm:w-auto">
           <RotateCcw className="h-4 w-4" />
           {t("lessons.retakeLesson")}
         </Button>

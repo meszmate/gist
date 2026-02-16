@@ -399,7 +399,7 @@ export default function GeneratePage() {
                           {...field}
                         />
                       </FormControl>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <FormDescription>
                           {t("generate.characters", { count: contentLength })}
                           {contentLength < 50 && (
@@ -478,8 +478,8 @@ export default function GeneratePage() {
                                 control={form.control}
                                 name={option.countName}
                                 render={({ field: countField }) => (
-                                  <FormItem className="space-y-3 pl-12">
-                                    <div className="flex items-center justify-between">
+                                  <FormItem className="space-y-3 pl-0 sm:pl-12">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                       <FormLabel className="text-sm">
                                         {option.countLabel}
                                       </FormLabel>
@@ -512,14 +512,14 @@ export default function GeneratePage() {
               </CardContent>
             </Card>
 
-            <div className="flex justify-between gap-4 pt-2">
-              <Button type="button" variant="outline" asChild>
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+              <Button type="button" variant="outline" asChild className="w-full sm:w-auto">
                 <Link href={`/library/${resourceId}`}>{t("generate.skipForNow")}</Link>
               </Button>
               <Button
                 type="submit"
                 disabled={generate.isPending || contentLength < 50}
-                className="min-w-[160px]"
+                className="w-full sm:min-w-[160px] sm:w-auto"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 {t("generate.generateContent")}

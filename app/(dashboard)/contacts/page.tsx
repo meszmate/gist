@@ -253,7 +253,7 @@ export default function ContactsPage() {
           { label: t("contacts.title") },
         ]}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -491,7 +491,7 @@ export default function ContactsPage() {
 
       {/* Search */}
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("contacts.searchPlaceholder")}

@@ -439,18 +439,19 @@ export default function CreateResourcePage() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-4 pt-4 border-t">
+              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/library")}
+                  className="w-full sm:w-auto"
                 >
                   {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   disabled={createResource.isPending || !titleValue}
-                  className="min-w-[140px]"
+                  className="w-full sm:min-w-[140px] sm:w-auto"
                 >
                   {createResource.isPending ? (
                     <>

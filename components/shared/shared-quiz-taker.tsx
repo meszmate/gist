@@ -189,7 +189,7 @@ export function SharedQuizTaker({
             <Trophy className="h-10 w-10 text-primary" />
           </div>
           <h3 className="text-2xl font-bold">{t("quiz.quizComplete")}</h3>
-          <div className="flex justify-center gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
             <div className="text-center">
               <p className="text-4xl font-bold">
                 {result.percentage.toFixed(0)}%
@@ -259,14 +259,14 @@ export function SharedQuizTaker({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">
             {t("quiz.questionOf", { current: currentIndex + 1, total: questions.length })}
           </p>
-          <Progress value={progress} className="h-2 w-48" />
+          <Progress value={progress} className="h-2 w-full sm:w-48" />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {timeLeft !== null && (
             <Badge
               variant={timeLeft < 60 ? "destructive" : "outline"}
@@ -321,11 +321,12 @@ export function SharedQuizTaker({
       />
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant="outline"
           onClick={() => setCurrentIndex((i) => i - 1)}
           disabled={currentIndex === 0}
+          className="w-full sm:w-auto"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
           {t("quiz.previous")}
@@ -335,6 +336,7 @@ export function SharedQuizTaker({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
+            className="w-full sm:w-auto"
           >
             {isSubmitting ? t("common.submitting") : t("quiz.submitQuiz")}
           </Button>
@@ -342,6 +344,7 @@ export function SharedQuizTaker({
           <Button
             variant="outline"
             onClick={() => setCurrentIndex((i) => i + 1)}
+            className="w-full sm:w-auto"
           >
             {t("quiz.next")}
             <ChevronRight className="ml-1 h-4 w-4" />

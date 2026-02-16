@@ -443,12 +443,12 @@ export function QuestionBuilder({ onSave, onCancel, initialData }: QuestionBuild
             <p className="text-sm text-muted-foreground">
               {t("questionBuilder.matchingDesc")}
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
               <div className="font-medium text-sm">{t("questionBuilder.leftColumn")}</div>
               <div className="font-medium text-sm">{t("questionBuilder.rightColumn")}</div>
             </div>
             {matchingLeft.map((left, index) => (
-              <div key={index} className="grid grid-cols-2 gap-4">
+              <div key={index} className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
                 <Input
                   value={left}
                   onChange={(e) => {

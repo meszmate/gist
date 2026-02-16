@@ -267,8 +267,8 @@ export function LessonPlayer({
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
       <div className="border-b p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium text-sm truncate">{lesson.title}</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="min-w-0 truncate text-sm font-medium">{lesson.title}</h2>
           <Button variant="ghost" size="icon" onClick={onExit}>
             <X className="h-5 w-5" />
           </Button>
@@ -333,8 +333,8 @@ export function LessonPlayer({
       </div>
 
       {/* Bottom actions — always visible */}
-      <div className="sticky bottom-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-4">
-        <div className="container max-w-2xl mx-auto flex items-center justify-between">
+      <div className="sticky bottom-0 z-20 border-t bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="container mx-auto flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-medium">
               {t("lessons.stepOf", { current: stepIndex + 1, total: steps.length })}
@@ -349,16 +349,16 @@ export function LessonPlayer({
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             {isChecked ? (
               <>
                 {!isCorrect && attemptCount <= 1 && (
-                  <Button variant="outline" onClick={handleTryAgain} className="gap-2">
+                  <Button variant="outline" onClick={handleTryAgain} className="w-full gap-2 sm:w-auto">
                     <RotateCcw className="h-4 w-4" />
                     {t("lessons.tryAgain")}
                   </Button>
                 )}
-                <Button onClick={handleContinue} className="gap-2">
+                <Button onClick={handleContinue} className="w-full gap-2 sm:w-auto">
                   {t("common.continue")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -367,12 +367,12 @@ export function LessonPlayer({
               <Button
                 onClick={handleCheck}
                 disabled={!userAnswer}
-                className="gap-2"
+                className="w-full gap-2 sm:w-auto"
               >
                 {t("lessons.check")}
               </Button>
             ) : (
-              <Button onClick={handleContinue} className="gap-2">
+              <Button onClick={handleContinue} className="w-full gap-2 sm:w-auto">
                 {t("common.continue")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
