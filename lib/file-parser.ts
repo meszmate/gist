@@ -8,8 +8,14 @@ export const ACCEPTED_EXTENSIONS = [
   ".pdf",
   ".docx",
   ".docm",
+  ".dotx",
+  ".dotm",
   ".pptx",
   ".pptm",
+  ".ppsx",
+  ".ppsm",
+  ".potx",
+  ".potm",
   ".xlsx",
   ".xlsm",
   ".odt",
@@ -40,8 +46,14 @@ const MIME_TO_EXTENSION: Record<string, AcceptedExtension> = {
   "application/x-pdf": ".pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
   "application/vnd.ms-word.document.macroenabled.12": ".docm",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.template": ".dotx",
+  "application/vnd.ms-word.template.macroenabled.12": ".dotm",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
   "application/vnd.ms-powerpoint.presentation.macroenabled.12": ".pptm",
+  "application/vnd.openxmlformats-officedocument.presentationml.slideshow": ".ppsx",
+  "application/vnd.ms-powerpoint.slideshow.macroenabled.12": ".ppsm",
+  "application/vnd.openxmlformats-officedocument.presentationml.template": ".potx",
+  "application/vnd.ms-powerpoint.template.macroenabled.12": ".potm",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
   "application/vnd.ms-excel.sheet.macroenabled.12": ".xlsm",
   "application/vnd.oasis.opendocument.text": ".odt",
@@ -223,6 +235,16 @@ function decodeEntities(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
+function decodeOpenXmlEscapes(value: string): string {
+  return value.replace(/_x([0-9a-fA-F]{4})_/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16))
+  );
+}
+
+function decodeOpenXmlText(value: string): string {
+  return decodeOpenXmlEscapes(decodeEntities(value));
+}
+
 function normalizeExtractedText(text: string): string {
   return text
     .replace(/\r\n/g, "\n")
@@ -248,24 +270,102 @@ async function parsePdf(buffer: Buffer): Promise<ParseResult> {
 
 async function parseDocx(
   buffer: Buffer,
-  detectedType: ".docx" | ".docm" = ".docx"
+  detectedType: ".docx" | ".docm" | ".dotx" | ".dotm" = ".docx"
 ): Promise<ParseResult> {
-  const result = await mammoth.extractRawText({ buffer });
+  try {
+    const result = await mammoth.extractRawText({ buffer });
+    const text = normalizeExtractedText(result.value);
+    if (text) {
+      return {
+        text,
+        detectedType,
+      };
+    }
+  } catch {
+    // Fall back to direct OpenXML extraction below.
+  }
+
+  const zip = await JSZip.loadAsync(buffer);
+  const docxPartPaths: string[] = [];
+  zip.forEach((path) => {
+    if (
+      /^word\/document\.xml$/i.test(path) ||
+      /^word\/header\d+\.xml$/i.test(path) ||
+      /^word\/footer\d+\.xml$/i.test(path) ||
+      /^word\/(?:footnotes|endnotes|comments|commentsextended|commentsids)\.xml$/i.test(path)
+    ) {
+      docxPartPaths.push(path);
+    }
+  });
+
+  docxPartPaths.sort((a, b) => {
+    const rank = (path: string) => {
+      if (/^word\/document\.xml$/i.test(path)) return 0;
+      if (/^word\/header\d+\.xml$/i.test(path)) return 1;
+      if (/^word\/footer\d+\.xml$/i.test(path)) return 2;
+      if (/^word\/footnotes\.xml$/i.test(path)) return 3;
+      if (/^word\/endnotes\.xml$/i.test(path)) return 4;
+      if (/^word\/comments/i.test(path)) return 5;
+      return 99;
+    };
+
+    const rankDiff = rank(a) - rank(b);
+    if (rankDiff !== 0) return rankDiff;
+
+    const numA = parseInt(a.match(/(\d+)/)?.[1] || "0", 10);
+    const numB = parseInt(b.match(/(\d+)/)?.[1] || "0", 10);
+    if (numA !== numB) return numA - numB;
+
+    return a.localeCompare(b);
+  });
+
+  const texts: string[] = [];
+  for (const path of docxPartPaths) {
+    const xml = await zip.file(path)?.async("text");
+    if (!xml) continue;
+
+    const xmlWithBreaks = xml
+      .replace(/<w:tab(?:\s[^>]*)?\/>/gi, "\t")
+      .replace(/<w:(?:br|cr)(?:\s[^>]*)?\/>/gi, "\n")
+      .replace(/<\/w:p>/gi, "\n")
+      .replace(/<\/w:tr>/gi, "\n");
+
+    const segments = [...xmlWithBreaks.matchAll(/<w:(?:t|delText|instrText)\b[^>]*>([\s\S]*?)<\/w:(?:t|delText|instrText)>/gi)]
+      .map((match) => decodeOpenXmlText(match[1] || "").trim())
+      .filter(Boolean);
+
+    const text = segments.length
+      ? normalizeExtractedText(segments.join(" "))
+      : normalizeExtractedText(
+          decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
+        );
+
+    if (text) {
+      texts.push(text);
+    }
+  }
+
   return {
-    text: normalizeExtractedText(result.value),
+    text: normalizeExtractedText(texts.join("\n\n")),
     detectedType,
   };
 }
 
 async function parsePptx(
   buffer: Buffer,
-  detectedType: ".pptx" | ".pptm" = ".pptx"
+  detectedType:
+    | ".pptx"
+    | ".pptm"
+    | ".ppsx"
+    | ".ppsm"
+    | ".potx"
+    | ".potm" = ".pptx"
 ): Promise<ParseResult> {
   const zip = await JSZip.loadAsync(buffer);
   const slideFiles: string[] = [];
 
   zip.forEach((path) => {
-    if (/^ppt\/slides\/slide\d+\.xml$/.test(path)) {
+    if (/^ppt\/slides\/slide\d+\.xml$/i.test(path)) {
       slideFiles.push(path);
     }
   });
@@ -282,16 +382,55 @@ async function parsePptx(
     const xml = await zip.file(slidePath)?.async("text");
     if (!xml) continue;
 
-    const matches = xml.match(/<a:t>([\s\S]*?)<\/a:t>/g);
-    if (!matches?.length) continue;
+    const xmlWithBreaks = xml
+      .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
+      .replace(/<\/a:p>/gi, "\n")
+      .replace(/<\/a:tr>/gi, "\n");
 
-    const slideText = matches
-      .map((match) => match.replace(/<\/?a:t>/g, ""))
-      .map((segment) => decodeEntities(segment))
-      .join(" ");
+    const segments = [...xmlWithBreaks.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>/gi)]
+      .map((match) => decodeOpenXmlText(match[1] || "").trim())
+      .filter(Boolean);
+
+    const slideText = segments.length
+      ? normalizeExtractedText(segments.join(" "))
+      : normalizeExtractedText(
+          decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
+        );
 
     if (slideText.trim()) {
       texts.push(slideText);
+    }
+  }
+
+  if (!texts.length) {
+    const notesFiles: string[] = [];
+    zip.forEach((path) => {
+      if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/i.test(path)) {
+        notesFiles.push(path);
+      }
+    });
+
+    notesFiles.sort((a, b) => {
+      const numA = parseInt(a.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+      const numB = parseInt(b.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+      return numA - numB;
+    });
+
+    for (const notesPath of notesFiles) {
+      const xml = await zip.file(notesPath)?.async("text");
+      if (!xml) continue;
+
+      const noteText = normalizeExtractedText(
+        decodeOpenXmlText(
+          xml
+            .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
+            .replace(/<\/a:p>/gi, "\n")
+            .replace(/<[^>]+>/g, " ")
+        )
+      );
+      if (noteText) {
+        texts.push(noteText);
+      }
     }
   }
 
@@ -654,10 +793,22 @@ async function parseByType(
       return parseDocx(buffer, ".docx");
     case ".docm":
       return parseDocx(buffer, ".docm");
+    case ".dotx":
+      return parseDocx(buffer, ".dotx");
+    case ".dotm":
+      return parseDocx(buffer, ".dotm");
     case ".pptx":
       return parsePptx(buffer, ".pptx");
     case ".pptm":
       return parsePptx(buffer, ".pptm");
+    case ".ppsx":
+      return parsePptx(buffer, ".ppsx");
+    case ".ppsm":
+      return parsePptx(buffer, ".ppsm");
+    case ".potx":
+      return parsePptx(buffer, ".potx");
+    case ".potm":
+      return parsePptx(buffer, ".potm");
     case ".xlsx":
       return parseXlsx(buffer, ".xlsx");
     case ".xlsm":
