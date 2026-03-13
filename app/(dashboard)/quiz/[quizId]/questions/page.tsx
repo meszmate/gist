@@ -210,7 +210,7 @@ export default function QuestionsEditorPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -224,7 +224,7 @@ export default function QuestionsEditorPage() {
   const questions = data?.questions || [];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title={t("questionsEditor.editQuestions")}
         description={t("questionsEditor.editQuestionsDescription")}

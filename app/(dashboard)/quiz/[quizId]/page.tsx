@@ -298,7 +298,7 @@ export default function QuizPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-8 w-32 bg-muted rounded animate-pulse" />
         <div className="h-96 bg-muted rounded animate-pulse" />
       </div>
@@ -328,7 +328,7 @@ export default function QuizPage() {
         : "text-red-600";
 
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         <PageHeader
           title="Quiz Results"
           description={quiz.title}
@@ -542,7 +542,7 @@ export default function QuizPage() {
 
   if (!quizStarted) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="space-y-6">
         <PageHeader
           title={quiz.title}
           description={quiz.description || undefined}
@@ -641,7 +641,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">

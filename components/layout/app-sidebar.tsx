@@ -63,7 +63,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="h-14 flex justify-center">
         <Link href="/dashboard" className="flex items-center gap-2.5 px-2 group">
-          <GistLogo className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
+          <GistLogo className="h-6 w-6 text-foreground" />
           <span className="font-semibold text-base tracking-tight">
             gist
           </span>

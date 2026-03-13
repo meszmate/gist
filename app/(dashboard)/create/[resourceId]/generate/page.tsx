@@ -251,7 +251,7 @@ export default function GeneratePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         <div className="h-96 bg-muted rounded animate-pulse" />
       </div>
@@ -273,7 +273,7 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="space-y-8">
       <PageHeader
         title={t("generate.title")}
         description={resource.title}
