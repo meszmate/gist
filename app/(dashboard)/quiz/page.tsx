@@ -96,40 +96,19 @@ export default function QuizzesPage() {
 
       {/* Stats Overview */}
       {quizzes.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="rounded-lg bg-primary/10 p-3">
-                <FileQuestion className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalQuizzes}</p>
-                <p className="text-sm text-muted-foreground">{t("quiz.availableQuizzes")}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-green-500/5 to-transparent">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="rounded-lg bg-green-500/10 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{completedQuizzes}</p>
-                <p className="text-sm text-muted-foreground">{t("quiz.completed")}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-500/5 to-transparent">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="rounded-lg bg-blue-500/10 p-3">
-                <Trophy className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalAttempts}</p>
-                <p className="text-sm text-muted-foreground">{t("quiz.totalAttempts")}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <FileQuestion className="h-4 w-4" />
+            <strong className="text-foreground">{totalQuizzes}</strong> {t("quiz.availableQuizzes")}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="h-4 w-4" />
+            <strong className="text-foreground">{completedQuizzes}</strong> {t("quiz.completed")}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Trophy className="h-4 w-4" />
+            <strong className="text-foreground">{totalAttempts}</strong> {t("quiz.totalAttempts")}
+          </span>
         </div>
       )}
 
@@ -185,10 +164,9 @@ export default function QuizzesPage() {
             <Card
               key={quiz.id}
               className={cn(
-                "cursor-pointer transition-all duration-200 card-hover animate-scale-in group",
-                selectedIndex === index && "border-primary ring-2 ring-primary ring-offset-2"
+                "cursor-pointer transition-colors duration-150 hover:bg-muted/50 group",
+                selectedIndex === index && "bg-muted/50"
               )}
-              style={{ animationDelay: `${index * 30}ms` }}
               onClick={() => router.push(`/quiz/${quiz.id}`)}
               onMouseEnter={() => setSelectedIndex(index)}
             >

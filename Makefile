@@ -1,4 +1,4 @@
-.PHONY: dev build start lint typecheck check db-generate db-migrate db-push db-studio db-seed docker-seed install clean
+.PHONY: dev build start lint typecheck check db-generate db-migrate db-push db-studio db-seed docker-db docker-app docker-seed install clean
 
 # Development
 dev:
@@ -36,6 +36,12 @@ db-seed:
 	pnpm db:seed
 
 # Docker
+docker-db:
+	docker compose up -d db
+
+docker-app:
+	docker compose --profile app up -d
+
 docker-seed:
 	docker compose --profile seed run --rm seed
 

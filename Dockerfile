@@ -3,13 +3,16 @@
 # Multi-stage build for optimized production image
 # ============================================
 
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+ARG NODE_VERSION=22-alpine
+ARG PNPM_VERSION=9.15.9
+
+# Shared base image for all pnpm-driven stages.
+FROM node:${NODE_VERSION} AS base
+RUN corepack enable
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Stage 1: Dependencies
+FROM base AS deps
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -18,11 +21,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM base AS builder
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -36,10 +35,7 @@ ENV NODE_ENV=production
 RUN pnpm build
 
 # Stage 3: Migrator (used by docker-compose migrate service)
-FROM node:20-alpine AS migrator
-WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM base AS migrator
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml drizzle.config.ts tsconfig.json ./
@@ -48,10 +44,7 @@ COPY lib ./lib
 CMD ["pnpm", "db:push", "--force"]
 
 # Stage 4: Seeder (used by docker-compose seed service)
-FROM node:20-alpine AS seeder
-WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM base AS seeder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml tsconfig.json ./
@@ -61,7 +54,7 @@ COPY scripts ./scripts
 CMD ["pnpm", "db:seed"]
 
 # Stage 5: Runner
-FROM node:20-alpine AS runner
+FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

@@ -19,7 +19,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -58,49 +57,46 @@ export function AppSidebar() {
     },
   ];
 
+  const allItems = navGroups.flatMap((group) => group.items);
+
   return (
     <Sidebar>
-      <SidebarHeader className="border-b h-14 flex justify-center">
-        <Link href="/dashboard" className="flex items-center gap-2 px-2">
-          <div className="rounded-md bg-primary p-1">
-            <GistLogo className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-semibold text-sm">
+      <SidebarHeader className="h-14 flex justify-center">
+        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 group">
+          <GistLogo className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
+          <span className="font-semibold text-base tracking-tight">
             gist
           </span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/dashboard" &&
-                      pathname.startsWith(item.href));
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {allItems.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" &&
+                    pathname.startsWith(item.href));
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t">
+      <SidebarFooter>
         <SidebarUser />
       </SidebarFooter>
     </Sidebar>

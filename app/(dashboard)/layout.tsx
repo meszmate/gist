@@ -3,7 +3,6 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { VimNavigationProvider } from "@/components/keyboard/vim-navigation-provider";
 import { ShortcutHelpDialog } from "@/components/keyboard/shortcut-help-dialog";
 import { CommandMenu, CommandMenuTrigger } from "@/components/shared/command-menu";
-import { Separator } from "@/components/ui/separator";
 import { ShortcutHint } from "@/components/layout/shortcut-hint";
 
 export default function DashboardLayout({
@@ -16,15 +15,16 @@ export default function DashboardLayout({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
+          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 px-4 sm:px-6">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 hidden h-4 sm:block" />
             <div className="flex-1">
               <CommandMenuTrigger />
             </div>
             <ShortcutHint />
           </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 px-4 pb-6 sm:px-6">
+            <div className="mx-auto w-full max-w-6xl">{children}</div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
       <CommandMenu />

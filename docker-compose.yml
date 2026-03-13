@@ -9,6 +9,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    profiles:
+      - app
 
   app:
     build:
@@ -32,6 +34,8 @@ services:
       migrate:
         condition: service_completed_successfully
     restart: unless-stopped
+    profiles:
+      - app
 
   seed:
     build:

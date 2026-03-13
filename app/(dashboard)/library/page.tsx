@@ -388,11 +388,10 @@ export default function LibraryPage() {
               <HoverCardTrigger asChild>
                 <Card
                   className={cn(
-                    "cursor-pointer transition-all duration-200 card-hover animate-scale-in",
-                    selectedIndex === index && "border-primary ring-2 ring-primary ring-offset-2",
-                    resource.completedAt && "border-green-500/30 opacity-80"
+                    "cursor-pointer transition-colors duration-150 hover:bg-muted/50",
+                    selectedIndex === index && "bg-muted/50",
+                    resource.completedAt && "opacity-75"
                   )}
-                  style={{ animationDelay: `${index * 30}ms` }}
                   onClick={() => router.push(`/library/${resource.id}`)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
@@ -562,11 +561,10 @@ export default function LibraryPage() {
             <Card
               key={resource.id}
               className={cn(
-                "cursor-pointer transition-all duration-200 hover:bg-muted/50 animate-slide-up",
-                selectedIndex === index && "border-primary ring-1 ring-primary",
-                resource.completedAt && "border-green-500/30 opacity-80"
+                "cursor-pointer transition-colors duration-150 hover:bg-muted/50",
+                selectedIndex === index && "bg-muted/50",
+                resource.completedAt && "opacity-75"
               )}
-              style={{ animationDelay: `${index * 30}ms` }}
               onClick={() => router.push(`/library/${resource.id}`)}
               onMouseEnter={() => setSelectedIndex(index)}
             >

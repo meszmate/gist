@@ -145,9 +145,7 @@ export default function LoginPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="rounded-md bg-primary p-1">
-              <GistLogo className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <GistLogo className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold tracking-tight">gist</span>
           </div>
           <div className="flex items-center gap-0.5">
