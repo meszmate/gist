@@ -2,46 +2,10 @@ import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import JSZip from "jszip";
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export { MAX_FILE_SIZE, ACCEPTED_EXTENSIONS } from "./file-constants";
+export type { AcceptedExtension } from "./file-constants";
 
-export const ACCEPTED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".dot",
-  ".docx",
-  ".docm",
-  ".dotx",
-  ".dotm",
-  ".pptx",
-  ".pptm",
-  ".ppsx",
-  ".ppsm",
-  ".potx",
-  ".potm",
-  ".xlsx",
-  ".xlsm",
-  ".odt",
-  ".ods",
-  ".odp",
-  ".txt",
-  ".text",
-  ".md",
-  ".markdown",
-  ".csv",
-  ".tsv",
-  ".json",
-  ".jsonl",
-  ".xml",
-  ".html",
-  ".htm",
-  ".rtf",
-  ".yaml",
-  ".yml",
-  ".log",
-  ".sql",
-] as const;
-
-export type AcceptedExtension = (typeof ACCEPTED_EXTENSIONS)[number];
+import { ACCEPTED_EXTENSIONS, type AcceptedExtension } from "./file-constants";
 
 const MIME_TO_EXTENSION: Record<string, AcceptedExtension> = {
   "application/pdf": ".pdf",
