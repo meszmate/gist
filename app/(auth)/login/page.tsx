@@ -6,13 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -42,7 +35,7 @@ function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="h-9 w-9 rounded-full cursor-pointer"
+      className="h-9 w-9 rounded-full cursor-pointer text-muted-foreground"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
     >
@@ -106,7 +99,7 @@ function LoginForm() {
   return (
     <Button
       variant="outline"
-      className="w-full h-12 text-[15px] font-medium cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+      className="h-11 px-6 text-sm font-medium cursor-pointer"
       onClick={() => signIn("google", { callbackUrl })}
     >
       <GoogleIcon />
@@ -119,7 +112,7 @@ function LoginButtonFallback() {
   const { t } = useLocale();
 
   return (
-    <Button variant="outline" className="w-full h-12" disabled>
+    <Button variant="outline" className="h-11 px-6" disabled>
       <Loader2 className="h-5 w-5 animate-spin" />
       {t("common.loading")}
     </Button>
@@ -130,52 +123,29 @@ export default function LoginPage() {
   const { t } = useLocale();
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Atmospheric radial gradient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 38%, oklch(from var(--primary) l c h / 0.06), transparent)",
-        }}
-      />
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+      <div className="flex flex-col items-center text-center">
+        {/* Logo */}
+        <GistLogo className="h-10 w-10 text-foreground mb-6" />
 
-      {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <GistLogo className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold tracking-tight">gist</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
-        </header>
+        {/* Title */}
+        <h1 className="text-xl font-semibold tracking-tight mb-1">
+          {t("login.welcomeBack")}
+        </h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          {t("login.signInContinue")}
+        </p>
 
-        {/* Centered auth */}
-        <main className="flex-1 flex items-center justify-center px-4 pb-20">
-          <div className="w-full max-w-[420px] animate-scale-in">
+        {/* Sign in */}
+        <Suspense fallback={<LoginButtonFallback />}>
+          <LoginForm />
+        </Suspense>
+      </div>
 
-            {/* Auth card */}
-            <Card className="shadow-lg border-border/60">
-              <CardHeader className="text-center space-y-1.5 pb-2">
-                <CardTitle className="text-2xl font-bold tracking-tight">
-                  {t("login.welcomeBack")}
-                </CardTitle>
-                <CardDescription className="text-[15px]">
-                  {t("login.signInContinue")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4 pb-6 space-y-5">
-                <Suspense fallback={<LoginButtonFallback />}>
-                  <LoginForm />
-                </Suspense>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+      {/* Bottom controls */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-0.5">
+        <LanguageSwitcher />
+        <ThemeToggle />
       </div>
     </div>
   );
