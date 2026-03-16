@@ -18,7 +18,7 @@ export function LessonCard({ lesson, resourceId, onDelete }: LessonCardProps) {
   const { t } = useLocale();
 
   return (
-    <Card className="group hover:border-primary/30 transition-colors">
+    <Card className="group hover:bg-muted/50 transition-colors">
       <CardContent className="px-4 py-3">
         <div className="grid grid-cols-[auto,minmax(0,1fr)] gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

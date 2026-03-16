@@ -175,7 +175,7 @@ export default function CreateResourcePage() {
   const titleValue = form.watch("title");
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="space-y-8">
       <PageHeader
         title={t("create.title")}
         description={t("create.description")}

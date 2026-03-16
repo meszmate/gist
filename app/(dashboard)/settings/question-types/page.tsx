@@ -183,7 +183,7 @@ export default function QuestionTypesPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
@@ -199,7 +199,7 @@ export default function QuestionTypesPage() {
   const customTypes = questionTypes.filter((t) => !t.isSystem);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title={t("questionTypes.title")}
         description={t("questionTypes.description")}

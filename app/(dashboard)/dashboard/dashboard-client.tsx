@@ -3,7 +3,6 @@
 import { BookOpen, Brain, FileQuestion, Plus, Flame, Target, Clock, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/shared/stat-card";
@@ -258,16 +257,14 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Quick Actions */}
-        <Card className="lg:col-span-1 animate-slide-up">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              {t("dashboard.quickActions")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <div className="lg:col-span-1 animate-slide-up space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            {t("dashboard.quickActions")}
+          </h2>
+          <div className="space-y-2">
             {hasCardsDue ? (
               <Button
                 asChild
@@ -335,44 +332,36 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
                 </kbd>
               </Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Weekly Progress */}
-        <Card className="lg:col-span-2 animate-slide-up" style={{ animationDelay: "50ms" }}>
-          <CardHeader>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>{t("dashboard.weeklyProgress")}</CardTitle>
-              <Badge variant="secondary" className="font-normal">
-                {t("dashboard.reviewsThisWeek", { count: totalWeeklyReviews })}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <WeeklyChart data={stats.weeklyActivity} />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2 animate-slide-up space-y-4" style={{ animationDelay: "50ms" }}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">{t("dashboard.weeklyProgress")}</h2>
+            <span className="text-xs text-muted-foreground">
+              {t("dashboard.reviewsThisWeek", { count: totalWeeklyReviews })}
+            </span>
+          </div>
+          <WeeklyChart data={stats.weeklyActivity} />
+        </div>
       </div>
 
       {/* Recent Activity */}
-      <Card className="animate-slide-up" style={{ animationDelay: "100ms" }}>
-        <CardHeader>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>{t("dashboard.recentQuizAttempts")}</CardTitle>
-            {stats.recentAttempts.length > 0 && (
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/quiz">
-                  {t("common.viewAll")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ActivityTimeline attempts={stats.recentAttempts} />
-        </CardContent>
-      </Card>
+      <div className="animate-slide-up space-y-4" style={{ animationDelay: "100ms" }}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">{t("dashboard.recentQuizAttempts")}</h2>
+          {stats.recentAttempts.length > 0 && (
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/quiz">
+                {t("common.viewAll")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
+        <ActivityTimeline attempts={stats.recentAttempts} />
+      </div>
     </div>
   );
 }

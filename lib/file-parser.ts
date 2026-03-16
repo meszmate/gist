@@ -2,48 +2,17 @@ import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import JSZip from "jszip";
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export { MAX_FILE_SIZE, ACCEPTED_EXTENSIONS } from "./file-constants";
+export type { AcceptedExtension } from "./file-constants";
 
-export const ACCEPTED_EXTENSIONS = [
-  ".pdf",
-  ".docx",
-  ".docm",
-  ".dotx",
-  ".dotm",
-  ".pptx",
-  ".pptm",
-  ".ppsx",
-  ".ppsm",
-  ".potx",
-  ".potm",
-  ".xlsx",
-  ".xlsm",
-  ".odt",
-  ".ods",
-  ".odp",
-  ".txt",
-  ".text",
-  ".md",
-  ".markdown",
-  ".csv",
-  ".tsv",
-  ".json",
-  ".jsonl",
-  ".xml",
-  ".html",
-  ".htm",
-  ".rtf",
-  ".yaml",
-  ".yml",
-  ".log",
-  ".sql",
-] as const;
-
-export type AcceptedExtension = (typeof ACCEPTED_EXTENSIONS)[number];
+import { ACCEPTED_EXTENSIONS, type AcceptedExtension } from "./file-constants";
 
 const MIME_TO_EXTENSION: Record<string, AcceptedExtension> = {
   "application/pdf": ".pdf",
   "application/x-pdf": ".pdf",
+  "application/msword": ".doc",
+  "application/vnd.ms-word": ".doc",
+  "application/x-msword": ".doc",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
   "application/vnd.ms-word.document.macroenabled.12": ".docm",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.template": ".dotx",
@@ -268,6 +237,50 @@ async function parsePdf(buffer: Buffer): Promise<ParseResult> {
   }
 }
 
+interface LegacyWordDocument {
+  getBody(): string;
+  getHeaders?(options?: { includeFooters?: boolean }): string;
+  getFooters?(): string;
+  getFootnotes?(): string;
+  getEndnotes?(): string;
+  getAnnotations?(): string;
+  getTextboxes?(options?: {
+    includeHeadersAndFooters?: boolean;
+    includeBody?: boolean;
+  }): string;
+}
+
+async function parseDoc(
+  buffer: Buffer,
+  detectedType: ".doc" | ".dot" = ".doc"
+): Promise<ParseResult> {
+  const WordExtractorModule = await import("word-extractor");
+  const WordExtractor = (WordExtractorModule.default ??
+    WordExtractorModule) as new () => {
+    extract(source: Buffer): Promise<LegacyWordDocument>;
+  };
+
+  const extractor = new WordExtractor();
+  const document = await extractor.extract(buffer);
+  const sections = [
+    document.getHeaders?.({ includeFooters: false }) || "",
+    document.getBody?.() || "",
+    document.getFooters?.() || "",
+    document.getFootnotes?.() || "",
+    document.getEndnotes?.() || "",
+    document.getAnnotations?.() || "",
+    document.getTextboxes?.({
+      includeHeadersAndFooters: true,
+      includeBody: true,
+    }) || "",
+  ].filter(Boolean);
+
+  return {
+    text: normalizeExtractedText(sections.join("\n\n")),
+    detectedType,
+  };
+}
+
 async function parseDocx(
   buffer: Buffer,
   detectedType: ".docx" | ".docm" | ".dotx" | ".dotm" = ".docx"
@@ -351,6 +364,23 @@ async function parseDocx(
   };
 }
 
+function extractPptXmlText(xml: string): string {
+  const xmlWithBreaks = xml
+    .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
+    .replace(/<\/a:p>/gi, "\n")
+    .replace(/<\/a:tr>/gi, "\n");
+
+  const segments = [...xmlWithBreaks.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>/gi)]
+    .map((match) => decodeOpenXmlText(match[1] || "").trim())
+    .filter(Boolean);
+
+  return segments.length
+    ? normalizeExtractedText(segments.join(" "))
+    : normalizeExtractedText(
+        decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
+      );
+}
+
 async function parsePptx(
   buffer: Buffer,
   detectedType:
@@ -382,55 +412,57 @@ async function parsePptx(
     const xml = await zip.file(slidePath)?.async("text");
     if (!xml) continue;
 
-    const xmlWithBreaks = xml
-      .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
-      .replace(/<\/a:p>/gi, "\n")
-      .replace(/<\/a:tr>/gi, "\n");
-
-    const segments = [...xmlWithBreaks.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>/gi)]
-      .map((match) => decodeOpenXmlText(match[1] || "").trim())
-      .filter(Boolean);
-
-    const slideText = segments.length
-      ? normalizeExtractedText(segments.join(" "))
-      : normalizeExtractedText(
-          decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
-        );
+    const slideText = extractPptXmlText(xml);
 
     if (slideText.trim()) {
       texts.push(slideText);
     }
   }
 
-  if (!texts.length) {
-    const notesFiles: string[] = [];
-    zip.forEach((path) => {
-      if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/i.test(path)) {
-        notesFiles.push(path);
-      }
-    });
+  const notesFiles: string[] = [];
+  const commentFiles: string[] = [];
+  zip.forEach((path) => {
+    if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/i.test(path)) {
+      notesFiles.push(path);
+    }
+    if (/^ppt\/comments\/comment\d+\.xml$/i.test(path)) {
+      commentFiles.push(path);
+    }
+  });
 
-    notesFiles.sort((a, b) => {
-      const numA = parseInt(a.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
-      const numB = parseInt(b.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
-      return numA - numB;
-    });
+  notesFiles.sort((a, b) => {
+    const numA = parseInt(a.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+    const numB = parseInt(b.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+    return numA - numB;
+  });
 
-    for (const notesPath of notesFiles) {
-      const xml = await zip.file(notesPath)?.async("text");
-      if (!xml) continue;
+  commentFiles.sort((a, b) => {
+    const numA = parseInt(a.match(/comment(\d+)/i)?.[1] || "0", 10);
+    const numB = parseInt(b.match(/comment(\d+)/i)?.[1] || "0", 10);
+    return numA - numB;
+  });
 
-      const noteText = normalizeExtractedText(
-        decodeOpenXmlText(
-          xml
-            .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
-            .replace(/<\/a:p>/gi, "\n")
-            .replace(/<[^>]+>/g, " ")
-        )
-      );
-      if (noteText) {
-        texts.push(noteText);
-      }
+  const extraTexts: string[] = [];
+
+  for (const notesPath of notesFiles) {
+    const xml = await zip.file(notesPath)?.async("text");
+    if (!xml) continue;
+
+    const noteText = extractPptXmlText(xml);
+    if (noteText) extraTexts.push(noteText);
+  }
+
+  for (const commentPath of commentFiles) {
+    const xml = await zip.file(commentPath)?.async("text");
+    if (!xml) continue;
+
+    const commentText = extractPptXmlText(xml);
+    if (commentText) extraTexts.push(commentText);
+  }
+
+  for (const extraText of extraTexts) {
+    if (!texts.includes(extraText)) {
+      texts.push(extraText);
     }
   }
 
@@ -789,6 +821,10 @@ async function parseByType(
   switch (type) {
     case ".pdf":
       return parsePdf(buffer);
+    case ".doc":
+      return parseDoc(buffer, ".doc");
+    case ".dot":
+      return parseDoc(buffer, ".dot");
     case ".docx":
       return parseDocx(buffer, ".docx");
     case ".docm":

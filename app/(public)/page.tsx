@@ -58,8 +58,8 @@ export default function LandingPage() {
       {/* Header */}
       <header className="border-b">
         <div className="container flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:py-0">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <GistLogo className="h-6 w-6" />
+          <Link href="/" className="flex items-center gap-2.5 font-semibold">
+            <GistLogo className="h-6 w-6 text-primary" />
             gist
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">

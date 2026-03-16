@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -33,48 +32,44 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn("border-dashed", className)}>
-      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-        <div className="rounded-full bg-muted p-4 mb-6 animate-scale-in">
-          <div className="h-12 w-12 text-muted-foreground flex items-center justify-center">
-            {icon}
-          </div>
-        </div>
-        <h3 className="text-lg font-semibold mb-2 animate-fade-in">{title}</h3>
-        <p className="text-muted-foreground max-w-sm mb-6 animate-fade-in">
-          {description}
-        </p>
-        <div className="flex items-center gap-3 animate-slide-up">
-          {action && (
-            action.href ? (
-              <Button asChild>
-                <Link href={action.href}>
-                  {action.icon}
-                  {action.label}
-                </Link>
-              </Button>
-            ) : (
-              <Button onClick={action.onClick}>
+    <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center", className)}>
+      <div className="text-muted-foreground mb-6 animate-scale-in">
+        {icon}
+      </div>
+      <h3 className="text-lg font-semibold mb-2 animate-fade-in">{title}</h3>
+      <p className="text-muted-foreground max-w-sm mb-6 animate-fade-in">
+        {description}
+      </p>
+      <div className="flex items-center gap-3 animate-slide-up">
+        {action && (
+          action.href ? (
+            <Button asChild>
+              <Link href={action.href}>
                 {action.icon}
                 {action.label}
-              </Button>
-            )
-          )}
-          {secondaryAction && (
-            secondaryAction.href ? (
-              <Button variant="outline" asChild>
-                <Link href={secondaryAction.href}>
-                  {secondaryAction.label}
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={secondaryAction.onClick}>
+              </Link>
+            </Button>
+          ) : (
+            <Button onClick={action.onClick}>
+              {action.icon}
+              {action.label}
+            </Button>
+          )
+        )}
+        {secondaryAction && (
+          secondaryAction.href ? (
+            <Button variant="outline" asChild>
+              <Link href={secondaryAction.href}>
                 {secondaryAction.label}
-              </Button>
-            )
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={secondaryAction.onClick}>
+              {secondaryAction.label}
+            </Button>
+          )
+        )}
+      </div>
+    </div>
   );
 }

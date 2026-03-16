@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ACCEPTED_EXTENSIONS } from "@/lib/file-parser";
+import { ACCEPTED_EXTENSIONS } from "@/lib/file-constants";
 import { useLocale } from "@/hooks/use-locale";
 import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
 import { parseOfficeFileInBrowser } from "@/lib/client-office-parser";

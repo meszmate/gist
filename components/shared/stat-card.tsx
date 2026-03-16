@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -131,53 +130,47 @@ export function StatCard({
     : "";
 
   return (
-    <Card
+    <div
       className={cn(
-        "relative overflow-hidden transition-all duration-200",
-        isClickable && "cursor-pointer card-hover",
+        "relative p-5 rounded-lg transition-colors duration-200",
+        isClickable && "cursor-pointer hover:bg-muted/50",
         className
       )}
       onClick={onClick}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight">
-                {numericValue !== null ? (
-                  <AnimatedNumber value={numericValue} delay={delay} />
-                ) : (
-                  value
-                )}
-              </span>
-              {trend && TrendIcon && (
-                <div className={cn("flex items-center gap-1 text-sm", trendColor)}>
-                  <TrendIcon className="h-4 w-4" />
-                  <span>{Math.abs(trend.value)}%</span>
-                </div>
-              )}
-            </div>
-            {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
-            )}
-            {trend?.label && (
-              <p className="text-xs text-muted-foreground">{trend.label}</p>
-            )}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            {icon && <span className="shrink-0">{icon}</span>}
+            <p className="text-sm font-medium">{title}</p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            {icon && (
-              <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                {icon}
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight">
+              {numericValue !== null ? (
+                <AnimatedNumber value={numericValue} delay={delay} />
+              ) : (
+                value
+              )}
+            </span>
+            {trend && TrendIcon && (
+              <div className={cn("flex items-center gap-1 text-sm", trendColor)}>
+                <TrendIcon className="h-4 w-4" />
+                <span>{Math.abs(trend.value)}%</span>
               </div>
             )}
-            {sparklineData && sparklineData.length > 0 && (
-              <MiniSparkline data={sparklineData} />
-            )}
           </div>
+          {description && (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          )}
+          {trend?.label && (
+            <p className="text-xs text-muted-foreground">{trend.label}</p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        {sparklineData && sparklineData.length > 0 && (
+          <MiniSparkline data={sparklineData} />
+        )}
+      </div>
+    </div>
   );
 }

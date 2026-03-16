@@ -2,6 +2,7 @@
   "name": "gist",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -61,6 +62,7 @@
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0",
     "vaul": "^1.1.2",
+    "word-extractor": "^1.0.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -301,7 +301,7 @@ function StudyContent() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-8 w-32 bg-muted rounded animate-pulse" />
         <div className="h-80 bg-muted rounded animate-pulse" />
       </div>
@@ -310,7 +310,7 @@ function StudyContent() {
 
   if (activeCards.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div>
         <EmptyState
           icon={<Sparkles className="h-12 w-12" />}
           title={t("study.noCardsDue")}
@@ -331,7 +331,7 @@ function StudyContent() {
   if (sessionComplete) {
     const stats = getSessionStats();
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
             <div className="text-center animate-celebrate">
@@ -406,7 +406,7 @@ function StudyContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Continuation Banner */}
       {showContinuationBanner && (
         <div className="animate-slide-up rounded-lg border border-orange-500/30 bg-orange-500/10 p-4">
@@ -611,7 +611,7 @@ function StudyContent() {
 
 function StudyFallback() {
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-center h-80">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>

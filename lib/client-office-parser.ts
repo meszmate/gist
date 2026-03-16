@@ -101,6 +101,23 @@ function normalizeExtractedText(text: string): string {
     .trim();
 }
 
+function extractPptXmlText(xml: string): string {
+  const xmlWithBreaks = xml
+    .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
+    .replace(/<\/a:p>/gi, "\n")
+    .replace(/<\/a:tr>/gi, "\n");
+
+  const segments = [...xmlWithBreaks.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>/gi)]
+    .map((match) => decodeOpenXmlText(match[1] || "").trim())
+    .filter(Boolean);
+
+  return segments.length
+    ? normalizeExtractedText(segments.join(" "))
+    : normalizeExtractedText(
+        decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
+      );
+}
+
 function resolveClientOfficeType(
   fileName: string,
   mimeType?: string
@@ -208,56 +225,43 @@ async function parsePptxLike(
     const xml = await zip.file(path)?.async("text");
     if (!xml) continue;
 
-    const xmlWithBreaks = xml
-      .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
-      .replace(/<\/a:p>/gi, "\n")
-      .replace(/<\/a:tr>/gi, "\n");
-
-    const segments = [...xmlWithBreaks.matchAll(/<a:t\b[^>]*>([\s\S]*?)<\/a:t>/gi)]
-      .map((match) => decodeOpenXmlText(match[1] || "").trim())
-      .filter(Boolean);
-
-    const text = segments.length
-      ? normalizeExtractedText(segments.join(" "))
-      : normalizeExtractedText(
-          decodeOpenXmlText(xmlWithBreaks.replace(/<[^>]+>/g, " "))
-        );
+    const text = extractPptXmlText(xml);
 
     if (text) {
       slideTexts.push(text);
     }
   }
 
-  if (!slideTexts.length) {
-    const notesPaths: string[] = [];
-    zip.forEach((path) => {
-      if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/i.test(path)) {
-        notesPaths.push(path);
-      }
-    });
+  const notesPaths: string[] = [];
+  const commentPaths: string[] = [];
+  zip.forEach((path) => {
+    if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/i.test(path)) {
+      notesPaths.push(path);
+    }
+    if (/^ppt\/comments\/comment\d+\.xml$/i.test(path)) {
+      commentPaths.push(path);
+    }
+  });
 
-    notesPaths.sort((a, b) => {
-      const numA = parseInt(a.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
-      const numB = parseInt(b.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
-      return numA - numB;
-    });
+  notesPaths.sort((a, b) => {
+    const numA = parseInt(a.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+    const numB = parseInt(b.match(/notesSlide(\d+)/i)?.[1] || "0", 10);
+    return numA - numB;
+  });
 
-    for (const path of notesPaths) {
-      const xml = await zip.file(path)?.async("text");
-      if (!xml) continue;
+  commentPaths.sort((a, b) => {
+    const numA = parseInt(a.match(/comment(\d+)/i)?.[1] || "0", 10);
+    const numB = parseInt(b.match(/comment(\d+)/i)?.[1] || "0", 10);
+    return numA - numB;
+  });
 
-      const text = normalizeExtractedText(
-        decodeOpenXmlText(
-          xml
-            .replace(/<a:br(?:\s[^>]*)?\/>/gi, "\n")
-            .replace(/<\/a:p>/gi, "\n")
-            .replace(/<[^>]+>/g, " ")
-        )
-      );
+  for (const path of [...notesPaths, ...commentPaths]) {
+    const xml = await zip.file(path)?.async("text");
+    if (!xml) continue;
 
-      if (text) {
-        slideTexts.push(text);
-      }
+    const text = extractPptXmlText(xml);
+    if (text && !slideTexts.includes(text)) {
+      slideTexts.push(text);
     }
   }
 
