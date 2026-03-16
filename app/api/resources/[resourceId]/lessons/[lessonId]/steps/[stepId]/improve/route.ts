@@ -59,7 +59,7 @@ export async function POST(
 
   await logTokenUsage(session.user.id, usage, "improve_lesson_step", MODEL);
   const normalized = normalizeLessonStepPayload({
-    stepType: step.stepType,
+    stepType: improved.stepType,
     content: improved.content,
     answerData: improved.answerData,
   });
@@ -67,6 +67,7 @@ export async function POST(
   const [updated] = await db
     .update(lessonSteps)
     .set({
+      stepType: normalized.stepType,
       content: normalized.content,
       answerData: normalized.answerData,
       explanation: improved.explanation,
