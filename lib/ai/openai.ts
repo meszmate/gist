@@ -6,6 +6,10 @@ import type {
 } from "@/lib/types/quiz";
 import type { StepContent, StepAnswerData, StepType } from "@/lib/types/lesson";
 import { extractFillBlankIds, replaceGenericBlankPlaceholders } from "@/lib/quiz/fill-blank-template";
+import {
+  normalizeLessonStepRecord,
+  normalizeLessonSteps,
+} from "@/lib/lesson/step-normalizer";
 
 export const openai = new OpenAI();
 
@@ -975,251 +979,14 @@ export interface GeneratedLessonStep {
 }
 
 function normalizeGeneratedLessonStep(step: GeneratedLessonStep): GeneratedLessonStep {
-  const rawContent = asRecord(step.content);
-  const rawAnswerData = asRecord(step.answerData);
-
-  if (step.stepType === "drag_match") {
-    const rawPairs = Array.isArray(rawContent.pairs)
-      ? rawContent.pairs
-      : (Array.isArray(rawContent.items) ? rawContent.items : []);
-
-    let pairs = rawPairs
-      .map((pair, index) => {
-        const rawPair = asRecord(pair);
-        return {
-          id: String(rawPair.id ?? `${index + 1}`),
-          left: String(rawPair.left ?? rawPair.term ?? rawPair.concept ?? rawPair.title ?? "").trim(),
-          right: String(
-            rawPair.right ??
-            rawPair.definition ??
-            rawPair.match ??
-            rawPair.value ??
-            rawPair.explanation ??
-            ""
-          ).trim(),
-        };
-      })
-      .filter((pair) => pair.left.length > 0 || pair.right.length > 0);
-
-    if (pairs.length === 0) {
-      const leftItems = toStringArray(rawContent.leftItems);
-      const rightItems = toStringArray(rawContent.rightItems);
-      pairs = leftItems.map((left, index) => ({
-        id: String(index + 1),
-        left,
-        right: rightItems[index] || "",
-      }));
-    }
-
-    const normalizedCorrectPairs: Record<string, string> = {};
-    const rawCorrectPairs = rawAnswerData.correctPairs ?? rawAnswerData.pairs;
-    const rightPool = [
-      ...pairs.map((pair) => pair.right).filter((value) => value.length > 0),
-      ...toStringArray(rawContent.rightItems),
-    ];
-    const rawCorrectPairsArray = Array.isArray(rawCorrectPairs)
-      ? rawCorrectPairs
-      : [];
-    const useOneBasedLeft = detectOneBasedIndexing(
-      rawCorrectPairsArray,
-      0,
-      pairs.length
-    );
-    const useOneBasedRight = detectOneBasedIndexing(
-      rawCorrectPairsArray,
-      1,
-      rightPool.length
-    );
-
-    if (Array.isArray(rawCorrectPairs)) {
-      for (const entry of rawCorrectPairs) {
-        if (Array.isArray(entry) && entry.length >= 2) {
-          const leftIndex = resolveListIndex(
-            entry[0],
-            pairs.length,
-            useOneBasedLeft
-          );
-          const rightIndex = resolveListIndex(
-            entry[1],
-            rightPool.length,
-            useOneBasedRight
-          );
-
-          let pairId: string | null = null;
-          if (leftIndex !== null && pairs[leftIndex]) {
-            pairId = pairs[leftIndex].id;
-          } else {
-            const leftText = String(entry[0] ?? "").trim();
-            const foundPair = pairs.find((pair) => pair.id === leftText || pair.left === leftText);
-            pairId = foundPair?.id || (leftText.length > 0 ? leftText : null);
-          }
-
-          let rightText = "";
-          if (rightIndex !== null && rightPool[rightIndex] !== undefined) {
-            rightText = rightPool[rightIndex];
-          } else {
-            rightText = String(entry[1] ?? "").trim();
-          }
-
-          if (pairId && rightText) {
-            normalizedCorrectPairs[pairId] = rightText;
-          }
-          continue;
-        }
-
-        const rawPair = asRecord(entry);
-        const leftText = String(rawPair.left ?? rawPair.leftId ?? rawPair.from ?? "").trim();
-        const rightText = String(rawPair.right ?? rawPair.rightText ?? rawPair.to ?? "").trim();
-        if (leftText && rightText) normalizedCorrectPairs[leftText] = rightText;
-      }
-    } else if (rawCorrectPairs && typeof rawCorrectPairs === "object") {
-      for (const [rawLeft, rawRight] of Object.entries(rawCorrectPairs as Record<string, unknown>)) {
-        const leftIndex = resolveListIndex(
-          rawLeft,
-          pairs.length,
-          useOneBasedLeft
-        );
-        const leftKey =
-          leftIndex !== null && pairs[leftIndex]
-            ? pairs[leftIndex].id
-            : String(rawLeft ?? "").trim();
-        const rightIndex = resolveListIndex(
-          rawRight,
-          rightPool.length,
-          useOneBasedRight
-        );
-        const rightValue =
-          rightIndex !== null && rightPool[rightIndex] !== undefined
-            ? rightPool[rightIndex]
-            : String(rawRight ?? "").trim();
-        if (leftKey && rightValue) normalizedCorrectPairs[leftKey] = rightValue;
-      }
-    }
-
-    const reconciledCorrectPairs: Record<string, string> = {};
-    for (const [rawKey, rightText] of Object.entries(normalizedCorrectPairs)) {
-      if (!rightText) continue;
-
-      const byId = pairs.find((pair) => pair.id === rawKey);
-      if (byId) {
-        reconciledCorrectPairs[byId.id] = rightText;
-        continue;
-      }
-
-      const byLeft = pairs.find((pair) => pair.left === rawKey);
-      if (byLeft) {
-        reconciledCorrectPairs[byLeft.id] = rightText;
-        continue;
-      }
-
-      const generatedId = rawKey || String(pairs.length + 1);
-      pairs.push({
-        id: generatedId,
-        left: rawKey || generatedId,
-        right: rightText,
-      });
-      reconciledCorrectPairs[generatedId] = rightText;
-    }
-
-    pairs = pairs
-      .map((pair) => {
-        const right = pair.right || reconciledCorrectPairs[pair.id] || "";
-        return { ...pair, right };
-      })
-      .filter((pair) => pair.left.trim().length > 0 && pair.right.trim().length > 0);
-
-    for (const pair of pairs) {
-      if (!reconciledCorrectPairs[pair.id]) {
-        reconciledCorrectPairs[pair.id] = pair.right;
-      }
-    }
-
-    return {
-      ...step,
-      content: {
-        type: "drag_match",
-        instruction: String(rawContent.instruction ?? "Match each item with its definition"),
-        pairs,
-      },
-      answerData: { correctPairs: reconciledCorrectPairs },
-    };
-  }
-
-  if (step.stepType === "fill_blanks") {
-    const rawTemplate = String(rawContent.template ?? rawContent.text ?? "").trim();
-    const rawBlanks = Array.isArray(rawContent.blanks) ? rawContent.blanks : [];
-
-    const acceptedById: Record<string, string[]> = {};
-    const blankDefinitions = rawBlanks.map((blank, index) => {
-      const rawBlank = asRecord(blank);
-      const id = String(rawBlank.id ?? `b${index + 1}`).trim();
-      const acceptedAnswers = uniqueStrings(
-        toStringArray(rawBlank.acceptedAnswers ?? rawBlank.answers ?? rawBlank.answer)
-      );
-      if (id.length > 0) acceptedById[id] = acceptedAnswers;
-      return { id, acceptedAnswers };
-    });
-
-    const rawCorrectBlanks = asRecord(rawAnswerData.correctBlanks ?? rawAnswerData.blanks);
-    for (const [id, answers] of Object.entries(rawCorrectBlanks)) {
-      acceptedById[id] = uniqueStrings(toStringArray(answers));
-    }
-
-    let blankIds = extractFillBlankIds(rawTemplate, blankDefinitions.map((blank) => ({ id: blank.id })));
-    if (blankIds.length === 0) blankIds = blankDefinitions.map((blank) => blank.id);
-    if (blankIds.length === 0) blankIds = Object.keys(acceptedById);
-    if (blankIds.length === 0) blankIds = ["b1"];
-
-    let template = rawTemplate;
-    if (!template) {
-      template = blankIds.map((id) => `{{${id}}}`).join(" ");
-    } else {
-      template = replaceGenericBlankPlaceholders(template, blankIds);
-    }
-
-    const blanks = blankIds.map((id, index) => ({
-      id,
-      acceptedAnswers:
-        acceptedById[id] ||
-        blankDefinitions.find((blank) => blank.id === id)?.acceptedAnswers ||
-        blankDefinitions[index]?.acceptedAnswers ||
-        [],
-    }));
-
-    const correctBlanks: Record<string, string[]> = {};
-    for (const blank of blanks) {
-      correctBlanks[blank.id] = blank.acceptedAnswers;
-    }
-
-    return {
-      ...step,
-      content: {
-        type: "fill_blanks",
-        template,
-        blanks,
-      },
-      answerData: { correctBlanks },
-    };
-  }
-
-  if (step.stepType === "type_answer") {
-    const acceptedAnswers = uniqueStrings(
-      toStringArray(rawAnswerData.acceptedAnswers ?? rawAnswerData.answers ?? rawAnswerData.correctAnswers)
-    );
-
-    return {
-      ...step,
-      content: {
-        type: "type_answer",
-        question: String(rawContent.question ?? ""),
-        placeholder: typeof rawContent.placeholder === "string" ? rawContent.placeholder : undefined,
-        caseSensitive: toBoolean(rawContent.caseSensitive) ?? false,
-      },
-      answerData: { acceptedAnswers },
-    };
-  }
-
-  return step;
+  const normalized = normalizeLessonStepRecord(step);
+  return {
+    stepType: normalized.stepType,
+    content: normalized.content,
+    answerData: normalized.answerData,
+    explanation: normalized.explanation,
+    hint: normalized.hint,
+  };
 }
 
 export async function generateLesson(
@@ -1265,21 +1032,29 @@ export async function generateLesson(
   try {
     const parsed = parseJsonWithFallback(result) as Record<string, unknown> | null;
     const rawSteps = Array.isArray(parsed?.steps) ? parsed.steps : [];
+    const normalizedSteps = normalizeLessonSteps(
+      rawSteps.map((rawStep) => {
+        const s = (rawStep || {}) as Record<string, unknown>;
+        return {
+          stepType: s.stepType,
+          content: s.content,
+          answerData: s.answerData,
+          explanation: s.explanation,
+          hint: s.hint,
+        };
+      })
+    );
     return {
       result: {
         title: String(parsed?.title || options?.title || "Untitled Lesson"),
         description: String(parsed?.description || ""),
-        steps: rawSteps.map((rawStep) => {
-          const s = (rawStep || {}) as Record<string, unknown>;
-          const base: GeneratedLessonStep = {
-            stepType: (s.stepType as StepType) || "explanation",
-            content: (s.content as StepContent) || ({ type: "explanation", markdown: "" } as StepContent),
-            answerData: (s.answerData as StepAnswerData) || null,
-            explanation: typeof s.explanation === "string" ? s.explanation : null,
-            hint: typeof s.hint === "string" ? s.hint : null,
-          };
-          return normalizeGeneratedLessonStep(base);
-        }),
+        steps: normalizedSteps.map((step) => ({
+          stepType: step.stepType,
+          content: step.content,
+          answerData: step.answerData,
+          explanation: step.explanation,
+          hint: step.hint,
+        })),
       },
       usage,
     };
