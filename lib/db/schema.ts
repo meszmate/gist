@@ -692,6 +692,96 @@ export const resourceCollaboratorsRelations = relations(resourceCollaborators, (
   }),
 }));
 
+// ============== COURSES ==============
+export const courses = pgTable(
+  "courses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    code: varchar("code", { length: 20 }).unique(),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("courses_owner_idx").on(table.ownerId),
+    index("courses_code_idx").on(table.code),
+  ]
+);
+
+export const coursesRelations = relations(courses, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [courses.ownerId],
+    references: [users.id],
+  }),
+  resources: many(courseResources),
+  enrollments: many(courseEnrollments),
+}));
+
+export const courseResources = pgTable(
+  "course_resources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => studyMaterials.id, { onDelete: "cascade" }),
+    order: integer("order").default(0),
+    dueDate: timestamp("due_date"),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("course_resources_course_idx").on(table.courseId),
+  ]
+);
+
+export const courseResourcesRelations = relations(courseResources, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseResources.courseId],
+    references: [courses.id],
+  }),
+  resource: one(studyMaterials, {
+    fields: [courseResources.resourceId],
+    references: [studyMaterials.id],
+  }),
+}));
+
+export const courseEnrollments = pgTable(
+  "course_enrollments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 20 }).default("student"),
+    enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("course_enrollments_course_idx").on(table.courseId),
+    index("course_enrollments_user_idx").on(table.userId),
+  ]
+);
+
+export const courseEnrollmentsRelations = relations(courseEnrollments, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseEnrollments.courseId],
+    references: [courses.id],
+  }),
+  user: one(users, {
+    fields: [courseEnrollments.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============== DRAFTS (Auto-Save) ==============
 export const drafts = pgTable(
   "drafts",
@@ -771,3 +861,12 @@ export type NewTokenUsageLog = typeof tokenUsageLogs.$inferInsert;
 
 export type ResourceCollaborator = typeof resourceCollaborators.$inferSelect;
 export type NewResourceCollaborator = typeof resourceCollaborators.$inferInsert;
+
+export type Course = typeof courses.$inferSelect;
+export type NewCourse = typeof courses.$inferInsert;
+
+export type CourseResource = typeof courseResources.$inferSelect;
+export type NewCourseResource = typeof courseResources.$inferInsert;
+
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+export type NewCourseEnrollment = typeof courseEnrollments.$inferInsert;
