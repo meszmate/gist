@@ -6,7 +6,6 @@ import {
   getGradeColorClass,
   calculateQuizStatistics,
   type QuestionData,
-  type GradingOptions,
 } from "../grading-service";
 
 function makeQuestion(overrides: Partial<QuestionData> = {}): QuestionData {

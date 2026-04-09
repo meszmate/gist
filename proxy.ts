@@ -1,12 +1,62 @@
 import { auth } from "@/lib/auth/config";
 import { NextResponse } from "next/server";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const SUPPORTED_LOCALES = ["en", "hu"];
 const DEFAULT_LOCALE = "en";
 
+const AI_ROUTE_PATTERNS = [
+  /^\/api\/resources\/[^/]+\/generate/,
+  /^\/api\/resources\/[^/]+\/lessons\/generate/,
+  /^\/api\/resources\/[^/]+\/lessons\/[^/]+\/steps\/[^/]+\/improve/,
+  /^\/api\/chat\//,
+];
+
+function isAiRoute(pathname: string): boolean {
+  return AI_ROUTE_PATTERNS.some((pattern) => pattern.test(pathname));
+}
+
+function getClientIp(request: Request & { headers: Headers }): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
+
+  // Rate limit API routes (except auth)
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/")) {
+    const ip = getClientIp(req);
+    const config = isAiRoute(pathname) ? RATE_LIMITS.ai : RATE_LIMITS.api;
+    const key = `${ip}:${isAiRoute(pathname) ? "ai" : "api"}`;
+
+    const result = rateLimit(key, config);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((result.reset - Date.now()) / 1000)),
+            "X-RateLimit-Limit": String(result.limit),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(result.reset),
+          },
+        }
+      );
+    }
+
+    const response = NextResponse.next();
+    response.headers.set("X-RateLimit-Limit", String(result.limit));
+    response.headers.set("X-RateLimit-Remaining", String(result.remaining));
+    response.headers.set("X-RateLimit-Reset", String(result.reset));
+    return response;
+  }
 
   // Protected routes
   const protectedPaths = [
@@ -16,6 +66,8 @@ export const proxy = auth((req) => {
     "/study",
     "/contacts",
     "/settings",
+    "/courses",
+    "/progress",
   ];
 
   const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
@@ -55,5 +107,7 @@ export const config = {
   matcher: [
     // Match all paths except static files and API routes (except auth)
     "/((?!_next/static|_next/image|favicon.ico|api/(?!auth)).*)",
+    // Also match API routes for rate limiting
+    "/api/:path*",
   ],
 };

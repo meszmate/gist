@@ -47,7 +47,7 @@ describe("validateTrueFalse", () => {
   });
 
   it("handles isTrue fallback in correctAnswerData", () => {
-    const result = validateAnswer("true_false", { selectedValue: true }, { isTrue: true } as any, {});
+    const result = validateAnswer("true_false", { selectedValue: true }, { isTrue: true } as unknown as Parameters<typeof validateAnswer>[2], {});
     expect(result.isCorrect).toBe(true);
   });
 });
@@ -101,9 +101,9 @@ describe("validateYearRange", () => {
   });
 
   it("handles correctYear/exactYear/year fallbacks", () => {
-    const r1 = validateAnswer("year_range", { year: 1969 }, { exactYear: 1969 } as any, config);
+    const r1 = validateAnswer("year_range", { year: 1969 }, { exactYear: 1969 } as unknown as Parameters<typeof validateAnswer>[2], config);
     expect(r1.isCorrect).toBe(true);
-    const r2 = validateAnswer("year_range", { year: 1969 }, { year: 1969 } as any, config);
+    const r2 = validateAnswer("year_range", { year: 1969 }, { year: 1969 } as unknown as Parameters<typeof validateAnswer>[2], config);
     expect(r2.isCorrect).toBe(true);
   });
 
@@ -232,7 +232,7 @@ describe("validateAnswer edge cases", () => {
   });
 
   it("unknown question type", () => {
-    const result = validateAnswer("custom_type" as any, { text: "hi" }, { answer: "hi" }, {});
+    const result = validateAnswer("custom_type" as Parameters<typeof validateAnswer>[0], { text: "hi" }, { answer: "hi" }, {});
     expect(result.isCorrect).toBe(false);
   });
 });
