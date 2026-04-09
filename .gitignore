@@ -41,6 +41,9 @@ coverage/
 # Drizzle
 drizzle/meta/
 
+# Uploads
+public/uploads/
+
 # Misc
 *.log
 *.pid

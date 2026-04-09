@@ -261,6 +261,7 @@ export const quizQuestions = pgTable(
     options: jsonb("options").$type<string[]>(),
     correctAnswer: integer("correct_answer"),
     explanation: text("explanation"),
+    imageUrl: text("image_url"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
