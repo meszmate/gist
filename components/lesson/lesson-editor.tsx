@@ -38,6 +38,7 @@ import { STEP_EDITORS } from "./step-editors";
 import { LessonStepTypePicker } from "./lesson-step-type-picker";
 import { LessonPlayer } from "./lesson-player";
 import { useLocale } from "@/hooks/use-locale";
+import { useAutoSave } from "@/hooks/use-auto-save";
 
 interface LessonEditorProps {
   lesson: LessonWithSteps;
@@ -55,6 +56,41 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+
+  const { hasDraft, draftData, clearDraft, dismissDraft } = useAutoSave({
+    entityType: "lesson",
+    entityId: initialLesson.id,
+    data: { lesson: { title: lesson.title, description: lesson.description, status: lesson.status, isPublic: lesson.isPublic, settings: lesson.settings }, steps },
+    isDirty,
+  });
+
+  // Show draft recovery toast
+  const [draftHandled, setDraftHandled] = useState(false);
+  if (hasDraft && draftData && !draftHandled) {
+    setDraftHandled(true);
+    toast("Unsaved draft found", {
+      description: "Would you like to restore your previous changes?",
+      action: {
+        label: "Restore",
+        onClick: () => {
+          const d = draftData as { lesson?: Record<string, unknown>; steps?: typeof steps };
+          if (d.lesson) {
+            setLesson((prev) => ({ ...prev, ...d.lesson }));
+          }
+          if (d.steps) {
+            setSteps(d.steps);
+          }
+          setIsDirty(true);
+          toast.success("Draft restored");
+        },
+      },
+      cancel: {
+        label: "Discard",
+        onClick: () => dismissDraft(),
+      },
+      duration: 10000,
+    });
+  }
 
   const selectedStep = selectedStepIndex !== null ? steps[selectedStepIndex] : null;
 
@@ -102,6 +138,7 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
     },
     onSuccess: () => {
       setIsDirty(false);
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
       toast.success(t("lessonEditor.lessonSaved"));
     },
