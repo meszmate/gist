@@ -696,6 +696,52 @@ export async function generateSummary(content: string, locale?: string): Promise
   };
 }
 
+export async function generateSummaryStream(content: string, locale?: string): Promise<{
+  stream: ReadableStream<Uint8Array>;
+  getUsage: () => TokenUsageData | null;
+}> {
+  const preparedContent = prepareGenerationContent(content);
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: SUMMARY_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      { role: "user", content: `Please summarize the following content:\n\n${preparedContent}` },
+    ],
+    max_completion_tokens: 16000,
+    stream: true,
+    stream_options: { include_usage: true },
+  });
+
+  let usage: TokenUsageData | null = null;
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const chunk of response) {
+          if (chunk.usage) {
+            usage = {
+              total_tokens: chunk.usage.total_tokens,
+              prompt_tokens: chunk.usage.prompt_tokens,
+              completion_tokens: chunk.usage.completion_tokens,
+            };
+          }
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+          }
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+
+  return { stream, getUsage: () => usage };
+}
+
 export async function generateFlashcards(
   content: string,
   count: number = 10,
