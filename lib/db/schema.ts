@@ -658,6 +658,31 @@ export const lessonAttemptsRelations = relations(lessonAttempts, ({ one }) => ({
   }),
 }));
 
+// ============== DRAFTS (Auto-Save) ==============
+export const drafts = pgTable(
+  "drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    entityType: varchar("entity_type", { length: 50 }).notNull(),
+    entityId: uuid("entity_id"),
+    data: jsonb("data").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("drafts_user_entity_idx").on(table.userId, table.entityType, table.entityId),
+  ]
+);
+
+export const draftsRelations = relations(drafts, ({ one }) => ({
+  user: one(users, {
+    fields: [drafts.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============== TYPES ==============
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
