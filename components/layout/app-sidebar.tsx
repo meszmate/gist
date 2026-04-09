@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   FileQuestion,
+  School,
 } from "lucide-react";
 import { GistLogo } from "@/components/icons/gist-logo";
 import {
@@ -51,6 +52,7 @@ export function AppSidebar() {
     {
       label: t("nav.manage"),
       items: [
+        { title: t("nav.courses") || "Courses", href: "/courses", icon: School },
         { title: t("nav.contacts"), href: "/contacts", icon: Users },
         { title: t("nav.settings"), href: "/settings", icon: Settings },
       ],
