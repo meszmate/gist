@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   CommandDialog,
@@ -20,23 +20,27 @@ import {
   Search,
   Settings,
   Users,
+  CreditCard,
+  MessageSquare,
 } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 
-interface Resource {
+interface SearchResult {
   id: string;
+  type: "resource" | "flashcard" | "question";
   title: string;
-  type: "resource" | "quiz";
+  subtitle?: string;
+  resourceId?: string;
 }
 
-interface CommandMenuProps {
-  resources?: Resource[];
-}
-
-export function CommandMenu({ resources = [] }: CommandMenuProps) {
+export function CommandMenu() {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
   const { t } = useLocale();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -50,8 +54,40 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
+  // Search when query changes
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.results || []);
+        }
+      } catch {
+        // Silently fail search
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
   const runCommand = useCallback((command: () => void) => {
     setOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
     command();
   }, [setOpen]);
 
@@ -69,11 +105,60 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
     { icon: Brain, label: t("command.startStudySession"), href: "/study", shortcut: "S S" },
   ];
 
+  const getResultIcon = (type: string) => {
+    switch (type) {
+      case "resource": return BookOpen;
+      case "flashcard": return CreditCard;
+      case "question": return MessageSquare;
+      default: return Search;
+    }
+  };
+
+  const getResultHref = (result: SearchResult) => {
+    switch (result.type) {
+      case "resource": return `/library/${result.id}`;
+      case "flashcard": return `/library/${result.resourceId}`;
+      case "question": return `/quiz/${result.resourceId}`;
+      default: return "/library";
+    }
+  };
+
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder={t("command.placeholder")} />
+    <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSearchQuery(""); setSearchResults([]); } }}>
+      <CommandInput
+        placeholder={t("command.placeholder")}
+        value={searchQuery}
+        onValueChange={setSearchQuery}
+      />
       <CommandList>
-        <CommandEmpty>{t("common.noResults")}</CommandEmpty>
+        <CommandEmpty>
+          {isSearching ? "Searching..." : t("common.noResults")}
+        </CommandEmpty>
+
+        {searchResults.length > 0 && (
+          <>
+            <CommandGroup heading="Search Results">
+              {searchResults.map((result) => {
+                const Icon = getResultIcon(result.type);
+                return (
+                  <CommandItem
+                    key={`${result.type}-${result.id}`}
+                    onSelect={() => runCommand(() => router.push(getResultHref(result)))}
+                  >
+                    <Icon className="mr-2 h-4 w-4 shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate">{result.title}</span>
+                      {result.subtitle && (
+                        <span className="text-xs text-muted-foreground truncate">{result.subtitle}</span>
+                      )}
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         <CommandGroup heading={t("command.navigation")}>
           {navigationItems.map((item) => (
@@ -112,31 +197,6 @@ export function CommandMenu({ resources = [] }: CommandMenuProps) {
             </CommandItem>
           ))}
         </CommandGroup>
-
-        {resources.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading={t("command.resources")}>
-              {resources.slice(0, 5).map((resource) => (
-                <CommandItem
-                  key={resource.id}
-                  onSelect={() =>
-                    runCommand(() =>
-                      router.push(
-                        resource.type === "quiz"
-                          ? `/quiz/${resource.id}`
-                          : `/library/${resource.id}`
-                      )
-                    )
-                  }
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  <span>{resource.title}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
       </CommandList>
     </CommandDialog>
   );
