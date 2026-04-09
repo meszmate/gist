@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, quizQuestions, quizAttempts, gradingConfigs } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { gradeQuiz, type QuestionData } from "@/lib/quiz/grading-service";
 import type {
@@ -145,6 +145,18 @@ export async function POST(
     const correctCount = gradeResult.questionResults.filter(r => r.isCorrect).length;
     const total = questions.length;
 
+    // Calculate attempt number based on previous attempts
+    const [attemptCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(quizAttempts)
+      .where(
+        and(
+          eq(quizAttempts.studyMaterialId, quizId),
+          eq(quizAttempts.userId, session.user.id)
+        )
+      );
+    const attemptNumber = Number(attemptCount.count) + 1;
+
     // Save attempt with new data structure
     await db.insert(quizAttempts).values({
       studyMaterialId: quizId,
@@ -164,7 +176,7 @@ export async function POST(
       grade: gradeResult.grade,
       questionResults: gradeResult.questionResults,
       timeSpentSeconds: data.timeSpentSeconds,
-      attemptNumber: 1, // TODO: Calculate attempt number based on previous attempts
+      attemptNumber,
     });
 
     return NextResponse.json({
