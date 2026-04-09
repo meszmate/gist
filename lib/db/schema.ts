@@ -659,6 +659,39 @@ export const lessonAttemptsRelations = relations(lessonAttempts, ({ one }) => ({
   }),
 }));
 
+// ============== RESOURCE COLLABORATORS (RBAC) ==============
+export const resourceCollaborators = pgTable(
+  "resource_collaborators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => studyMaterials.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 20 }).notNull(), // 'editor' | 'viewer'
+    invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
+    invitedAt: timestamp("invited_at").defaultNow().notNull(),
+    acceptedAt: timestamp("accepted_at"),
+  },
+  (table) => [
+    index("resource_collaborators_resource_idx").on(table.resourceId),
+    index("resource_collaborators_user_idx").on(table.userId),
+  ]
+);
+
+export const resourceCollaboratorsRelations = relations(resourceCollaborators, ({ one }) => ({
+  resource: one(studyMaterials, {
+    fields: [resourceCollaborators.resourceId],
+    references: [studyMaterials.id],
+  }),
+  user: one(users, {
+    fields: [resourceCollaborators.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============== DRAFTS (Auto-Save) ==============
 export const drafts = pgTable(
   "drafts",
@@ -735,3 +768,6 @@ export type NewLessonAttempt = typeof lessonAttempts.$inferInsert;
 
 export type TokenUsageLog = typeof tokenUsageLogs.$inferSelect;
 export type NewTokenUsageLog = typeof tokenUsageLogs.$inferInsert;
+
+export type ResourceCollaborator = typeof resourceCollaborators.$inferSelect;
+export type NewResourceCollaborator = typeof resourceCollaborators.$inferInsert;
