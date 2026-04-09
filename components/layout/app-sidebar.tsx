@@ -12,6 +12,7 @@ import {
   Users,
   FileQuestion,
   School,
+  TrendingUp,
 } from "lucide-react";
 import { GistLogo } from "@/components/icons/gist-logo";
 import {
@@ -47,6 +48,7 @@ export function AppSidebar() {
         { title: t("nav.study"), href: "/study", icon: Brain },
         { title: t("nav.quizzes"), href: "/quiz", icon: FileQuestion },
         { title: t("nav.lessons"), href: "/lessons", icon: GraduationCap },
+        { title: t("nav.progress") || "Progress", href: "/progress", icon: TrendingUp },
       ],
     },
     {
