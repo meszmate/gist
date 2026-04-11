@@ -148,21 +148,15 @@ export default function LoginPage() {
 
       {/* Centered content */}
       <div className="flex w-full max-w-sm flex-col items-center text-center">
-        <h1
-          className="text-3xl font-semibold leading-tight tracking-[-0.02em] sm:text-4xl"
-          style={{ margin: 0 }}
-        >
+        <h1 className="text-3xl font-semibold leading-tight tracking-[-0.02em] sm:text-4xl">
           {t("login.welcomeBack")}
         </h1>
 
-        <p
-          className="text-base leading-relaxed text-muted-foreground"
-          style={{ marginTop: 16, marginBottom: 0 }}
-        >
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           {t("login.signInContinue")}
         </p>
 
-        <div className="w-full" style={{ marginTop: 32 }}>
+        <div className="mt-8 w-full">
           <Suspense fallback={<LoginButtonFallback />}>
             <LoginForm />
           </Suspense>

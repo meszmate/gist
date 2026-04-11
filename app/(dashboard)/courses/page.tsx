@@ -19,9 +19,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function CoursesPage() {
+  const { t } = useLocale();
   const queryClient = useQueryClient();
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "student":
+        return t("courses.role.student");
+      case "instructor":
+        return t("courses.role.instructor");
+      case "ta":
+        return t("courses.role.ta");
+      default:
+        return role;
+    }
+  };
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -43,7 +57,7 @@ export default function CoursesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description }),
       });
-      if (!res.ok) throw new Error("Failed to create course");
+      if (!res.ok) throw new Error(t("courses.failedCreate"));
       return res.json();
     },
     onSuccess: () => {
@@ -51,7 +65,7 @@ export default function CoursesPage() {
       setCreateOpen(false);
       setTitle("");
       setDescription("");
-      toast.success("Course created");
+      toast.success(t("courses.courseCreated"));
     },
   });
 
@@ -64,7 +78,7 @@ export default function CoursesPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to join");
+        throw new Error(data.error || t("courses.failedJoin"));
       }
       return res.json();
     },
@@ -72,7 +86,7 @@ export default function CoursesPage() {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       setJoinOpen(false);
       setJoinCode("");
-      toast.success(`Joined "${data.course.title}"`);
+      toast.success(t("courses.joinedCourse", { title: data.course.title }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -82,30 +96,30 @@ export default function CoursesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Courses"
-        description="Create and manage your courses or join existing ones"
+        title={t("courses.title")}
+        description={t("courses.description")}
         actions={
           <div className="flex gap-2">
             <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <LogIn className="mr-2 h-4 w-4" />
-                  Join Course
+                  {t("courses.joinCourse")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Join a Course</DialogTitle>
-                  <DialogDescription>Enter the course code to join</DialogDescription>
+                  <DialogTitle>{t("courses.joinCourseTitle")}</DialogTitle>
+                  <DialogDescription>{t("courses.joinCourseDescription")}</DialogDescription>
                 </DialogHeader>
                 <Input
-                  placeholder="ABC-123"
+                  placeholder={t("courses.joinCodePlaceholder")}
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                 />
                 <DialogFooter>
                   <Button onClick={() => joinMutation.mutate()} disabled={!joinCode.trim()}>
-                    Join
+                    {t("courses.join")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -115,29 +129,29 @@ export default function CoursesPage() {
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Course
+                  {t("courses.createCourse")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create a Course</DialogTitle>
-                  <DialogDescription>Organize resources and invite students</DialogDescription>
+                  <DialogTitle>{t("courses.createCourseTitle")}</DialogTitle>
+                  <DialogDescription>{t("courses.createCourseDescription")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
-                    placeholder="Course title"
+                    placeholder={t("courses.titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
                   <Input
-                    placeholder="Description (optional)"
+                    placeholder={t("courses.descriptionPlaceholder")}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
                 <DialogFooter>
                   <Button onClick={() => createMutation.mutate()} disabled={!title.trim()}>
-                    Create
+                    {t("courses.create")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -149,7 +163,7 @@ export default function CoursesPage() {
       {/* Owned Courses */}
       {data?.owned?.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground">Your Courses</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">{t("courses.yourCourses")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.owned.map((course: { id: string; title: string; description: string | null; code: string; isActive: boolean }) => (
               <Card key={course.id} className="group hover:shadow-md transition-shadow">
@@ -157,7 +171,7 @@ export default function CoursesPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{course.title}</CardTitle>
                     <Badge variant={course.isActive ? "default" : "secondary"}>
-                      {course.isActive ? "Active" : "Inactive"}
+                      {course.isActive ? t("courses.active") : t("courses.inactive")}
                     </Badge>
                   </div>
                   {course.description && (
@@ -169,7 +183,7 @@ export default function CoursesPage() {
                     <code className="text-sm bg-muted px-2 py-1 rounded">{course.code}</code>
                     <Button asChild variant="ghost" size="sm">
                       <Link href={`/courses/${course.id}`}>
-                        Manage
+                        {t("courses.manage")}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -184,14 +198,14 @@ export default function CoursesPage() {
       {/* Enrolled Courses */}
       {data?.enrolled?.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground">Enrolled Courses</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">{t("courses.enrolledCourses")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.enrolled.map((course: { id: string; title: string; description: string | null; enrollmentRole: string }) => (
               <Card key={course.id} className="group hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{course.title}</CardTitle>
-                    <Badge variant="secondary">{course.enrollmentRole}</Badge>
+                    <Badge variant="secondary">{getRoleLabel(course.enrollmentRole)}</Badge>
                   </div>
                   {course.description && (
                     <CardDescription>{course.description}</CardDescription>
@@ -200,7 +214,7 @@ export default function CoursesPage() {
                 <CardContent>
                   <Button asChild variant="ghost" size="sm">
                     <Link href={`/courses/${course.id}`}>
-                      View
+                      {t("courses.view")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -213,7 +227,7 @@ export default function CoursesPage() {
 
       {!data?.owned?.length && !data?.enrolled?.length && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No courses yet. Create one or join with a code.</p>
+          <p>{t("courses.noCourses")}</p>
         </div>
       )}
     </div>

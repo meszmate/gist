@@ -24,9 +24,11 @@ interface DashboardStats {
   totalReviews: number;
 }
 
+type TimeOfDay = "morning" | "afternoon" | "evening";
+
 interface DashboardClientProps {
-  greeting: string;
-  firstName: string;
+  timeOfDay: TimeOfDay;
+  firstName: string | null;
   stats: DashboardStats;
 }
 
@@ -170,10 +172,17 @@ function ActivityTimeline({
   );
 }
 
-export function DashboardClient({ greeting, firstName, stats }: DashboardClientProps) {
+export function DashboardClient({ timeOfDay, firstName, stats }: DashboardClientProps) {
   const { t } = useLocale();
   const hasCardsDue = stats.flashcardsDue > 0;
   const totalWeeklyReviews = stats.weeklyActivity.reduce((a, b) => a + b, 0);
+  const greeting =
+    timeOfDay === "morning"
+      ? t("dashboard.greetingMorning")
+      : timeOfDay === "afternoon"
+      ? t("dashboard.greetingAfternoon")
+      : t("dashboard.greetingEvening");
+  const displayName = firstName ?? t("dashboard.fallbackName");
 
   return (
     <div className="space-y-8">
@@ -181,7 +190,7 @@ export function DashboardClient({ greeting, firstName, stats }: DashboardClientP
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
-            {greeting}, {firstName}
+            {greeting}, {displayName}
           </h1>
           <p className="text-muted-foreground animate-fade-in">
             {hasCardsDue
