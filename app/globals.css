@@ -60,7 +60,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.985 0.002 80);
   --foreground: oklch(0.22 0.005 60);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.005 60);
@@ -437,14 +437,49 @@
   border-color: var(--destructive);
 }
 
-/* Smooth scrolling */
+/* Smooth scrolling + reserve scrollbar gutter so pages don't shift
+   when modals/dropdowns open (Radix scroll-lock adds compensation
+   padding that conflicts with a permanently-forced scrollbar). */
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
-/* Custom scrollbar — always visible */
-html {
-  overflow-y: scroll;
+html:has(body[data-scroll-locked]) {
+  scrollbar-gutter: auto;
+}
+
+html:has([data-slot="select-content"]) {
+  scrollbar-gutter: auto;
+}
+
+body[data-scroll-locked]:has([data-slot="select-content"]) {
+  overflow: auto !important;
+  overscroll-behavior: auto !important;
+}
+
+/* Cancel react-remove-scroll's scrollbar-width compensation.
+   When Radix opens a Dropdown/Select/Dialog, react-remove-scroll-bar
+   sets `body[data-scroll-locked]` and adds padding-right equal to
+   the scrollbar width (with !important). Because scrollbar-gutter
+   above already keeps that space reserved, the extra padding is a
+   visible shift. Higher specificity (html body…) + !important wins. */
+html body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+html body[data-scroll-locked] .with-scroll-bars-hidden {
+  padding-right: 0 !important;
+}
+
+html body[data-scroll-locked] .width-before-scroll-bar {
+  margin-right: 0 !important;
+}
+
+html body[data-scroll-locked] .right-scroll-bar-position {
+  right: 0 !important;
 }
 
 ::-webkit-scrollbar {

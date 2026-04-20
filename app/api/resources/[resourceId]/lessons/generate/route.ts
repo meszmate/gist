@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { studyMaterials, flashcards, quizQuestions, lessons, lessonSteps } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { generateLesson, MODEL } from "@/lib/ai/openai";
+import { generateLesson, MODEL, type UserLevel } from "@/lib/ai/openai";
 import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
 import { normalizeLessonStepPayload } from "@/lib/lesson/step-normalizer";
+import { inferUserLevel } from "@/lib/user/skill-inferencer";
 
 export async function POST(
   req: NextRequest,
@@ -67,11 +68,18 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const locale = body.locale || "en";
 
+  // Resolve target level: explicit body param > inferred from user history
+  const explicitLevel = body.targetLevel as UserLevel | undefined;
+  const validLevels: UserLevel[] = ["beginner", "intermediate", "advanced"];
+  const targetLevel: UserLevel = validLevels.includes(explicitLevel as UserLevel)
+    ? (explicitLevel as UserLevel)
+    : await inferUserLevel(session.user.id, resourceId);
+
   const { result: generated, usage } = await generateLesson(
     content,
     existingFlashcards,
     existingQuestions.map((q) => ({ question: q.question, options: q.options || undefined })),
-    { stepCount: body.stepCount, title: body.title },
+    { stepCount: body.stepCount, title: body.title, targetLevel },
     locale
   );
 
@@ -88,6 +96,7 @@ export async function POST(
       settings: { allowSkip: true, showProgressBar: true, transitionStyle: "slide" },
       status: "draft",
       isPublic: false,
+      targetLevel,
     })
     .returning();
 

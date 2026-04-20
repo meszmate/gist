@@ -1,10 +1,14 @@
 "use client";
 
-import { BookOpen, Brain, FileQuestion, Plus, Flame, Target, Clock, ArrowRight, Sparkles } from "lucide-react";
+import { BookOpen, Brain, FileQuestion, Plus, Flame, Target, Clock, ArrowRight, Sparkles, TrendingUp, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/shared/stat-card";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
@@ -30,6 +34,225 @@ interface DashboardClientProps {
   timeOfDay: TimeOfDay;
   firstName: string | null;
   stats: DashboardStats;
+}
+
+type RecommendationType =
+  | "review_flashcards"
+  | "review_lesson"
+  | "try_advanced"
+  | "start_learning";
+
+interface Recommendation {
+  type: RecommendationType;
+  resourceId: string;
+  resourceTitle: string;
+  priority: number;
+  dueCount?: number;
+  lastScore?: number;
+  level?: string;
+  masteryScore?: number;
+}
+
+function RecommendationsPanel() {
+  const { t, locale } = useLocale();
+  const router = useRouter();
+
+  const { data, isLoading } = useQuery<{ recommendations: Recommendation[] }>({
+    queryKey: ["recommendations"],
+    queryFn: async () => {
+      const res = await fetch("/api/student/recommendations");
+      if (!res.ok) throw new Error("Failed to load recommendations");
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const generateReview = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const res = await fetch(
+        `/api/resources/${resourceId}/lessons/generate-review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale }),
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to generate review");
+      }
+      return res.json() as Promise<{ id: string; studyMaterialId: string }>;
+    },
+    onSuccess: (lesson) => {
+      toast.success(t("resourceLessons.reviewGenerated"));
+      router.push(`/library/${lesson.studyMaterialId}/lessons/${lesson.id}/edit`);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="animate-slide-up space-y-4">
+        <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          {t("dashboard.recommendations")}
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-32 rounded-lg bg-muted/50 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const recs = data?.recommendations || [];
+
+  if (recs.length === 0) {
+    return (
+      <div className="animate-slide-up space-y-4">
+        <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          {t("dashboard.recommendations")}
+        </h2>
+        <Card>
+          <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+            {t("dashboard.noRecommendations")}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-slide-up space-y-4">
+      <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Sparkles className="h-4 w-4" />
+        {t("dashboard.recommendations")}
+      </h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {recs.map((rec) => {
+          const cardConfig = getRecommendationCard(rec, t);
+          const isReviewLesson = rec.type === "review_lesson";
+          const isGenerating =
+            isReviewLesson && generateReview.isPending && generateReview.variables === rec.resourceId;
+
+          return (
+            <Card
+              key={`${rec.type}-${rec.resourceId}`}
+              className="group transition-shadow hover:shadow-md"
+            >
+              <CardContent className="flex h-full flex-col gap-3 pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <cardConfig.Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-tight">
+                      {cardConfig.label}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                      {cardConfig.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-auto pt-2">
+                  {isReviewLesson ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full justify-between"
+                      disabled={isGenerating}
+                      onClick={() => generateReview.mutate(rec.resourceId)}
+                    >
+                      <span>
+                        {isGenerating
+                          ? t("resourceLessons.generating")
+                          : cardConfig.action}
+                      </span>
+                      {isGenerating ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      <Link href={cardConfig.href}>
+                        <span>{cardConfig.action}</span>
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getRecommendationCard(
+  rec: Recommendation,
+  t: (key: string, params?: Record<string, string | number>) => string
+): {
+  Icon: typeof Brain;
+  label: string;
+  description: string;
+  action: string;
+  href: string;
+} {
+  switch (rec.type) {
+    case "review_flashcards":
+      return {
+        Icon: Brain,
+        label: t("dashboard.recReviewFlashcards"),
+        description: t("dashboard.recReviewFlashcardsDesc", {
+          count: rec.dueCount ?? 0,
+          title: rec.resourceTitle,
+        }),
+        action: t("dashboard.recStudy"),
+        href: "/study",
+      };
+    case "review_lesson":
+      return {
+        Icon: Target,
+        label: t("dashboard.recReviewLesson"),
+        description: t("dashboard.recReviewLessonDesc", {
+          score: rec.lastScore ?? rec.masteryScore ?? 0,
+          title: rec.resourceTitle,
+        }),
+        action: t("dashboard.recReview"),
+        href: `/library/${rec.resourceId}/lessons`,
+      };
+    case "try_advanced":
+      return {
+        Icon: TrendingUp,
+        label: t("dashboard.recTryAdvanced"),
+        description: t("dashboard.recTryAdvancedDesc", {
+          title: rec.resourceTitle,
+        }),
+        action: t("dashboard.recOpen"),
+        href: `/library/${rec.resourceId}`,
+      };
+    case "start_learning":
+      return {
+        Icon: Sparkles,
+        label: t("dashboard.recStartLearning"),
+        description: t("dashboard.recStartLearningDesc", {
+          title: rec.resourceTitle,
+        }),
+        action: t("dashboard.recStart"),
+        href: `/library/${rec.resourceId}`,
+      };
+  }
 }
 
 function WeeklyChart({ data }: { data: number[] }) {
@@ -355,6 +578,9 @@ export function DashboardClient({ timeOfDay, firstName, stats }: DashboardClient
           <WeeklyChart data={stats.weeklyActivity} />
         </div>
       </div>
+
+      {/* Recommendations */}
+      <RecommendationsPanel />
 
       {/* Recent Activity */}
       <div className="animate-slide-up space-y-4" style={{ animationDelay: "100ms" }}>

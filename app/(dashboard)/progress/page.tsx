@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
-import { Target, Brain, FileQuestion, GraduationCap, BookOpen } from "lucide-react";
+import { Target, Brain, FileQuestion, GraduationCap, BookOpen, PieChart } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 
 interface CourseProgress {
@@ -33,6 +33,24 @@ interface LessonAttempt {
   totalSteps: number;
   correctCount: number;
 }
+
+interface QuestionTypeStat {
+  type: string;
+  total: number;
+  correct: number;
+  accuracy: number;
+}
+
+const QUESTION_TYPE_KEYS: Record<string, string> = {
+  multiple_choice: "progress.qt.multiple_choice",
+  true_false: "progress.qt.true_false",
+  text_input: "progress.qt.text_input",
+  year_range: "progress.qt.year_range",
+  numeric_range: "progress.qt.numeric_range",
+  matching: "progress.qt.matching",
+  fill_blank: "progress.qt.fill_blank",
+  multi_select: "progress.qt.multi_select",
+};
 
 export default function ProgressPage() {
   const { t, formatDate } = useLocale();
@@ -209,6 +227,48 @@ export default function ProgressPage() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Question Type Performance */}
+      {data?.questionTypeStats && data.questionTypeStats.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <PieChart className="h-4 w-4" />
+            {t("progress.questionTypePerformance")}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.questionTypeStats.map((stat: QuestionTypeStat) => {
+              const typeKey = QUESTION_TYPE_KEYS[stat.type];
+              const typeLabel = typeKey ? t(typeKey) : stat.type.replace(/_/g, " ");
+              const accuracyTone =
+                stat.accuracy >= 80
+                  ? "text-green-600 dark:text-green-500"
+                  : stat.accuracy >= 60
+                  ? "text-yellow-600 dark:text-yellow-500"
+                  : "text-red-600 dark:text-red-500";
+              return (
+                <Card key={stat.type}>
+                  <CardContent className="pt-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{typeLabel}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t("progress.questionTypeAttempts", { count: stat.total })}
+                        </p>
+                      </div>
+                      <div className={`text-2xl font-bold tabular-nums ${accuracyTone}`}>
+                        {stat.accuracy}%
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <Progress value={stat.accuracy} />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}

@@ -132,8 +132,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "relative p-5 rounded-lg transition-colors duration-200",
-        isClickable && "cursor-pointer hover:bg-muted/50",
+        "relative p-5 rounded-lg border bg-card shadow-sm transition-shadow duration-200",
+        isClickable && "cursor-pointer hover:shadow-md",
         className
       )}
       onClick={onClick}

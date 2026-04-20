@@ -142,6 +142,36 @@ export async function GET() {
       ? recentQuizAttempts.reduce((sum, a) => sum + Number(a.score || 0), 0) / totalQuizAttempts
       : 0;
 
+    // Per-question-type analytics: aggregate questionResults over recent attempts
+    const attemptsForTypeStats = await db
+      .select({ questionResults: quizAttempts.questionResults })
+      .from(quizAttempts)
+      .where(eq(quizAttempts.userId, userId))
+      .orderBy(desc(quizAttempts.completedAt))
+      .limit(50);
+
+    const typeAgg: Record<string, { correct: number; total: number }> = {};
+    for (const row of attemptsForTypeStats) {
+      const results = row.questionResults || [];
+      for (const r of results) {
+        if (!r || typeof r !== "object" || !r.questionType) continue;
+        const t = String(r.questionType);
+        if (!typeAgg[t]) typeAgg[t] = { correct: 0, total: 0 };
+        typeAgg[t].total += 1;
+        if (r.isCorrect) typeAgg[t].correct += 1;
+      }
+    }
+
+    const questionTypeStats = Object.entries(typeAgg)
+      .map(([type, stats]) => ({
+        type,
+        total: stats.total,
+        correct: stats.correct,
+        accuracy:
+          stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
     return NextResponse.json({
       quizAttempts: recentQuizAttempts,
       lessonAttempts: recentLessonAttempts,
@@ -149,6 +179,7 @@ export async function GET() {
       flashcardsDue: Number(dueCount?.count || 0),
       savedResourcesCount: Number(savedCount?.count || 0),
       courseProgress,
+      questionTypeStats,
       summary: {
         avgQuizScore: Math.round(avgQuizScore * 10) / 10,
         totalQuizAttempts,

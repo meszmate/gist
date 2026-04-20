@@ -178,6 +178,20 @@
     "great": "Remek!",
     "good": "Jó",
     "keepPracticing": "Gyakorolj tovább",
+    "recommendations": "Ajánlott neked",
+    "recReviewFlashcards": "Esedékes kártyák",
+    "recReviewFlashcardsDesc": "{count} kártya vár átnézésre itt: {title}",
+    "recReviewLesson": "Gyenge részek ismétlése",
+    "recReviewLessonDesc": "Eredményed: {score}% a(z) {title}-ben — nézzük át újra",
+    "recTryAdvanced": "Ezt már tudod",
+    "recTryAdvancedDesc": "Készen állsz a haladó szintre: {title}",
+    "recStartLearning": "Kezdd el",
+    "recStartLearningDesc": "Indítsd el az első tanulási alkalmat: {title}",
+    "recStudy": "Tanulás",
+    "recReview": "Ismétlés",
+    "recOpen": "Megnyitás",
+    "recStart": "Kezdés",
+    "noRecommendations": "Tanulj tovább, és javaslatok jelennek meg itt",
     "days": {
       "mon": "H",
       "tue": "K",
@@ -959,7 +973,12 @@
     "lessonCreated": "Lecke létrehozva",
     "lessonGenerated": "Lecke generálva! Szerkesztő megnyitása...",
     "failedGenerate": "Nem sikerült generálni a leckét",
-    "lessonDeleted": "Lecke törölve"
+    "lessonDeleted": "Lecke törölve",
+    "generateReview": "Gyenge részek ismétlése",
+    "generating": "Generálás...",
+    "reviewGenerated": "Ismétlő lecke létrehozva!",
+    "noLessonsForReview": "Először fejezz be egy leckét, és átnézzük a hibáidat",
+    "noMistakesYet": "Nincsenek hibák az ismétléshez. Remek munka!"
   },
   "inlineEdit": {
     "clickToEdit": "Kattints a szerkesztéshez..."
@@ -1256,7 +1275,19 @@
     "cardsStudied": "Tanult kártyák",
     "cardsCorrect": "Helyes kártyák",
     "accuracyRate": "Pontossági arány",
-    "noActivity": "Még nincs tevékenység. Kezdj el tanulni, hogy lásd a haladásodat."
+    "noActivity": "Még nincs tevékenység. Kezdj el tanulni, hogy lásd a haladásodat.",
+    "questionTypePerformance": "Teljesítmény kérdéstípusonként",
+    "questionTypeAttempts": "{count} próbálkozás",
+    "qt": {
+      "multiple_choice": "Feleletválasztós",
+      "true_false": "Igaz / Hamis",
+      "text_input": "Szöveges válasz",
+      "year_range": "Évszám",
+      "numeric_range": "Szám",
+      "matching": "Párosítás",
+      "fill_blank": "Hiányzó szó",
+      "multi_select": "Többszörös választás"
+    }
   },
   "layout": {
     "shortcutHint": "? a parancsokhoz"

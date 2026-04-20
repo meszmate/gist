@@ -23,7 +23,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { GraduationCap, Plus, Sparkles, Loader2 } from "lucide-react";
+import { GraduationCap, Plus, Sparkles, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/use-locale";
 import type { Lesson } from "@/lib/types/lesson";
@@ -85,6 +85,39 @@ export default function LessonsPage() {
     onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
   });
 
+  const generateReviewLesson = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(
+        `/api/resources/${resourceId}/lessons/generate-review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale }),
+        }
+      );
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({}));
+        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
+          throw new Error(t("generate.tokenLimitExceeded"));
+        }
+        if (errorBody.code === "NO_ATTEMPTS" || errorBody.code === "NO_LESSONS") {
+          throw new Error(t("resourceLessons.noLessonsForReview"));
+        }
+        if (errorBody.code === "NO_MISTAKES") {
+          throw new Error(t("resourceLessons.noMistakesYet"));
+        }
+        throw new Error("Failed to generate review lesson");
+      }
+      return res.json();
+    },
+    onSuccess: (lesson) => {
+      queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
+      toast.success(t("resourceLessons.reviewGenerated"));
+      window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
+    },
+    onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
+  });
+
   const deleteLesson = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/resources/${resourceId}/lessons/${id}`, {
@@ -132,6 +165,19 @@ export default function LessonsPage() {
           <Badge variant="secondary">{lessons.length}</Badge>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => generateReviewLesson.mutate()}
+            disabled={generateReviewLesson.isPending}
+            className="w-full sm:w-auto"
+          >
+            {generateReviewLesson.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Target className="mr-2 h-4 w-4" />
+            )}
+            {t("resourceLessons.generateReview")}
+          </Button>
           <Button
             variant="outline"
             onClick={() => generateLesson.mutate()}

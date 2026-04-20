@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai/openai";
 import { checkTokenLimit, logTokenUsage } from "@/lib/ai/token-usage";
 import { normalizeQuestionPayload } from "@/lib/quiz/question-normalizer";
+import { inferUserLevel } from "@/lib/user/skill-inferencer";
 
 const generateSchema = z.object({
   type: z.enum(["summary", "flashcards", "quiz"]),
@@ -76,10 +77,12 @@ export async function POST(
       }
 
       case "flashcards": {
+        const targetLevel = await inferUserLevel(session.user.id, resourceId);
         const { result: generatedFlashcards, usage } = await generateFlashcards(
           data.sourceContent,
           data.count || 10,
-          data.locale
+          data.locale,
+          targetLevel
         );
 
         if (generatedFlashcards.length === 0) {
@@ -105,11 +108,13 @@ export async function POST(
       }
 
       case "quiz": {
+        const targetLevel = await inferUserLevel(session.user.id, resourceId);
         const { result: generatedQuestions, usage } = await generateExtendedQuizQuestions(
           data.sourceContent,
           data.count || 5,
           "mixed",
-          data.locale
+          data.locale,
+          targetLevel
         );
 
         if (generatedQuestions.length === 0) {

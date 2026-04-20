@@ -178,6 +178,20 @@
     "great": "Great!",
     "good": "Good",
     "keepPracticing": "Keep practicing",
+    "recommendations": "Recommended for you",
+    "recReviewFlashcards": "Flashcards due",
+    "recReviewFlashcardsDesc": "{count} cards ready to review in {title}",
+    "recReviewLesson": "Review weak areas",
+    "recReviewLessonDesc": "You scored {score}% on {title} — let's revisit",
+    "recTryAdvanced": "You've mastered this",
+    "recTryAdvancedDesc": "Ready for advanced content on {title}",
+    "recStartLearning": "Ready to begin",
+    "recStartLearningDesc": "Start your first session on {title}",
+    "recStudy": "Study",
+    "recReview": "Review",
+    "recOpen": "Open",
+    "recStart": "Start",
+    "noRecommendations": "Keep studying — suggestions will appear here",
     "days": {
       "mon": "Mon",
       "tue": "Tue",
@@ -959,7 +973,12 @@
     "lessonCreated": "Lesson created",
     "lessonGenerated": "Lesson generated! Opening editor...",
     "failedGenerate": "Failed to generate lesson",
-    "lessonDeleted": "Lesson deleted"
+    "lessonDeleted": "Lesson deleted",
+    "generateReview": "Review weak areas",
+    "generating": "Generating...",
+    "reviewGenerated": "Review lesson created!",
+    "noLessonsForReview": "Finish a lesson first — we'll review your mistakes",
+    "noMistakesYet": "No mistakes to review. Great work!"
   },
   "inlineEdit": {
     "clickToEdit": "Click to edit..."
@@ -1256,7 +1275,19 @@
     "cardsStudied": "Cards studied",
     "cardsCorrect": "Cards correct",
     "accuracyRate": "Accuracy rate",
-    "noActivity": "No activity yet. Start studying to see your progress here."
+    "noActivity": "No activity yet. Start studying to see your progress here.",
+    "questionTypePerformance": "Performance by question type",
+    "questionTypeAttempts": "{count} attempts",
+    "qt": {
+      "multiple_choice": "Multiple Choice",
+      "true_false": "True / False",
+      "text_input": "Text Input",
+      "year_range": "Year",
+      "numeric_range": "Numeric",
+      "matching": "Matching",
+      "fill_blank": "Fill the Blank",
+      "multi_select": "Multi-Select"
+    }
   },
   "layout": {
     "shortcutHint": "? for shortcuts"
