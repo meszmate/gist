@@ -1119,6 +1119,98 @@ export async function generateLesson(
   }
 }
 
+export async function generateLessonStream(
+  sourceContent: string,
+  existingFlashcards?: { front: string; back: string }[],
+  existingQuizQuestions?: { question: string; options?: string[] }[],
+  options?: {
+    stepCount?: number;
+    title?: string;
+    targetLevel?: UserLevel;
+    focusTopics?: string[];
+    customInstructions?: string;
+  },
+  locale?: string
+): Promise<{
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+  getUsage: () => TokenUsageData | null;
+}> {
+  const stepCount = options?.stepCount || 14;
+  const preparedSource = prepareGenerationContent(sourceContent);
+
+  let context = `Source material:\n${preparedSource}`;
+  if (existingFlashcards?.length) {
+    context += `\n\nExisting flashcards for reference (use these concepts):\n${existingFlashcards
+      .slice(0, 10)
+      .map((f) => `Q: ${f.front} A: ${f.back}`)
+      .join("\n")}`;
+  }
+  if (existingQuizQuestions?.length) {
+    context += `\n\nExisting quiz questions for reference:\n${existingQuizQuestions
+      .slice(0, 5)
+      .map((q) => q.question)
+      .join("\n")}`;
+  }
+
+  let focusBlock = "";
+  if (options?.focusTopics?.length) {
+    focusBlock = `\n\nFOCUS AREAS (the user struggled with these previously — dedicate the lesson to reviewing them):\n${options.focusTopics
+      .slice(0, 15)
+      .map((topic, i) => `${i + 1}. ${topic}`)
+      .join("\n")}\n\nBuild the lesson specifically around these weak points. Re-teach the underlying concepts from scratch, then reinforce with interactive practice.`;
+  }
+
+  let customBlock = "";
+  if (options?.customInstructions?.trim()) {
+    customBlock = `\n\nUSER INSTRUCTIONS (follow these tightly; they reflect exactly what the learner wants out of this lesson):\n${options.customInstructions.trim()}`;
+  }
+
+  const userPrompt = `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}
+
+Also provide a title and short description for the lesson.
+
+IMPORTANT: Emit fields in this exact order so the stream stays readable: "title" FIRST, then "description", then "steps".
+
+Return JSON: { "title": "...", "description": "...", "steps": [...] }${customBlock}${focusBlock}
+
+${context}`;
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [
+      {
+        role: "system",
+        content:
+          LESSON_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(options?.targetLevel),
+      },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 25000,
+    stream: true,
+    stream_options: { include_usage: true },
+  });
+
+  let usage: TokenUsageData | null = null;
+
+  async function* tracked(): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
+    for await (const chunk of response) {
+      if (chunk.usage) {
+        usage = {
+          total_tokens: chunk.usage.total_tokens,
+          prompt_tokens: chunk.usage.prompt_tokens,
+          completion_tokens: chunk.usage.completion_tokens,
+        };
+      }
+      yield chunk;
+    }
+  }
+
+  return { stream: tracked(), getUsage: () => usage };
+}
+
 export async function improveLessonStep(
   step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
   sourceContent?: string,

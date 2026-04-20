@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LessonCard } from "@/components/lesson/lesson-card";
+import { LessonGenerationDialog } from "@/components/lesson/lesson-generation-dialog";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,6 +35,7 @@ export default function LessonsPage() {
   const { t, locale } = useLocale();
   const resourceId = params.resourceId as string;
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const { data: lessons = [], isLoading } = useQuery<Lesson[]>({
     queryKey: ["lessons", resourceId],
@@ -59,30 +61,6 @@ export default function LessonsPage() {
       toast.success(t("resourceLessons.lessonCreated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
-  });
-
-  const generateLesson = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/resources/${resourceId}/lessons/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale }),
-      });
-      if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({}));
-        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
-          throw new Error(t("generate.tokenLimitExceeded"));
-        }
-        throw new Error("Failed to generate lesson");
-      }
-      return res.json();
-    },
-    onSuccess: (lesson) => {
-      queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
-      toast.success(t("resourceLessons.lessonGenerated"));
-      window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
-    },
-    onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
   });
 
   const generateReviewLesson = useMutation({
@@ -180,15 +158,10 @@ export default function LessonsPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => generateLesson.mutate()}
-            disabled={generateLesson.isPending}
+            onClick={() => setGenerateOpen(true)}
             className="w-full sm:w-auto"
           >
-            {generateLesson.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
+            <Sparkles className="mr-2 h-4 w-4" />
             {t("resourceLessons.aiGenerate")}
           </Button>
           <Button
@@ -220,6 +193,12 @@ export default function LessonsPage() {
           ))}
         </div>
       )}
+
+      <LessonGenerationDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        resourceId={resourceId}
+      />
 
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
