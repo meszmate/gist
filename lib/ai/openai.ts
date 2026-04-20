@@ -39,9 +39,50 @@ function extractUsage(completion: { usage?: { total_tokens: number; prompt_token
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", hu: "Hungarian" };
 const GENERATION_INPUT_MAX_CHARS = 24000;
 
+export type UserLevel = "beginner" | "intermediate" | "advanced";
+
 function getLanguageInstruction(locale?: string): string {
   const lang = LANGUAGE_NAMES[locale || "en"] || "English";
   return `\nIMPORTANT: Generate ALL content in ${lang}.`;
+}
+
+function getLevelInstruction(level?: UserLevel): string {
+  if (!level) return "";
+  switch (level) {
+    case "beginner":
+      return `\n\nTARGET LEVEL: BEGINNER. The learner is new to this material.
+- Use simple vocabulary and short sentences.
+- Define technical terms the first time you use them.
+- Prefer concrete examples over abstract theory.
+- For questions, make the correct answer clearly right and distractors obviously wrong. Avoid trick questions.
+- Include generous hints and explanations.
+- Focus on fundamentals before edge cases.`;
+    case "intermediate":
+      return `\n\nTARGET LEVEL: INTERMEDIATE. The learner has basic familiarity with the subject.
+- Use standard domain vocabulary and assume core concepts are known.
+- Mix application and recall questions.
+- Distractors should be plausible but distinguishable with careful thought.
+- Include moderate hints on harder questions.`;
+    case "advanced":
+      return `\n\nTARGET LEVEL: ADVANCED. The learner has strong mastery of the fundamentals.
+- Use precise domain terminology without defining it.
+- Emphasize edge cases, exceptions, and critical thinking.
+- Make distractors subtle and realistic (near-miss answers, common misconceptions).
+- Minimize hints and hand-holding.
+- Favor multi-step reasoning and synthesis over recall.`;
+  }
+}
+
+function getDifficultyDistribution(level?: UserLevel): string {
+  if (!level) return "Mix of easy, medium, hard questions.";
+  switch (level) {
+    case "beginner":
+      return "Distribution: ~60% easy (1 pt), ~30% medium (2 pt), ~10% hard (3 pt). Favor the fundamentals.";
+    case "intermediate":
+      return "Distribution: ~25% easy (1 pt), ~50% medium (2 pt), ~25% hard (3 pt). Balanced.";
+    case "advanced":
+      return "Distribution: ~10% easy (1 pt), ~30% medium (2 pt), ~60% hard (3 pt). Emphasize challenging questions.";
+  }
 }
 
 function prepareGenerationContent(content: string): string {
@@ -745,13 +786,20 @@ export async function generateSummaryStream(content: string, locale?: string): P
 export async function generateFlashcards(
   content: string,
   count: number = 10,
-  locale?: string
+  locale?: string,
+  targetLevel?: UserLevel
 ): Promise<{ result: GeneratedFlashcard[]; usage: TokenUsageData | null }> {
   const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
-      { role: "system", content: FLASHCARD_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      {
+        role: "system",
+        content:
+          FLASHCARD_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(targetLevel),
+      },
       {
         role: "user",
         content: `Generate ${count} flashcards from the following content. Return ONLY JSON:\n\n${preparedContent}`,
@@ -810,13 +858,20 @@ export async function generateFlashcards(
 export async function generateQuizQuestions(
   content: string,
   count: number = 5,
-  locale?: string
+  locale?: string,
+  targetLevel?: UserLevel
 ): Promise<{ result: GeneratedQuizQuestion[]; usage: TokenUsageData | null }> {
   const preparedContent = prepareGenerationContent(content);
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
-      { role: "system", content: QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      {
+        role: "system",
+        content:
+          QUIZ_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(targetLevel),
+      },
       {
         role: "user",
         content: `Generate ${count} multiple-choice quiz questions from the following content. Return ONLY JSON:\n\n${preparedContent}`,
@@ -848,7 +903,8 @@ export async function generateExtendedQuizQuestions(
   content: string,
   count: number = 10,
   questionTypes: QuestionTypeFilter = "mixed",
-  locale?: string
+  locale?: string,
+  targetLevel?: UserLevel
 ): Promise<{ result: ExtendedQuizQuestion[]; usage: TokenUsageData | null }> {
   const preparedContent = prepareGenerationContent(content);
   let typeInstruction = "";
@@ -869,7 +925,13 @@ Aim for this distribution:
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
-      { role: "system", content: EXTENDED_QUIZ_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      {
+        role: "system",
+        content:
+          EXTENDED_QUIZ_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(targetLevel),
+      },
       {
         role: "user",
         content: `Generate ${count} quiz questions from the following content.
@@ -878,7 +940,7 @@ ${typeInstruction}
 
 Important:
 - Questions should test understanding, not just memorization
-- Vary difficulty (mix of easy, medium, hard questions)
+- ${getDifficultyDistribution(targetLevel)}
 - Assign points based on difficulty (1=easy, 2=medium, 3=hard)
 - Provide clear explanations for each answer
 - For matching questions, use 3-5 pairs maximum
@@ -967,7 +1029,12 @@ export async function generateLesson(
   sourceContent: string,
   existingFlashcards?: { front: string; back: string }[],
   existingQuizQuestions?: { question: string; options?: string[] }[],
-  options?: { stepCount?: number; title?: string },
+  options?: {
+    stepCount?: number;
+    title?: string;
+    targetLevel?: UserLevel;
+    focusTopics?: string[];
+  },
   locale?: string
 ): Promise<{ result: { title: string; description: string; steps: GeneratedLessonStep[] }; usage: TokenUsageData | null }> {
   const stepCount = options?.stepCount || 14;
@@ -986,13 +1053,27 @@ export async function generateLesson(
       .join("\n")}`;
   }
 
+  let focusBlock = "";
+  if (options?.focusTopics?.length) {
+    focusBlock = `\n\nFOCUS AREAS (the user struggled with these previously — dedicate the lesson to reviewing them):\n${options.focusTopics
+      .slice(0, 15)
+      .map((topic, i) => `${i + 1}. ${topic}`)
+      .join("\n")}\n\nBuild the lesson specifically around these weak points. Re-teach the underlying concepts from scratch, then reinforce with interactive practice.`;
+  }
+
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [
-      { role: "system", content: LESSON_SYSTEM_PROMPT + getLanguageInstruction(locale) },
+      {
+        role: "system",
+        content:
+          LESSON_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(options?.targetLevel),
+      },
       {
         role: "user",
-        content: `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}\n\nAlso provide a title and short description for the lesson.\n\nReturn JSON: { "title": "...", "description": "...", "steps": [...] }\n\n${context}`,
+        content: `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}\n\nAlso provide a title and short description for the lesson.\n\nReturn JSON: { "title": "...", "description": "...", "steps": [...] }${focusBlock}\n\n${context}`,
       },
     ],
     response_format: { type: "json_object" },
@@ -1036,6 +1117,98 @@ export async function generateLesson(
     console.error("Failed to parse lesson:", result);
     return { result: { title: "Untitled Lesson", description: "", steps: [] }, usage };
   }
+}
+
+export async function generateLessonStream(
+  sourceContent: string,
+  existingFlashcards?: { front: string; back: string }[],
+  existingQuizQuestions?: { question: string; options?: string[] }[],
+  options?: {
+    stepCount?: number;
+    title?: string;
+    targetLevel?: UserLevel;
+    focusTopics?: string[];
+    customInstructions?: string;
+  },
+  locale?: string
+): Promise<{
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+  getUsage: () => TokenUsageData | null;
+}> {
+  const stepCount = options?.stepCount || 14;
+  const preparedSource = prepareGenerationContent(sourceContent);
+
+  let context = `Source material:\n${preparedSource}`;
+  if (existingFlashcards?.length) {
+    context += `\n\nExisting flashcards for reference (use these concepts):\n${existingFlashcards
+      .slice(0, 10)
+      .map((f) => `Q: ${f.front} A: ${f.back}`)
+      .join("\n")}`;
+  }
+  if (existingQuizQuestions?.length) {
+    context += `\n\nExisting quiz questions for reference:\n${existingQuizQuestions
+      .slice(0, 5)
+      .map((q) => q.question)
+      .join("\n")}`;
+  }
+
+  let focusBlock = "";
+  if (options?.focusTopics?.length) {
+    focusBlock = `\n\nFOCUS AREAS (the user struggled with these previously — dedicate the lesson to reviewing them):\n${options.focusTopics
+      .slice(0, 15)
+      .map((topic, i) => `${i + 1}. ${topic}`)
+      .join("\n")}\n\nBuild the lesson specifically around these weak points. Re-teach the underlying concepts from scratch, then reinforce with interactive practice.`;
+  }
+
+  let customBlock = "";
+  if (options?.customInstructions?.trim()) {
+    customBlock = `\n\nUSER INSTRUCTIONS (follow these tightly; they reflect exactly what the learner wants out of this lesson):\n${options.customInstructions.trim()}`;
+  }
+
+  const userPrompt = `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}
+
+Also provide a title and short description for the lesson.
+
+IMPORTANT: Emit fields in this exact order so the stream stays readable: "title" FIRST, then "description", then "steps".
+
+Return JSON: { "title": "...", "description": "...", "steps": [...] }${customBlock}${focusBlock}
+
+${context}`;
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [
+      {
+        role: "system",
+        content:
+          LESSON_SYSTEM_PROMPT +
+          getLanguageInstruction(locale) +
+          getLevelInstruction(options?.targetLevel),
+      },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 25000,
+    stream: true,
+    stream_options: { include_usage: true },
+  });
+
+  let usage: TokenUsageData | null = null;
+
+  async function* tracked(): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
+    for await (const chunk of response) {
+      if (chunk.usage) {
+        usage = {
+          total_tokens: chunk.usage.total_tokens,
+          prompt_tokens: chunk.usage.prompt_tokens,
+          completion_tokens: chunk.usage.completion_tokens,
+        };
+      }
+      yield chunk;
+    }
+  }
+
+  return { stream: tracked(), getUsage: () => usage };
 }
 
 export async function improveLessonStep(

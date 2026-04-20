@@ -21,6 +21,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -48,59 +49,62 @@ export function AppSidebar() {
         { title: t("nav.study"), href: "/study", icon: Brain },
         { title: t("nav.quizzes"), href: "/quiz", icon: FileQuestion },
         { title: t("nav.lessons"), href: "/lessons", icon: GraduationCap },
-        { title: t("nav.progress") || "Progress", href: "/progress", icon: TrendingUp },
+        { title: t("nav.progress"), href: "/progress", icon: TrendingUp },
       ],
     },
     {
       label: t("nav.manage"),
       items: [
-        { title: t("nav.courses") || "Courses", href: "/courses", icon: School },
+        { title: t("nav.courses"), href: "/courses", icon: School },
         { title: t("nav.contacts"), href: "/contacts", icon: Users },
         { title: t("nav.settings"), href: "/settings", icon: Settings },
       ],
     },
   ];
 
-  const allItems = navGroups.flatMap((group) => group.items);
-
   return (
     <Sidebar>
-      <SidebarHeader className="h-14 flex justify-center">
-        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 group">
+      <SidebarHeader className="h-14 flex-row items-center px-4">
+        <Link href="/dashboard" className="flex items-center gap-2 group">
           <GistLogo className="h-6 w-6 text-foreground" />
           <span className="font-semibold text-base tracking-tight">
             gist
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {allItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" &&
-                    pathname.startsWith(item.href));
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="gap-0 py-2">
+        {navGroups.map((group) => (
+          <SidebarGroup key={group.label} className="py-1.5">
+            <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/50">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/dashboard" &&
+                      pathname.startsWith(item.href));
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/60">
         <SidebarUser />
       </SidebarFooter>
     </Sidebar>

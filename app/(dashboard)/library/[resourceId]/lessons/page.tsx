@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LessonCard } from "@/components/lesson/lesson-card";
+import { LessonGenerationDialog } from "@/components/lesson/lesson-generation-dialog";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,7 +24,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { GraduationCap, Plus, Sparkles, Loader2 } from "lucide-react";
+import { GraduationCap, Plus, Sparkles, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/use-locale";
 import type { Lesson } from "@/lib/types/lesson";
@@ -34,6 +35,7 @@ export default function LessonsPage() {
   const { t, locale } = useLocale();
   const resourceId = params.resourceId as string;
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const { data: lessons = [], isLoading } = useQuery<Lesson[]>({
     queryKey: ["lessons", resourceId],
@@ -61,25 +63,34 @@ export default function LessonsPage() {
     },
   });
 
-  const generateLesson = useMutation({
+  const generateReviewLesson = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/resources/${resourceId}/lessons/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale }),
-      });
+      const res = await fetch(
+        `/api/resources/${resourceId}/lessons/generate-review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale }),
+        }
+      );
       if (!res.ok) {
         const errorBody = await res.json().catch(() => ({}));
         if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
           throw new Error(t("generate.tokenLimitExceeded"));
         }
-        throw new Error("Failed to generate lesson");
+        if (errorBody.code === "NO_ATTEMPTS" || errorBody.code === "NO_LESSONS") {
+          throw new Error(t("resourceLessons.noLessonsForReview"));
+        }
+        if (errorBody.code === "NO_MISTAKES") {
+          throw new Error(t("resourceLessons.noMistakesYet"));
+        }
+        throw new Error("Failed to generate review lesson");
       }
       return res.json();
     },
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: ["lessons", resourceId] });
-      toast.success(t("resourceLessons.lessonGenerated"));
+      toast.success(t("resourceLessons.reviewGenerated"));
       window.location.href = `/library/${resourceId}/lessons/${lesson.id}/edit`;
     },
     onError: (error) => toast.error(error.message || t("resourceLessons.failedGenerate")),
@@ -134,15 +145,23 @@ export default function LessonsPage() {
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Button
             variant="outline"
-            onClick={() => generateLesson.mutate()}
-            disabled={generateLesson.isPending}
+            onClick={() => generateReviewLesson.mutate()}
+            disabled={generateReviewLesson.isPending}
             className="w-full sm:w-auto"
           >
-            {generateLesson.isPending ? (
+            {generateReviewLesson.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Target className="mr-2 h-4 w-4" />
             )}
+            {t("resourceLessons.generateReview")}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setGenerateOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
             {t("resourceLessons.aiGenerate")}
           </Button>
           <Button
@@ -174,6 +193,12 @@ export default function LessonsPage() {
           ))}
         </div>
       )}
+
+      <LessonGenerationDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        resourceId={resourceId}
+      />
 
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>

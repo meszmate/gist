@@ -261,7 +261,6 @@ export const quizQuestions = pgTable(
     options: jsonb("options").$type<string[]>(),
     correctAnswer: integer("correct_answer"),
     explanation: text("explanation"),
-    imageUrl: text("image_url"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
@@ -571,6 +570,9 @@ export const lessons = pgTable(
     settings: jsonb("settings").$type<LessonSettings>(),
     status: varchar("status", { length: 20 }).default("draft").notNull(),
     isPublic: boolean("is_public").default(false).notNull(),
+    // Adaptive learning: targeted difficulty at generation time
+    // One of: "beginner" | "intermediate" | "advanced" | "review"
+    targetLevel: varchar("target_level", { length: 20 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

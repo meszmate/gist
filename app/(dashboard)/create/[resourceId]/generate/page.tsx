@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -14,6 +14,7 @@ import {
   Sparkles,
   Check,
   GraduationCap,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,8 @@ function createGenerateSchema(t: (key: string) => string) {
 }
 
 type GenerateForm = z.infer<ReturnType<typeof createGenerateSchema>>;
+type GenerationStepKey = "save" | "summary" | "flashcards" | "quiz";
+type GenerationStepState = "pending" | "active" | "completed";
 
 interface Resource {
   id: string;
@@ -73,7 +76,16 @@ export default function GeneratePage() {
   const { t, locale } = useLocale();
   const resourceId = params.resourceId as string;
   const [progress, setProgress] = useState(0);
+  const [progressTarget, setProgressTarget] = useState(0);
   const [generatingStep, setGeneratingStep] = useState<string | null>(null);
+  const [summaryPreview, setSummaryPreview] = useState("");
+  const [runSteps, setRunSteps] = useState<GenerationStepKey[]>([]);
+  const [stepStates, setStepStates] = useState<Record<GenerationStepKey, GenerationStepState>>({
+    save: "pending",
+    summary: "pending",
+    flashcards: "pending",
+    quiz: "pending",
+  });
 
   const generateSchema = useMemo(() => createGenerateSchema(t), [t]);
 
@@ -133,6 +145,110 @@ export default function GeneratePage() {
     },
   ];
 
+  const stepLabels: Record<GenerationStepKey, string> = {
+    save: t("generate.savingContent"),
+    summary: t("generate.generatingSummary"),
+    flashcards: t("generate.creatingFlashcards"),
+    quiz: t("generate.buildingQuiz"),
+  };
+
+  const resetGenerationState = () => {
+    setProgress(0);
+    setProgressTarget(0);
+    setGeneratingStep(null);
+    setSummaryPreview("");
+    setRunSteps([]);
+    setStepStates({
+      save: "pending",
+      summary: "pending",
+      flashcards: "pending",
+      quiz: "pending",
+    });
+  };
+
+  const updateStepState = (step: GenerationStepKey, state: GenerationStepState) => {
+    setStepStates((current) => ({ ...current, [step]: state }));
+  };
+
+  useEffect(() => {
+    if (progress === progressTarget) return;
+
+    const interval = window.setInterval(() => {
+      setProgress((current) => {
+        if (current >= progressTarget) {
+          window.clearInterval(interval);
+          return current;
+        }
+
+        const distance = progressTarget - current;
+        const increment = Math.max(1, Math.ceil(distance / 6));
+        return Math.min(progressTarget, current + increment);
+      });
+    }, 120);
+
+    return () => window.clearInterval(interval);
+  }, [progress, progressTarget]);
+
+  const streamSummary = async (
+    sourceContent: string,
+    progressFloor: number,
+    progressPerStep: number
+  ) => {
+    const res = await fetch(`/api/resources/${resourceId}/generate/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceContent, locale }),
+    });
+
+    if (!res.ok) {
+      const rawError = await getApiErrorMessage(res, "Failed to stream summary");
+      throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
+    }
+
+    if (!res.body) {
+      throw new Error(t("generate.failedGenerate"));
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let chunkCount = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const event of events) {
+        for (const line of event.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+
+          const payload = line.slice(6).trim();
+          if (!payload || payload === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(payload) as { content?: string };
+            if (parsed.content) {
+              chunkCount += 1;
+              const streamedStepProgress = Math.min(
+                progressPerStep * 0.92,
+                progressPerStep * 0.18 + chunkCount * Math.max(progressPerStep * 0.06, 1)
+              );
+              setProgressTarget(Math.round(progressFloor + streamedStepProgress));
+              setSummaryPreview((current) => current + parsed.content);
+            }
+          } catch {
+            // Ignore malformed SSE chunks and keep streaming.
+          }
+        }
+      }
+
+      if (done) break;
+    }
+  };
+
   const { data: resource, isLoading } = useQuery<Resource>({
     queryKey: ["resource", resourceId],
     queryFn: async () => {
@@ -159,17 +275,28 @@ export default function GeneratePage() {
 
   const generate = useMutation({
     mutationFn: async (data: GenerateForm) => {
-      const steps = [];
+      const steps: Array<Extract<GenerationStepKey, "summary" | "flashcards" | "quiz">> = [];
       if (data.generateSummary) steps.push("summary");
       if (data.generateFlashcards) steps.push("flashcards");
       if (data.generateQuiz) steps.push("quiz");
+
+      const generationPlan: GenerationStepKey[] = ["save", ...steps];
+      setRunSteps(generationPlan);
+      setStepStates({
+        save: "active",
+        summary: steps.includes("summary") ? "pending" : "completed",
+        flashcards: steps.includes("flashcards") ? "pending" : "completed",
+        quiz: steps.includes("quiz") ? "pending" : "completed",
+      });
+
       const failedSteps: string[] = [];
 
       let currentProgress = 0;
-      const progressPerStep = 100 / steps.length;
+      const progressPerStep = 100 / generationPlan.length;
 
       // First, save the source content
       setGeneratingStep(t("generate.savingContent"));
+      setProgressTarget(Math.max(6, Math.round(progressPerStep * 0.45)));
       const saveRes = await fetch(`/api/resources/${resourceId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -179,9 +306,13 @@ export default function GeneratePage() {
         const rawError = await getApiErrorMessage(saveRes, "Failed to update resource");
         throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
       }
+      updateStepState("save", "completed");
+      currentProgress += progressPerStep;
+      setProgressTarget(Math.round(currentProgress));
 
       // Generate each type of content
       for (const step of steps) {
+        updateStepState(step, "active");
         setGeneratingStep(
           step === "summary"
             ? t("generate.generatingSummary")
@@ -190,24 +321,36 @@ export default function GeneratePage() {
             : t("generate.buildingQuiz")
         );
 
-        const res = await fetch(`/api/resources/${resourceId}/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: step,
-            sourceContent: data.sourceContent,
-            count: step === "flashcards" ? data.flashcardCount : data.quizQuestionCount,
-            locale,
-          }),
-        });
+        if (step === "summary") {
+          setSummaryPreview("");
+          setProgressTarget(
+            Math.round(currentProgress + Math.max(progressPerStep * 0.12, 3))
+          );
+          await streamSummary(data.sourceContent, currentProgress, progressPerStep);
+        } else {
+          setProgressTarget(
+            Math.round(currentProgress + Math.max(progressPerStep * 0.82, 6))
+          );
+          const res = await fetch(`/api/resources/${resourceId}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: step,
+              sourceContent: data.sourceContent,
+              count: step === "flashcards" ? data.flashcardCount : data.quizQuestionCount,
+              locale,
+            }),
+          });
 
-        if (!res.ok) {
-          const rawError = await getApiErrorMessage(res, `Failed to generate ${step}`);
-          throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
+          if (!res.ok) {
+            const rawError = await getApiErrorMessage(res, `Failed to generate ${step}`);
+            throw new Error(localizeErrorMessage(rawError, t, "generate.failedGenerate"));
+          }
         }
 
+        updateStepState(step, "completed");
         currentProgress += progressPerStep;
-        setProgress(Math.round(currentProgress));
+        setProgressTarget(Math.round(currentProgress));
       }
 
       if (failedSteps.length === steps.length) {
@@ -220,6 +363,8 @@ export default function GeneratePage() {
       };
     },
     onSuccess: (result) => {
+      setProgress(100);
+      setProgressTarget(100);
       queryClient.invalidateQueries({ queryKey: ["resource", resourceId] });
       if (result.failedSteps.length > 0) {
         toast.warning(
@@ -233,8 +378,7 @@ export default function GeneratePage() {
     },
     onError: (error) => {
       toast.error(localizeErrorMessage(error, t, "generate.failedGenerate"));
-      setProgress(0);
-      setGeneratingStep(null);
+      resetGenerationState();
     },
   });
 
@@ -243,6 +387,7 @@ export default function GeneratePage() {
       toast.error(t("generate.selectAtLeastOne"));
       return;
     }
+    resetGenerationState();
     generate.mutate(data);
   };
 
@@ -327,24 +472,74 @@ export default function GeneratePage() {
 
       {generate.isPending ? (
         <Card className="animate-fade-in">
-          <CardContent className="py-16">
-            <div className="text-center space-y-6">
-              <div className="relative mx-auto w-20 h-20">
-                <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                <div className="relative w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          <CardContent className="py-10">
+            <div className="space-y-8">
+              <div className="text-center space-y-6">
+                <div className="relative mx-auto w-20 h-20">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                  <div className="relative w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">{generatingStep}</h3>
+                  <p className="text-muted-foreground">
+                    {t("generate.aiWorking")}
+                  </p>
+                </div>
+                <div className="max-w-sm mx-auto space-y-2">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{t("generate.percentComplete", { progress })}</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold">{generatingStep}</h3>
-                <p className="text-muted-foreground">
-                  {t("generate.aiWorking")}
-                </p>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {runSteps.map((step) => {
+                  const state = stepStates[step];
+                  return (
+                    <div
+                      key={step}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
+                        state === "active" && "border-primary/50 bg-primary/5",
+                        state === "completed" && "border-green-500/30 bg-green-500/5"
+                      )}
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        {state === "completed" ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : state === "active" ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        ) : (
+                          <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{stepLabels[step]}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {state === "completed"
+                            ? t("common.done")
+                            : state === "active"
+                            ? t("generate.aiWorking")
+                            : t("common.loading")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="max-w-sm mx-auto space-y-2">
-                <Progress value={progress} className="h-2" />
-                <p className="text-sm text-muted-foreground">{t("generate.percentComplete", { progress })}</p>
-              </div>
+
+              {runSteps.includes("summary") && (
+                <div className="rounded-2xl border bg-muted/20 p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <h4 className="font-medium">{t("generate.summary")}</h4>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                    {summaryPreview || t("generate.generatingSummary")}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

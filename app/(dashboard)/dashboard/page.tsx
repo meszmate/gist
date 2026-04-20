@@ -161,11 +161,11 @@ async function getDashboardStats(userId: string): Promise<DashboardStats> {
   };
 }
 
-function getTimeBasedGreeting(): string {
+function getTimeOfDay(): "morning" | "afternoon" | "evening" {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  return "evening";
 }
 
 export default async function DashboardPage() {
@@ -173,12 +173,11 @@ export default async function DashboardPage() {
   if (!session?.user?.id) return null;
 
   const stats = await getDashboardStats(session.user.id);
-  const greeting = getTimeBasedGreeting();
-  const firstName = session.user.name?.split(" ")[0] || "there";
+  const firstName = session.user.name?.split(" ")[0] ?? null;
 
   return (
     <DashboardClient
-      greeting={greeting}
+      timeOfDay={getTimeOfDay()}
       firstName={firstName}
       stats={stats}
     />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sun, Moon, Globe } from "lucide-react";
+import { Loader2, Sun, Moon, Globe, ArrowRight } from "lucide-react";
 import { GistLogo } from "@/components/icons/gist-logo";
 import { useLocale } from "@/hooks/use-locale";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/types";
@@ -99,20 +100,26 @@ function LoginForm() {
   return (
     <Button
       variant="outline"
-      className="h-11 px-6 text-sm font-medium cursor-pointer"
+      className="group relative h-12 w-full justify-between rounded-full border-border bg-background px-5 text-sm font-medium shadow-sm transition-all hover:border-foreground/30 hover:bg-background hover:shadow-md cursor-pointer"
       onClick={() => signIn("google", { callbackUrl })}
     >
-      <GoogleIcon />
-      {t("login.continueWithGoogle")}
+      <span className="flex items-center gap-3">
+        <GoogleIcon />
+        {t("login.continueWithGoogle")}
+      </span>
+      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
     </Button>
   );
 }
 
 function LoginButtonFallback() {
   const { t } = useLocale();
-
   return (
-    <Button variant="outline" className="h-11 px-6" disabled>
+    <Button
+      variant="outline"
+      className="h-12 w-full justify-center rounded-full text-sm"
+      disabled
+    >
       <Loader2 className="h-5 w-5 animate-spin" />
       {t("common.loading")}
     </Button>
@@ -123,29 +130,37 @@ export default function LoginPage() {
   const { t } = useLocale();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
-      <div className="flex flex-col items-center text-center">
-        {/* Logo */}
-        <GistLogo className="h-10 w-10 text-foreground mb-6" />
+    <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-background px-6">
+      {/* Top bar overlay */}
+      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-6 sm:p-8">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold transition-opacity hover:opacity-80"
+        >
+          <GistLogo className="h-6 w-6 text-foreground" />
+          <span className="text-[15px] tracking-tight">gist</span>
+        </Link>
+        <div className="flex items-center gap-0.5">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+      </header>
 
-        {/* Title */}
-        <h1 className="text-xl font-semibold tracking-tight mb-1">
+      {/* Centered content */}
+      <div className="flex w-full max-w-sm flex-col items-center text-center">
+        <h1 className="text-3xl font-semibold leading-tight tracking-[-0.02em] sm:text-4xl">
           {t("login.welcomeBack")}
         </h1>
-        <p className="text-sm text-muted-foreground mb-8">
+
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           {t("login.signInContinue")}
         </p>
 
-        {/* Sign in */}
-        <Suspense fallback={<LoginButtonFallback />}>
-          <LoginForm />
-        </Suspense>
-      </div>
-
-      {/* Bottom controls */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-0.5">
-        <LanguageSwitcher />
-        <ThemeToggle />
+        <div className="mt-8 w-full">
+          <Suspense fallback={<LoginButtonFallback />}>
+            <LoginForm />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
