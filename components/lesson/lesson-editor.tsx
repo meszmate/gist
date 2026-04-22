@@ -18,6 +18,7 @@ import {
   Trash2,
   GripVertical,
   Loader2,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -37,6 +38,8 @@ import {
 import { STEP_EDITORS } from "./step-editors";
 import { LessonStepTypePicker } from "./lesson-step-type-picker";
 import { LessonPlayer } from "./lesson-player";
+import { StepImproveDialog } from "./step-improve-dialog";
+import { LessonImproveDialog } from "./lesson-improve-dialog";
 import { useLocale } from "@/hooks/use-locale";
 import { useAutoSave } from "@/hooks/use-auto-save";
 
@@ -46,7 +49,7 @@ interface LessonEditorProps {
 }
 
 export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditorProps) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const queryClient = useQueryClient();
   const [lesson, setLesson] = useState(initialLesson);
   const [steps, setSteps] = useState(initialLesson.steps);
@@ -56,6 +59,8 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [stepImproveOpen, setStepImproveOpen] = useState(false);
+  const [lessonImproveOpen, setLessonImproveOpen] = useState(false);
 
   const { hasDraft, draftData, clearDraft, dismissDraft } = useAutoSave({
     entityType: "lesson",
@@ -190,36 +195,13 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
     },
   });
 
-  const improveStepMutation = useMutation({
-    mutationFn: async (stepId: string) => {
-      const res = await fetch(
-        `/api/resources/${resourceId}/lessons/${lesson.id}/steps/${stepId}/improve`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ locale }),
-        }
-      );
-      if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({}));
-        if (errorBody.code === "TOKEN_LIMIT_EXCEEDED") {
-          throw new Error(t("generate.tokenLimitExceeded"));
-        }
-        throw new Error("Failed to improve step");
-      }
-      return res.json();
+  const handleStepImproved = useCallback(
+    (improved: typeof steps[number]) => {
+      setSteps((prev) => prev.map((s) => (s.id === improved.id ? improved : s)));
+      // Persisted server-side by the streaming endpoint — no local "dirty" flag needed.
     },
-    onSuccess: (improved) => {
-      setSteps((prev) =>
-        prev.map((s) => (s.id === improved.id ? improved : s))
-      );
-      setIsDirty(true);
-      toast.success(t("lessonEditor.stepImproved"));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+    []
+  );
 
   const handleStepContentChange = useCallback(
     (content: StepContent, answerData: StepAnswerData) => {
@@ -286,6 +268,15 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
           )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLessonImproveOpen(true)}
+            disabled={steps.length === 0}
+          >
+            <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+            {t("lessonImprove.toolbarLabel")}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -406,14 +397,9 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => improveStepMutation.mutate(selectedStep.id)}
-                    disabled={improveStepMutation.isPending}
+                    onClick={() => setStepImproveOpen(true)}
                   >
-                    {improveStepMutation.isPending ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-1 h-3.5 w-3.5" />
-                    )}
+                    <Sparkles className="mr-1 h-3.5 w-3.5" />
                     {t("lessonEditor.aiImprove")}
                   </Button>
                   <Button
@@ -507,6 +493,23 @@ export function LessonEditor({ lesson: initialLesson, resourceId }: LessonEditor
         open={typePickerOpen}
         onOpenChange={setTypePickerOpen}
         onSelect={(type) => addStepMutation.mutate(type)}
+      />
+
+      <StepImproveDialog
+        open={stepImproveOpen}
+        onOpenChange={setStepImproveOpen}
+        resourceId={resourceId}
+        lessonId={lesson.id}
+        step={selectedStep}
+        onImproved={handleStepImproved}
+      />
+
+      <LessonImproveDialog
+        open={lessonImproveOpen}
+        onOpenChange={setLessonImproveOpen}
+        resourceId={resourceId}
+        lessonId={lesson.id}
+        existingStepCount={steps.length}
       />
     </div>
   );
