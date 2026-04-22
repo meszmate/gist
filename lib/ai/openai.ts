@@ -1006,6 +1006,16 @@ Return JSON: { "steps": [{ "stepType": "...", "content": {...}, "answerData": {.
 
 export const LESSON_IMPROVE_PROMPT = `You are an expert instructional designer. Improve the given lesson step to be more engaging, clear, and educationally effective. Maintain the same step type and structure, but enhance the content quality. Return the improved step in the same JSON format.`;
 
+export const LESSON_WHOLE_IMPROVE_PROMPT = `You are an expert instructional designer. You will receive an existing lesson (title, description, and ordered steps) and rewrite it into a better version.
+
+Hard rules:
+- Return the full lesson as JSON: { "title": "...", "description": "...", "steps": [...] }.
+- Emit fields in this order: "title" FIRST, then "description", then "steps".
+- Each step must match the existing step schemas (same step types available as in the generation prompt: explanation, concept, multiple_choice, true_false, drag_sort, drag_match, drag_categorize, fill_blanks, type_answer, select_many, reveal).
+- Preserve the overall pedagogical arc unless the user instructions say otherwise. You may reorder, merge, split, add, or remove steps as needed to make the lesson better.
+- Follow any user instructions precisely. They take priority over your defaults.
+- Keep 40% content / 60% interactive as the baseline when user doesn't specify a style.`;
+
 export interface GeneratedLessonStep {
   stepType: StepType;
   content: StepContent;
@@ -1250,6 +1260,134 @@ export async function improveLessonStep(
   } catch {
     return { result: step as GeneratedLessonStep, usage };
   }
+}
+
+export async function improveLessonStepStream(
+  step: { stepType: string; content: StepContent; answerData: StepAnswerData; explanation: string | null; hint: string | null },
+  options?: {
+    sourceContent?: string;
+    customInstructions?: string;
+    locale?: string;
+  }
+): Promise<{
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+  getUsage: () => TokenUsageData | null;
+}> {
+  const customBlock = options?.customInstructions?.trim()
+    ? `\n\nUSER INSTRUCTIONS (apply these tightly — they describe exactly what to change):\n${options.customInstructions.trim()}`
+    : "";
+  const sourceBlock = options?.sourceContent
+    ? `\n\nOriginal source material for context:\n${options.sourceContent.slice(0, 2000)}`
+    : "";
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: LESSON_IMPROVE_PROMPT + getLanguageInstruction(options?.locale) },
+      {
+        role: "user",
+        content: `Improve this lesson step:\n${JSON.stringify(step)}${customBlock}${sourceBlock}\n\nReturn the improved step as JSON with the same structure (keys: stepType, content, answerData, explanation, hint).`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 16000,
+    stream: true,
+    stream_options: { include_usage: true },
+  });
+
+  let usage: TokenUsageData | null = null;
+
+  async function* tracked(): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
+    for await (const chunk of response) {
+      if (chunk.usage) {
+        usage = {
+          total_tokens: chunk.usage.total_tokens,
+          prompt_tokens: chunk.usage.prompt_tokens,
+          completion_tokens: chunk.usage.completion_tokens,
+        };
+      }
+      yield chunk;
+    }
+  }
+
+  return { stream: tracked(), getUsage: () => usage };
+}
+
+export async function improveLessonStream(
+  existingLesson: {
+    title: string;
+    description: string | null;
+    steps: { stepType: string; content: unknown; answerData: unknown; explanation: string | null; hint: string | null }[];
+  },
+  options?: {
+    sourceContent?: string;
+    customInstructions?: string;
+    locale?: string;
+    targetLevel?: UserLevel;
+  }
+): Promise<{
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+  getUsage: () => TokenUsageData | null;
+}> {
+  const customBlock = options?.customInstructions?.trim()
+    ? `\n\nUSER INSTRUCTIONS (apply these tightly — they take priority over defaults):\n${options.customInstructions.trim()}`
+    : "";
+  const sourceBlock = options?.sourceContent
+    ? `\n\nOriginal source material for context (use it to correct factual issues or to pull in missing material):\n${prepareGenerationContent(options.sourceContent)}`
+    : "";
+
+  const existingBlock = JSON.stringify({
+    title: existingLesson.title,
+    description: existingLesson.description,
+    steps: existingLesson.steps,
+  });
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [
+      {
+        role: "system",
+        content:
+          LESSON_WHOLE_IMPROVE_PROMPT +
+          "\n\n" +
+          LESSON_SYSTEM_PROMPT +
+          getLanguageInstruction(options?.locale) +
+          getLevelInstruction(options?.targetLevel),
+      },
+      {
+        role: "user",
+        content: `Here is the current lesson. Rewrite it as an improved full lesson JSON.${customBlock}${sourceBlock}
+
+IMPORTANT: Emit fields in this exact order so the stream stays readable: "title" FIRST, then "description", then "steps".
+
+Return JSON: { "title": "...", "description": "...", "steps": [...] }
+
+Current lesson:
+${existingBlock}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 25000,
+    stream: true,
+    stream_options: { include_usage: true },
+  });
+
+  let usage: TokenUsageData | null = null;
+
+  async function* tracked(): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
+    for await (const chunk of response) {
+      if (chunk.usage) {
+        usage = {
+          total_tokens: chunk.usage.total_tokens,
+          prompt_tokens: chunk.usage.prompt_tokens,
+          completion_tokens: chunk.usage.completion_tokens,
+        };
+      }
+      yield chunk;
+    }
+  }
+
+  return { stream: tracked(), getUsage: () => usage };
 }
 
 /**
