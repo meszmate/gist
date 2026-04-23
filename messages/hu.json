@@ -1456,7 +1456,8 @@
     "joinedCourse": "Csatlakoztál: \"{title}\"",
     "failedCreate": "Nem sikerült létrehozni a kurzust",
     "failedJoin": "Nem sikerült csatlakozni",
-    "noCourses": "Még nincsenek kurzusok. Hozz létre egyet, vagy csatlakozz egy kóddal.",
+    "noCourses": "Még nincs kurzusod",
+    "noCoursesDesc": "Hozz létre egy osztályt, vagy csatlakozz egy kóddal, hogy elindulj.",
     "role": {
       "student": "Diák",
       "instructor": "Oktató",
