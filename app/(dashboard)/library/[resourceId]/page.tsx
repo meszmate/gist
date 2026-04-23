@@ -27,6 +27,7 @@ import {
   GraduationCap,
   Play,
   GitFork,
+  School,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,7 @@ import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { QuestionEditDialog } from "@/components/quiz/question-edit-dialog";
 import { ResourceSettingsDialog } from "@/components/resource/resource-settings-dialog";
 import { AccessControlDialog } from "@/components/resource/access-control-dialog";
+import { AddToCourseDialog } from "@/components/course/add-to-course-dialog";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -302,6 +304,7 @@ export default function ResourcePage() {
   const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [accessControlDialogOpen, setAccessControlDialogOpen] = useState(false);
+  const [addToCourseOpen, setAddToCourseOpen] = useState(false);
 
   const { data: resource, isLoading } = useQuery({
     queryKey: ["resource", resourceId],
@@ -656,6 +659,15 @@ export default function ResourcePage() {
             >
               <Lock className="h-4 w-4" />
             </Button>
+            {resource.isOwned && (
+              <Button
+                variant="outline"
+                onClick={() => setAddToCourseOpen(true)}
+              >
+                <School className="mr-2 h-4 w-4" />
+                {t("addToCourse.trigger")}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
               <Share2 className="mr-2 h-4 w-4" />
               {t("resourceDetail.share")}
@@ -1323,6 +1335,13 @@ export default function ResourcePage() {
         onSaved={() =>
           queryClient.invalidateQueries({ queryKey: ["resource", resourceId] })
         }
+      />
+
+      {/* Add to course dialog */}
+      <AddToCourseDialog
+        open={addToCourseOpen}
+        onOpenChange={setAddToCourseOpen}
+        resourceId={resource.id}
       />
     </div>
   );
