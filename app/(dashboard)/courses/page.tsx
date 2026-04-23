@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +37,17 @@ export default function CoursesPage() {
         return role;
     }
   };
+  // Opening /courses?join=CODE from an invite link pre-fills the join
+  // dialog so the user can commit with one click. We seed once on mount;
+  // after that the user owns the state.
+  const searchParams = useSearchParams();
+  const initialJoinCode = searchParams.get("join") ?? "";
+
   const [createOpen, setCreateOpen] = useState(false);
-  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(!!initialJoinCode);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState(initialJoinCode);
 
   const { data } = useQuery({
     queryKey: ["courses"],
