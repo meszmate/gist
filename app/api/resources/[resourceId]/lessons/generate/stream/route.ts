@@ -23,6 +23,26 @@ const streamSchema = z.object({
   stepCount: z.number().min(6).max(24).optional(),
   title: z.string().optional(),
   customInstructions: z.string().max(2000).optional(),
+  goal: z
+    .enum([
+      "exam_prep",
+      "interview_prep",
+      "curiosity",
+      "refresher",
+      "deep_understanding",
+      "drill",
+    ])
+    .optional(),
+  tone: z.enum(["friendly", "formal", "story", "socratic", "coach"]).optional(),
+  theoryPractice: z.number().min(0).max(100).optional(),
+  inclusions: z
+    .object({
+      examples: z.boolean().optional(),
+      pitfalls: z.boolean().optional(),
+      recap: z.boolean().optional(),
+      memoryTricks: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export async function POST(
@@ -104,6 +124,10 @@ export async function POST(
       title: data.title,
       targetLevel,
       customInstructions: data.customInstructions,
+      goal: data.goal,
+      tone: data.tone,
+      theoryPractice: data.theoryPractice,
+      inclusions: data.inclusions,
     },
     data.locale
   );

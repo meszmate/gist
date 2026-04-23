@@ -1129,6 +1129,115 @@ export async function generateLesson(
   }
 }
 
+export type LearnerGoal =
+  | "exam_prep"
+  | "interview_prep"
+  | "curiosity"
+  | "refresher"
+  | "deep_understanding"
+  | "drill";
+
+export type LessonTone =
+  | "friendly"
+  | "formal"
+  | "story"
+  | "socratic"
+  | "coach";
+
+export interface LessonInclusions {
+  examples?: boolean;
+  pitfalls?: boolean;
+  recap?: boolean;
+  memoryTricks?: boolean;
+}
+
+function getGoalInstruction(goal?: LearnerGoal): string {
+  switch (goal) {
+    case "exam_prep":
+      return "Preparing for a written exam. Prioritize recall of facts and definitions. Use exam-style phrasing. Include at least 2 multiple-choice questions in the format the learner would see on the exam.";
+    case "interview_prep":
+      return "Preparing for a job or technical interview. Prioritize practical application, clearly articulating ideas, and answering common interview questions. Favor type_answer / explanation-heavy steps over drag-sort.";
+    case "curiosity":
+      return "Exploring the topic out of curiosity. Keep it engaging and conceptual. Skip rote memorization — favor aha-moments, surprising connections, and intuition over rigor.";
+    case "refresher":
+      return "Refreshing existing knowledge. Assume the fundamentals are known. Skim over basics and zero in on the harder or commonly-forgotten parts.";
+    case "deep_understanding":
+      return "Building deep understanding. Explain the *why*, not just the *what*. Include derivations, underlying intuitions, and connections to adjacent concepts.";
+    case "drill":
+      return "Drill mode. Minimal exposition. Pack the lesson with targeted practice questions — 80% or more interactive steps.";
+    default:
+      return "";
+  }
+}
+
+function getToneInstruction(tone?: LessonTone): string {
+  switch (tone) {
+    case "friendly":
+      return "Friendly and conversational. Write like a patient tutor chatting with a learner — warm, approachable, contractions OK.";
+    case "formal":
+      return "Formal and precise. Write like a textbook or academic reference. Full sentences, no slang, careful definitions.";
+    case "story":
+      return "Story-driven. Weave the material into a narrative or running example. Each step should connect to the last so the learner is following a thread, not a list.";
+    case "socratic":
+      return "Socratic. Lead with questions that prompt the learner to notice patterns themselves, then confirm and elaborate. Favor questions over explanations.";
+    case "coach":
+      return "Coach-like. Motivating, direct, and encouraging. Celebrate correct intuition; call out common slip-ups firmly but kindly.";
+    default:
+      return "";
+  }
+}
+
+function getBalanceInstruction(theoryPractice?: number): string {
+  if (theoryPractice === undefined) return "";
+  const clamped = Math.max(0, Math.min(100, theoryPractice));
+  const practice = clamped;
+  const content = 100 - clamped;
+  return `Balance: ~${content}% explanatory content steps vs ~${practice}% interactive practice steps. Deviate from the 40/60 default accordingly.`;
+}
+
+function getInclusionsInstruction(inc?: LessonInclusions): string {
+  if (!inc) return "";
+  const items: string[] = [];
+  if (inc.examples)
+    items.push(
+      "Real-world examples — include at least one concrete, relatable example for each major concept."
+    );
+  if (inc.pitfalls)
+    items.push(
+      "Common pitfalls — surface typical misconceptions and mistakes. Use them as distractors in questions."
+    );
+  if (inc.recap)
+    items.push(
+      "Final recap — end the lesson with a summary concept or a connection-making question that ties the main ideas together."
+    );
+  if (inc.memoryTricks)
+    items.push(
+      "Memory tricks — weave in mnemonics, analogies, or anchoring devices where they help retention."
+    );
+  if (items.length === 0) return "";
+  return `Must include:\n- ${items.join("\n- ")}`;
+}
+
+function buildLearnerProfileBlock(options?: {
+  goal?: LearnerGoal;
+  tone?: LessonTone;
+  theoryPractice?: number;
+  inclusions?: LessonInclusions;
+}): string {
+  if (!options) return "";
+  const lines: string[] = [];
+  const g = getGoalInstruction(options.goal);
+  if (g) lines.push(`Goal: ${g}`);
+  const t = getToneInstruction(options.tone);
+  if (t) lines.push(`Tone: ${t}`);
+  const b = getBalanceInstruction(options.theoryPractice);
+  if (b) lines.push(b);
+  const inc = getInclusionsInstruction(options.inclusions);
+  if (inc) lines.push(inc);
+  if (lines.length === 0) return "";
+  return `\n\nLEARNER PROFILE (shape the whole lesson so it fits these needs — they take priority over your generic defaults):\n${lines.join("\n\n")}`;
+}
+
 export async function generateLessonStream(
   sourceContent: string,
   existingFlashcards?: { front: string; back: string }[],
@@ -1139,6 +1248,10 @@ export async function generateLessonStream(
     targetLevel?: UserLevel;
     focusTopics?: string[];
     customInstructions?: string;
+    goal?: LearnerGoal;
+    tone?: LessonTone;
+    theoryPractice?: number;
+    inclusions?: LessonInclusions;
   },
   locale?: string
 ): Promise<{
@@ -1175,13 +1288,20 @@ export async function generateLessonStream(
     customBlock = `\n\nUSER INSTRUCTIONS (follow these tightly; they reflect exactly what the learner wants out of this lesson):\n${options.customInstructions.trim()}`;
   }
 
+  const learnerBlock = buildLearnerProfileBlock({
+    goal: options?.goal,
+    tone: options?.tone,
+    theoryPractice: options?.theoryPractice,
+    inclusions: options?.inclusions,
+  });
+
   const userPrompt = `Create a lesson with approximately ${stepCount} steps from this material.${options?.title ? ` Lesson title: "${options.title}"` : ""}
 
 Also provide a title and short description for the lesson.
 
 IMPORTANT: Emit fields in this exact order so the stream stays readable: "title" FIRST, then "description", then "steps".
 
-Return JSON: { "title": "...", "description": "...", "steps": [...] }${customBlock}${focusBlock}
+Return JSON: { "title": "...", "description": "...", "steps": [...] }${customBlock}${learnerBlock}${focusBlock}
 
 ${context}`;
 
