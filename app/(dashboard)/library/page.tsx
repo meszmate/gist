@@ -21,6 +21,7 @@ import {
   Lock,
   Users2,
   CheckCircle2,
+  GitFork,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +144,27 @@ export default function LibraryPage() {
     },
   });
 
+  const forkResource = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const res = await fetch(`/api/resources/${resourceId}/fork`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to fork resource");
+      }
+      return (await res.json()) as { id: string; title: string };
+    },
+    onSuccess: (forked) => {
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      toast.success(t("resourceFork.success", { title: forked.title }));
+      router.push(`/library/${forked.id}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t("resourceFork.failed"));
+    },
+  });
+
   // Get unique folders
   const folders = Array.from(
     new Map(
@@ -229,7 +251,8 @@ export default function LibraryPage() {
   };
 
   const savedCount = resources.filter((r) => !r.isOwned).length;
-  const actionsDisabled = deleteResource.isPending || shareResource.isPending;
+  const actionsDisabled =
+    deleteResource.isPending || shareResource.isPending || forkResource.isPending;
 
   const handleDeleteResource = (resourceId: string) => {
     if (!window.confirm(t("resourceDetail.deleteResourceConfirm"))) {
@@ -240,6 +263,10 @@ export default function LibraryPage() {
 
   const handleShareResource = (resourceId: string) => {
     shareResource.mutate(resourceId);
+  };
+
+  const handleForkResource = (resourceId: string) => {
+    forkResource.mutate(resourceId);
   };
 
   return (
@@ -441,6 +468,18 @@ export default function LibraryPage() {
                                 {t("common.delete")}
                               </DropdownMenuItem>
                             </>
+                          )}
+                          {!resource.isOwned && (
+                            <DropdownMenuItem
+                              disabled={actionsDisabled}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleForkResource(resource.id);
+                              }}
+                            >
+                              <GitFork className="mr-2 h-4 w-4" />
+                              {t("resourceFork.action")}
+                            </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -662,6 +701,18 @@ export default function LibraryPage() {
                           {t("common.delete")}
                         </DropdownMenuItem>
                       </>
+                    )}
+                    {!resource.isOwned && (
+                      <DropdownMenuItem
+                        disabled={actionsDisabled}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleForkResource(resource.id);
+                        }}
+                      >
+                        <GitFork className="mr-2 h-4 w-4" />
+                        {t("resourceFork.action")}
+                      </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

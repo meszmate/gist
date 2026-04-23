@@ -26,6 +26,7 @@ import {
   Loader2,
   GraduationCap,
   Play,
+  GitFork,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,6 +127,9 @@ interface Resource {
   allowedViewerEmails: string[] | null;
   flashcards: Flashcard[];
   quizQuestions: QuizQuestion[];
+  isOwned: boolean;
+  forkedFromId: string | null;
+  forkedFromTitle: string | null;
 }
 
 async function fetchResource(id: string): Promise<Resource> {
@@ -367,6 +371,27 @@ export default function ResourcePage() {
     },
   });
 
+  const forkResource = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/resources/${resourceId}/fork`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to fork resource");
+      }
+      return (await res.json()) as { id: string; title: string };
+    },
+    onSuccess: (forked) => {
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      toast.success(t("resourceFork.success", { title: forked.title }));
+      router.push(`/library/${forked.id}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t("resourceFork.failed"));
+    },
+  });
+
   const toggleComplete = useMutation({
     mutationFn: async (completed: boolean) => {
       const res = await fetch(`/api/resources/${resourceId}/complete`, {
@@ -568,6 +593,21 @@ export default function ResourcePage() {
             />
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 animate-fade-in sm:w-auto sm:justify-end">
+            {!resource.isOwned && (
+              <Button
+                variant="outline"
+                onClick={() => forkResource.mutate()}
+                disabled={forkResource.isPending}
+                className="gap-2 border-primary/40 text-foreground hover:bg-primary/5"
+              >
+                {forkResource.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <GitFork className="h-4 w-4 text-primary" />
+                )}
+                {t("resourceFork.actionLong")}
+              </Button>
+            )}
             {resource.completedAt ? (
               <Button
                 variant="outline"
@@ -632,6 +672,14 @@ export default function ResourcePage() {
 
       {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap animate-fade-in">
+        {resource.forkedFromId && (
+          <Badge variant="outline" className="gap-1">
+            <GitFork className="h-3 w-3 text-primary" />
+            {resource.forkedFromTitle
+              ? t("resourceFork.forkedFrom", { title: resource.forkedFromTitle })
+              : t("resourceFork.forkedFromUnknown")}
+          </Badge>
+        )}
         {resource.completedAt && (
           <Badge className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 border">
             <CheckCircle2 className="h-3 w-3" />
