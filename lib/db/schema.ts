@@ -10,6 +10,7 @@ import {
   jsonb,
   primaryKey,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type {
@@ -158,6 +159,13 @@ export const studyMaterials = pgTable(
     requireAuthToInteract: boolean("require_auth_to_interact").default(false),
     allowedViewerEmails: text("allowed_viewer_emails").array(),
     completedAt: timestamp("completed_at"),
+    // When a user forks someone else's resource into their own library, this
+    // points at the original. NULL when the resource was created from scratch.
+    // Survives deletion of the origin (set null) so the fork stays owned.
+    forkedFromId: uuid("forked_from_id").references(
+      (): AnyPgColumn => studyMaterials.id,
+      { onDelete: "set null" }
+    ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -165,6 +173,7 @@ export const studyMaterials = pgTable(
     index("study_materials_user_idx").on(table.userId),
     index("study_materials_folder_idx").on(table.folderId),
     index("study_materials_share_token_idx").on(table.shareToken),
+    index("study_materials_forked_from_idx").on(table.forkedFromId),
   ]
 );
 
@@ -179,6 +188,12 @@ export const studyMaterialsRelations = relations(
       fields: [studyMaterials.folderId],
       references: [folders.id],
     }),
+    forkedFrom: one(studyMaterials, {
+      fields: [studyMaterials.forkedFromId],
+      references: [studyMaterials.id],
+      relationName: "fork_origin",
+    }),
+    forks: many(studyMaterials, { relationName: "fork_origin" }),
     flashcards: many(flashcards),
     quizQuestions: many(quizQuestions),
     quizSettings: one(quizSettings),

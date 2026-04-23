@@ -115,11 +115,21 @@ export async function GET(
       };
     });
 
+    let forkedFromTitle: string | null = null;
+    if (resource.forkedFromId) {
+      const [origin] = await db
+        .select({ title: studyMaterials.title })
+        .from(studyMaterials)
+        .where(eq(studyMaterials.id, resource.forkedFromId));
+      forkedFromTitle = origin?.title ?? null;
+    }
+
     return NextResponse.json({
       ...resource,
       flashcards: resourceFlashcards,
       quizQuestions: normalizedQuizQuestions,
       isOwned: isOwner,
+      forkedFromTitle,
     });
   } catch (error) {
     console.error("Error fetching resource:", error);
