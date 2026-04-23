@@ -211,6 +211,10 @@ runs every migration from 0000 onwards.
 - **`prepared statement "..." already exists`** — you're using the
   Transaction pooler (port 6543) without `{ prepare: false }`. Switch to
   Session pooler (port 5432) or update `lib/db/index.ts`.
+- **`SSL connection is required`** — the migrator enables SSL by
+  default. If you're running against a local Docker Postgres with no
+  SSL configured, export `DISABLE_DB_SSL=1` before running
+  `pnpm db:migrate` / `pnpm db:baseline`.
 
 ## Project Structure
 
