@@ -19,7 +19,6 @@ import {
   Plus,
   Search,
   Settings,
-  Users,
   CreditCard,
   MessageSquare,
 } from "lucide-react";
@@ -96,7 +95,6 @@ export function CommandMenu() {
     { icon: BookOpen, label: t("command.library"), href: "/library", shortcut: "G L" },
     { icon: Brain, label: t("command.study"), href: "/study", shortcut: "G S" },
     { icon: FileQuestion, label: t("command.quizzes"), href: "/quiz", shortcut: "G Q" },
-    { icon: Users, label: t("command.contacts"), href: "/contacts", shortcut: "G C" },
     { icon: Settings, label: t("command.settings"), href: "/settings", shortcut: "G ," },
   ];
 

@@ -64,7 +64,6 @@ export const proxy = auth((req) => {
     "/library",
     "/create",
     "/study",
-    "/contacts",
     "/settings",
     "/courses",
     "/progress",

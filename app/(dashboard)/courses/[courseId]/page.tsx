@@ -22,11 +22,10 @@ import {
   ExternalLink,
   Loader2,
   AlertCircle,
-  UserPlus,
-  Mail,
   Pencil,
   Hash,
   Share2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,12 +107,8 @@ export default function CourseDetailPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [addResourceOpen, setAddResourceOpen] = useState(false);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"student" | "ta" | "instructor">(
-    "student"
-  );
   const [deleteCourseOpen, setDeleteCourseOpen] = useState(false);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   const courseQuery = useQuery<{ course: Course } | { error: string }>({
     queryKey: ["course", courseId],
@@ -217,27 +212,6 @@ export default function CourseDetailPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const inviteMember = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/courses/${courseId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to invite");
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["course-members", courseId] });
-      toast.success(t("courseDetail.memberInvited"));
-      setInviteOpen(false);
-      setInviteEmail("");
-      setInviteRole("student");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const removeMember = useMutation({
     mutationFn: async (enrollmentId: string) => {
       const res = await fetch(
@@ -312,6 +286,8 @@ export default function CourseDetailPage() {
     try {
       const link = `${window.location.origin}/courses?join=${course.code}`;
       await navigator.clipboard.writeText(link);
+      setInviteLinkCopied(true);
+      setTimeout(() => setInviteLinkCopied(false), 1500);
       toast.success(t("courseDetail.linkCopied"));
     } catch {
       toast.error(t("courseDetail.copyFailed"));
@@ -319,12 +295,7 @@ export default function CourseDetailPage() {
   };
 
   if (courseQuery.isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-        <div className="h-32 bg-muted rounded animate-pulse" />
-      </div>
-    );
+    return <CoursePageSkeleton />;
   }
 
   if (courseQuery.isError || !course) {
@@ -461,11 +432,7 @@ export default function CourseDetailPage() {
           </div>
 
           {resourcesQuery.isLoading ? (
-            <div className="space-y-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-lg bg-muted/40 animate-pulse" />
-              ))}
-            </div>
+            <ResourcesSkeleton />
           ) : resourcesQuery.data?.resources.length === 0 ? (
             <EmptyState
               icon={<BookOpen className="h-12 w-12" />}
@@ -548,24 +515,63 @@ export default function CourseDetailPage() {
 
         {/* --- Members tab --- */}
         <TabsContent value="members" className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {isOwner && (
+            <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-primary/10">
+              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <LinkIcon className="h-4 w-4 text-primary" />
+                    {t("courseDetail.inviteTitle")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("courseDetail.inviteBody")}
+                  </p>
+                </div>
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className={cn(
+                      "group inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-3 py-2 font-mono text-sm transition hover:border-primary/40 hover:bg-primary/5",
+                      codeCopied && "border-green-500/40 bg-green-500/5"
+                    )}
+                    title={t("courseDetail.copyCode")}
+                  >
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="tabular-nums">{course.code}</span>
+                    {codeCopied ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+                    )}
+                  </button>
+                  <Button size="sm" onClick={copyJoinLink}>
+                    {inviteLinkCopied ? (
+                      <Check className="mr-1.5 h-3.5 w-3.5" />
+                    ) : (
+                      <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    {inviteLinkCopied
+                      ? t("courseDetail.copied")
+                      : t("courseDetail.copyInviteLink")}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {t("courseDetail.membersDesc")}
             </p>
-            {isOwner && (
-              <Button size="sm" onClick={() => setInviteOpen(true)}>
-                <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-                {t("courseDetail.inviteMember")}
-              </Button>
-            )}
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {(membersQuery.data?.members.length ?? 0) + 1}{" "}
+              {t("courseDetail.membersCount")}
+            </span>
           </div>
 
           {membersQuery.isLoading ? (
-            <div className="space-y-2">
-              {[0, 1].map((i) => (
-                <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />
-              ))}
-            </div>
+            <MembersSkeleton />
           ) : (
             <div className="space-y-2">
               {membersQuery.data?.members.length === 0 && !isOwner ? (
@@ -724,7 +730,14 @@ export default function CourseDetailPage() {
           {libraryQuery.isLoading ? (
             <div className="space-y-2 py-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-12 rounded-lg bg-muted/40 animate-pulse" />
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-lg border p-3 animate-pulse"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  <div className="h-4 w-2/3 rounded bg-muted" />
+                  <div className="ml-auto h-4 w-4 rounded bg-muted" />
+                </div>
               ))}
             </div>
           ) : myResources.length === 0 ? (
@@ -767,69 +780,6 @@ export default function CourseDetailPage() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAddResourceOpen(false)}>
               {t("common.close")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invite dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("courseDetail.inviteMember")}</DialogTitle>
-            <DialogDescription>
-              {t("courseDetail.inviteDesc")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="invite-email" className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                {t("courseDetail.inviteEmail")}
-              </Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="student@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("courseDetail.inviteRole")}</Label>
-              <div className="flex flex-wrap gap-2">
-                {(["student", "ta", "instructor"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setInviteRole(r)}
-                    className={cn(
-                      "rounded-lg border px-3 py-1.5 text-sm transition",
-                      inviteRole === r
-                        ? "border-primary bg-primary/5"
-                        : "hover:border-muted-foreground/40"
-                    )}
-                  >
-                    {t(`courses.role.${r}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setInviteOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => inviteMember.mutate()}
-              disabled={!inviteEmail || inviteMember.isPending}
-            >
-              {inviteMember.isPending ? (
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <UserPlus className="mr-2 h-3.5 w-3.5" />
-              )}
-              {t("courseDetail.sendInvite")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -914,6 +864,79 @@ export default function CourseDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ============== SKELETONS ==============
+// Purpose-built over generic pulsing blocks: each mirrors the real
+// content's shape so the layout doesn't jump when data lands, and a
+// small staggered delay makes the wait feel intentional rather than
+// frozen.
+
+function CoursePageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-lg bg-muted animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-7 w-56 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-72 rounded bg-muted/70 animate-pulse" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 w-28 rounded-lg bg-muted animate-pulse" />
+          <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+        </div>
+      </div>
+      <div className="h-9 w-72 rounded-lg bg-muted animate-pulse" />
+      <ResourcesSkeleton />
+    </div>
+  );
+}
+
+function ResourcesSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex items-start justify-between gap-3 rounded-lg border p-4 animate-pulse"
+          style={{ animationDelay: `${i * 100}ms` }}
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-4 w-1/3 rounded bg-muted" />
+            <div className="h-3 w-2/3 rounded bg-muted/70" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-8 w-24 rounded-lg bg-muted/80" />
+            <div className="h-8 w-16 rounded-lg bg-muted/60" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MembersSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 rounded-lg border p-3 animate-pulse"
+          style={{ animationDelay: `${i * 100}ms` }}
+        >
+          <div className="h-9 w-9 shrink-0 rounded-full bg-muted" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-3.5 w-40 rounded bg-muted" />
+            <div className="h-3 w-28 rounded bg-muted/60" />
+          </div>
+          <div className="h-5 w-16 rounded-full bg-muted" />
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,39 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Globe,
-  Lock,
-  Plus,
-  X,
-  Users,
-  UserCheck,
-} from "lucide-react";
+import { Globe, Lock, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/use-locale";
-
-interface Contact {
-  id: string;
-  email: string;
-  name: string | null;
-  hasAccount: boolean;
-  groupId: string | null;
-}
-
-interface ContactGroup {
-  id: string;
-  name: string;
-}
 
 interface AccessControlDialogProps {
   open: boolean;
@@ -66,22 +38,7 @@ export function AccessControlDialog({
   );
   const [emails, setEmails] = useState<string[]>(initialEmails || []);
   const [newEmail, setNewEmail] = useState("");
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [contactGroups, setContactGroups] = useState<ContactGroup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Fetch contacts
-  useEffect(() => {
-    if (open) {
-      fetch("/api/contacts")
-        .then((res) => res.json())
-        .then((data) => {
-          setContacts(data.contacts || []);
-          setContactGroups(data.groups || []);
-        })
-        .catch(() => {});
-    }
-  }, [open]);
 
   const addEmail = () => {
     const email = newEmail.trim().toLowerCase();
@@ -93,20 +50,6 @@ export function AccessControlDialog({
 
   const removeEmail = (email: string) => {
     setEmails(emails.filter((e) => e !== email));
-  };
-
-  const importFromGroup = (groupId: string) => {
-    const groupContacts = contacts.filter((c) => c.groupId === groupId);
-    const newEmails = groupContacts
-      .map((c) => c.email.toLowerCase())
-      .filter((e) => !emails.includes(e));
-    setEmails([...emails, ...newEmails]);
-  };
-
-  const importContact = (email: string) => {
-    if (!emails.includes(email.toLowerCase())) {
-      setEmails([...emails, email.toLowerCase()]);
-    }
   };
 
   const handleSave = async () => {
@@ -131,9 +74,6 @@ export function AccessControlDialog({
       setIsSaving(false);
     }
   };
-
-  const contactByEmail = (email: string) =>
-    contacts.find((c) => c.email.toLowerCase() === email.toLowerCase());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,50 +132,6 @@ export function AccessControlDialog({
                 </div>
               </div>
 
-              {/* Import from contacts */}
-              {contacts.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm">{t("resource.importFromContacts")}</Label>
-                  <div className="flex gap-2">
-                    {contactGroups.length > 0 && (
-                      <Select onValueChange={importFromGroup}>
-                        <SelectTrigger className="w-[180px]">
-                          <Users className="mr-2 h-3.5 w-3.5" />
-                          <SelectValue placeholder={t("resource.importGroup")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {contactGroups.map((group) => (
-                            <SelectItem key={group.id} value={group.id}>
-                              {group.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Select onValueChange={importContact}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder={t("resource.selectContact")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {contacts
-                          .filter(
-                            (c) =>
-                              !emails.includes(c.email.toLowerCase())
-                          )
-                          .map((contact) => (
-                            <SelectItem
-                              key={contact.id}
-                              value={contact.email}
-                            >
-                              {contact.name || contact.email}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
               {/* Email list */}
               <div className="space-y-2">
                 <Label className="text-sm">
@@ -243,41 +139,22 @@ export function AccessControlDialog({
                 </Label>
                 <ScrollArea className="max-h-[200px]">
                   <div className="space-y-1">
-                    {emails.map((email) => {
-                      const contact = contactByEmail(email);
-                      return (
-                        <div
-                          key={email}
-                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50"
+                    {emails.map((email) => (
+                      <div
+                        key={email}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50"
+                      >
+                        <span className="text-sm truncate">{email}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => removeEmail(email)}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm truncate">{email}</span>
-                            {contact?.name && (
-                              <span className="text-xs text-muted-foreground">
-                                ({contact.name})
-                              </span>
-                            )}
-                            {contact?.hasAccount && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs gap-1 shrink-0"
-                              >
-                                <UserCheck className="h-3 w-3" />
-                                {t("resource.account")}
-                              </Badge>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => removeEmail(email)}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      );
-                    })}
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
                     {emails.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         {t("resource.noEmailsAdded")}
