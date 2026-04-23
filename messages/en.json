@@ -1456,7 +1456,8 @@
     "joinedCourse": "Joined \"{title}\"",
     "failedCreate": "Failed to create course",
     "failedJoin": "Failed to join",
-    "noCourses": "No courses yet. Create one or join with a code.",
+    "noCourses": "No courses yet",
+    "noCoursesDesc": "Create a classroom or join one with a code to get started.",
     "role": {
       "student": "Student",
       "instructor": "Instructor",

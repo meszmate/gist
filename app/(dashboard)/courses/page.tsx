@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowRight, LogIn } from "lucide-react";
+import { Plus, ArrowRight, LogIn, School } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +23,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useLocale } from "@/hooks/use-locale";
+
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  code: string;
+  isActive: boolean;
+  enrollmentRole?: string;
+}
+
+interface CoursesResponse {
+  owned: Course[];
+  enrolled: Course[];
+}
 
 export default function CoursesPage() {
   const { t } = useLocale();
@@ -49,13 +65,17 @@ export default function CoursesPage() {
   const [description, setDescription] = useState("");
   const [joinCode, setJoinCode] = useState(initialJoinCode);
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery<CoursesResponse>({
     queryKey: ["courses"],
     queryFn: async () => {
       const res = await fetch("/api/courses");
+      if (!res.ok) throw new Error("Failed to load courses");
       return res.json();
     },
   });
+
+  const hasOwned = (data?.owned?.length ?? 0) > 0;
+  const hasEnrolled = (data?.enrolled?.length ?? 0) > 0;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -167,76 +187,151 @@ export default function CoursesPage() {
         }
       />
 
-      {/* Owned Courses */}
-      {data?.owned?.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground">{t("courses.yourCourses")}</h2>
+      {isLoading ? (
+        <CoursesListSkeleton />
+      ) : !hasOwned && !hasEnrolled ? (
+        <EmptyState
+          icon={<School className="h-12 w-12" />}
+          title={t("courses.noCourses")}
+          description={t("courses.noCoursesDesc")}
+        />
+      ) : (
+        <>
+          {hasOwned && (
+            <section className="space-y-4 animate-fade-in">
+              <h2 className="text-sm font-medium text-muted-foreground">
+                {t("courses.yourCourses")}
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {data!.owned.map((course) => (
+                  <Card
+                    key={course.id}
+                    className="group transition-shadow hover:shadow-md"
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{course.title}</CardTitle>
+                        <Badge variant={course.isActive ? "default" : "secondary"}>
+                          {course.isActive
+                            ? t("courses.active")
+                            : t("courses.inactive")}
+                        </Badge>
+                      </div>
+                      {course.description && (
+                        <CardDescription>{course.description}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <code className="rounded bg-muted px-2 py-1 text-sm">
+                          {course.code}
+                        </code>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/courses/${course.id}`}>
+                            {t("courses.manage")}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {hasEnrolled && (
+            <section className="space-y-4 animate-fade-in">
+              <h2 className="text-sm font-medium text-muted-foreground">
+                {t("courses.enrolledCourses")}
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {data!.enrolled.map((course) => (
+                  <Card
+                    key={course.id}
+                    className="group transition-shadow hover:shadow-md"
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{course.title}</CardTitle>
+                        <Badge variant="secondary">
+                          {getRoleLabel(course.enrollmentRole || "student")}
+                        </Badge>
+                      </div>
+                      {course.description && (
+                        <CardDescription>{course.description}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/courses/${course.id}`}>
+                          {t("courses.view")}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============== LOADING SKELETON ==============
+// Two sections of card skeletons that match the real list's shape, with a
+// gentle pulse + a shimmer sweep across each card so the wait feels alive
+// instead of empty. Stagger delays keep the cards from all pulsing in
+// lockstep — gives it a "wave" feel.
+
+function CoursesListSkeleton() {
+  return (
+    <div className="space-y-8">
+      {[0, 1].map((section) => (
+        <section key={section} className="space-y-4">
+          <div className="h-3.5 w-32 rounded bg-muted animate-pulse" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.owned.map((course: { id: string; title: string; description: string | null; code: string; isActive: boolean }) => (
-              <Card key={course.id} className="group hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                    <Badge variant={course.isActive ? "default" : "secondary"}>
-                      {course.isActive ? t("courses.active") : t("courses.inactive")}
-                    </Badge>
-                  </div>
-                  {course.description && (
-                    <CardDescription>{course.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <code className="text-sm bg-muted px-2 py-1 rounded">{course.code}</code>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/courses/${course.id}`}>
-                        {t("courses.manage")}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            {[0, 1, 2].map((i) => (
+              <SkeletonCard key={i} delay={(section * 3 + i) * 120} />
             ))}
           </div>
-        </div>
-      )}
+        </section>
+      ))}
+    </div>
+  );
+}
 
-      {/* Enrolled Courses */}
-      {data?.enrolled?.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground">{t("courses.enrolledCourses")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.enrolled.map((course: { id: string; title: string; description: string | null; enrollmentRole: string }) => (
-              <Card key={course.id} className="group hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                    <Badge variant="secondary">{getRoleLabel(course.enrollmentRole)}</Badge>
-                  </div>
-                  {course.description && (
-                    <CardDescription>{course.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href={`/courses/${course.id}`}>
-                      {t("courses.view")}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+function SkeletonCard({ delay }: { delay: number }) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xl border bg-card p-6",
+        "animate-pulse"
       )}
-
-      {!data?.owned?.length && !data?.enrolled?.length && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>{t("courses.noCourses")}</p>
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="h-5 w-2/3 rounded bg-muted" />
+          <div className="h-5 w-14 shrink-0 rounded-full bg-muted/70" />
         </div>
-      )}
+        <div className="space-y-2">
+          <div className="h-3 w-full rounded bg-muted/60" />
+          <div className="h-3 w-4/5 rounded bg-muted/50" />
+        </div>
+        <div className="flex items-center justify-between pt-2">
+          <div className="h-7 w-20 rounded bg-muted/70" />
+          <div className="h-7 w-24 rounded bg-muted/60" />
+        </div>
+      </div>
+      {/* Shimmer sweep — uses the app-wide keyframe from globals.css */}
+      <div
+        className="pointer-events-none absolute inset-0 animate-shimmer"
+        style={{ animationDelay: `${delay}ms` }}
+      />
     </div>
   );
 }
