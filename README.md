@@ -108,9 +108,27 @@ Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 | `pnpm start` | Start production server |
 | `pnpm lint` | Run ESLint |
 | `pnpm db:generate` | Generate Drizzle migrations |
-| `pnpm db:migrate` | Run database migrations |
-| `pnpm db:push` | Push schema to database (dev) |
+| `pnpm db:migrate` | Apply pending SQL migrations (incremental, tracked in `_gist_migrations`) |
+| `pnpm db:baseline` | Mark every existing migration file as applied without running it. Run ONCE on a pre-existing DB before first `db:migrate`. |
+| `pnpm db:push` | Push schema to database (dev only) |
 | `pnpm db:studio` | Open Drizzle Studio |
+
+### Deploying migrations
+
+Migrations run automatically via `.github/workflows/migrate.yml` whenever
+`drizzle/*.sql` lands on `main`. The workflow waits for the Build check to
+pass, then runs `pnpm db:migrate:ci` with `DATABASE_URL` from a GitHub
+secret. A `production` GitHub environment gates the run (add approvers if
+you want a manual gate).
+
+First-time setup on an existing production DB:
+```bash
+# 1. Add DATABASE_URL as a GitHub repository secret (pointing at prod).
+# 2. Locally, against the same prod DB, baseline the existing schema:
+DATABASE_URL=postgres://... pnpm db:baseline
+```
+After that, every PR that adds a `drizzle/NNNN_*.sql` file automatically
+applies it on merge.
 
 ## Project Structure
 
