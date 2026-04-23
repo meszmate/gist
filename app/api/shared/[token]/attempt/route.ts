@@ -7,7 +7,6 @@ import {
   quizSettings,
   quizAttempts,
   gradingConfigs,
-  contacts,
 } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -214,19 +213,6 @@ export async function POST(
       timeSpentSeconds: data.timeSpentSeconds,
       attemptNumber,
     });
-
-    // Update contact's hasAccount if they exist and have account now
-    if (session?.user?.email) {
-      await db
-        .update(contacts)
-        .set({ hasAccount: true, updatedAt: new Date() })
-        .where(
-          and(
-            eq(contacts.teacherId, resource.userId),
-            eq(contacts.email, session.user.email)
-          )
-        );
-    }
 
     return NextResponse.json({
       score: correctCount,

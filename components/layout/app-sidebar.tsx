@@ -9,7 +9,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   Settings,
-  Users,
   FileQuestion,
   School,
   TrendingUp,
@@ -56,7 +55,6 @@ export function AppSidebar() {
       label: t("nav.manage"),
       items: [
         { title: t("nav.courses"), href: "/courses", icon: School },
-        { title: t("nav.contacts"), href: "/contacts", icon: Users },
         { title: t("nav.settings"), href: "/settings", icon: Settings },
       ],
     },

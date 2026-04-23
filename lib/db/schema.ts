@@ -45,8 +45,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   studyMaterials: many(studyMaterials),
   folders: many(folders),
-  contacts: many(contacts),
-  contactGroups: many(contactGroups),
   savedResources: many(savedResources),
   tokenUsageLogs: many(tokenUsageLogs),
 }));
@@ -382,67 +380,6 @@ export const quizAttemptsRelations = relations(quizAttempts, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-// ============== CONTACTS ==============
-export const contacts = pgTable(
-  "contacts",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    teacherId: uuid("teacher_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    email: varchar("email", { length: 255 }).notNull(),
-    name: varchar("name", { length: 255 }),
-    groupId: uuid("group_id").references(() => contactGroups.id, {
-      onDelete: "set null",
-    }),
-    hasAccount: boolean("has_account").default(false),
-    notes: text("notes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("contacts_teacher_idx").on(table.teacherId),
-    index("contacts_email_idx").on(table.email),
-  ]
-);
-
-export const contactsRelations = relations(contacts, ({ one }) => ({
-  teacher: one(users, {
-    fields: [contacts.teacherId],
-    references: [users.id],
-  }),
-  group: one(contactGroups, {
-    fields: [contacts.groupId],
-    references: [contactGroups.id],
-  }),
-}));
-
-// ============== CONTACT GROUPS ==============
-export const contactGroups = pgTable(
-  "contact_groups",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    teacherId: uuid("teacher_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    name: varchar("name", { length: 100 }).notNull(),
-    color: varchar("color", { length: 20 }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [index("contact_groups_teacher_idx").on(table.teacherId)]
-);
-
-export const contactGroupsRelations = relations(
-  contactGroups,
-  ({ one, many }) => ({
-    teacher: one(users, {
-      fields: [contactGroups.teacherId],
-      references: [users.id],
-    }),
-    contacts: many(contacts),
-  })
-);
 
 // ============== RESOURCE ACCESS LOG ==============
 export const resourceAccessLogs = pgTable(
@@ -842,12 +779,6 @@ export type NewQuizSettings = typeof quizSettings.$inferInsert;
 
 export type QuizAttempt = typeof quizAttempts.$inferSelect;
 export type NewQuizAttempt = typeof quizAttempts.$inferInsert;
-
-export type Contact = typeof contacts.$inferSelect;
-export type NewContact = typeof contacts.$inferInsert;
-
-export type ContactGroup = typeof contactGroups.$inferSelect;
-export type NewContactGroup = typeof contactGroups.$inferInsert;
 
 export type Folder = typeof folders.$inferSelect;
 export type NewFolder = typeof folders.$inferInsert;

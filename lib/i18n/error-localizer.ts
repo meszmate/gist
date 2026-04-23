@@ -35,7 +35,6 @@ const EXACT_ERROR_KEY_MAP: Record<string, string> = {
   "A question type with this slug already exists": "questionTypes.slugExists",
   "Cannot modify system question types": "questionTypes.cannotModifySystem",
   "Cannot delete system question types": "questionTypes.cannotDeleteSystem",
-  "Contact with this email already exists": "contacts.contactExists",
   "No file provided": "upload.noFileProvided",
   "File size exceeds 10MB limit": "upload.fileSizeExceeds",
   "Failed to parse file": "upload.failedToParse",

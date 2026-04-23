@@ -68,7 +68,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         request.nextUrl.pathname.startsWith("/create") ||
         request.nextUrl.pathname.startsWith("/study") ||
         request.nextUrl.pathname.startsWith("/lessons") ||
-        request.nextUrl.pathname.startsWith("/contacts") ||
         request.nextUrl.pathname.startsWith("/settings");
 
       if (isOnDashboard) {
