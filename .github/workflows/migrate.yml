@@ -1,0 +1,68 @@
+name: Migrate Production Database
+
+# Runs pending DB migrations against production whenever code lands on main.
+# Runs AFTER CI passes (lint, typecheck, build) so broken code can't migrate.
+#
+# Setup:
+#   1. Add DATABASE_URL as a GitHub repository secret pointing at the
+#      production Postgres instance.
+#   2. First time only: run `pnpm db:baseline` locally against the prod DB
+#      to mark existing 0000/0001 migrations as already applied, so this
+#      workflow only applies new ones.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "drizzle/**.sql"
+      - "scripts/db-migrate.ts"
+      - ".github/workflows/migrate.yml"
+
+  # Manual trigger in case you need to re-run.
+  workflow_dispatch:
+
+concurrency:
+  group: migrate-prod
+  cancel-in-progress: false
+
+jobs:
+  wait-for-ci:
+    name: Wait for CI
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    steps:
+      - uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Build
+          ref: ${{ github.sha }}
+          timeoutSeconds: 900
+      - name: Fail if CI failed
+        if: steps.wait-build.outputs.conclusion != 'success'
+        run: |
+          echo "CI build did not succeed (conclusion: ${{ steps.wait-build.outputs.conclusion }})."
+          exit 1
+
+  migrate:
+    name: Apply migrations
+    runs-on: ubuntu-latest
+    needs: [wait-for-ci]
+    if: always() && (needs.wait-for-ci.result == 'success' || github.event_name == 'workflow_dispatch')
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply pending migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm db:migrate:ci
