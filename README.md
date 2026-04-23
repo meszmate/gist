@@ -113,22 +113,104 @@ Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 | `pnpm db:push` | Push schema to database (dev only) |
 | `pnpm db:studio` | Open Drizzle Studio |
 
-### Deploying migrations
+### Database migrations
 
-Migrations run automatically via `.github/workflows/migrate.yml` whenever
-`drizzle/*.sql` lands on `main`. The workflow waits for the Build check to
-pass, then runs `pnpm db:migrate:ci` with `DATABASE_URL` from a GitHub
-secret. A `production` GitHub environment gates the run (add approvers if
-you want a manual gate).
+The app uses incremental SQL migrations stored in `drizzle/NNNN_*.sql`.
+Applied migrations are tracked in a `_gist_migrations` table inside your
+database, so the runner only applies new files.
 
-First-time setup on an existing production DB:
+Scripts you'll actually use:
+
 ```bash
-# 1. Add DATABASE_URL as a GitHub repository secret (pointing at prod).
-# 2. Locally, against the same prod DB, baseline the existing schema:
-DATABASE_URL=postgres://... pnpm db:baseline
+pnpm db:generate     # After changing lib/db/schema.ts — produces a new SQL file.
+pnpm db:migrate      # Apply any pending migrations against DATABASE_URL (reads .env).
+pnpm db:baseline     # ONE-TIME on an existing DB: marks every current SQL file
+                     # as already-applied so the runner doesn't try to recreate
+                     # tables that already exist.
+pnpm db:push         # Dev shortcut — force-syncs schema without writing a migration.
+                     # Use on throwaway/dev DBs only.
 ```
-After that, every PR that adds a `drizzle/NNNN_*.sql` file automatically
-applies it on merge.
+
+#### Pointing at your database
+
+You need a Postgres connection string in `DATABASE_URL`. Three places
+want it, and **the same URL works in all three**. The password is
+embedded in the URL, so treat it as a secret everywhere:
+
+1. **Local `.env`** — for `pnpm dev` and running `pnpm db:migrate` /
+   `pnpm db:baseline` from your machine. `.env` is already gitignored.
+2. **Vercel** → Project Settings → Environment Variables → add
+   `DATABASE_URL` and **check the "Sensitive" box** so the value stays
+   hidden in build logs. Apply it to Production, Preview, and
+   Development.
+3. **GitHub** → must be a **Secret**, not a plain variable (variables
+   are stored unencrypted and shown in logs). Two options:
+   - **Repository secret** (simplest): `Repo Settings → Secrets and
+     variables → Actions → Secrets tab → New repository secret`.
+   - **Environment secret** (recommended, matches the workflow's
+     `environment: production` and lets you add required reviewers):
+     `Repo Settings → Environments → New environment "production" →
+     Environment secrets → Add secret`.
+
+   The workflow reads `${{ secrets.DATABASE_URL }}` — that resolves
+   from the environment first, then the repo, so either one works.
+
+#### Supabase free tier
+
+Supabase exposes three connection modes. On the free tier:
+
+| Mode | Port | Works on GitHub Actions / Vercel? | Recommendation |
+|------|------|-----------------------------------|----------------|
+| Direct connection | 5432 | ❌ IPv6-only on free tier | Skip |
+| **Session pooler** | **5432** | ✅ IPv4 + prepared statements | **Use this** |
+| Transaction pooler | 6543 | ✅ IPv4, but no prepared statements | Only if you change `lib/db/index.ts` to pass `{ prepare: false }` to postgres-js |
+
+Grab the **Session Pooler** URI from Supabase → Project Settings →
+Database → Connection string → **Session pooler** tab. Format looks like:
+
+```
+postgresql://postgres.<project-ref>:[PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+Drop it into `.env`, Vercel env vars, and the GitHub `DATABASE_URL`
+secret. Done — one URL, three places.
+
+#### Automatic migrations on merge to `main`
+
+`.github/workflows/migrate.yml` triggers whenever a `drizzle/*.sql` file
+or the migrator script itself lands on `main`. It:
+1. Waits for the `Build` CI check to succeed.
+2. Runs `pnpm db:migrate:ci` with the `DATABASE_URL` secret.
+
+The workflow is gated behind a GitHub `production` environment — create
+it in Repo Settings → Environments and add required reviewers if you
+want human approval before prod migrations run. You can also trigger
+the workflow manually from the Actions tab.
+
+#### First-time setup
+
+Order matters the first time:
+
+```bash
+# 1. Add DATABASE_URL (Session pooler URI) to .env, Vercel, and the GitHub secret.
+# 2. Locally, against the prod DB, mark existing migrations as applied:
+pnpm db:baseline
+# 3. Push code. Any new drizzle/NNNN_*.sql now auto-applies on merge.
+```
+
+Skip the baseline on a fresh empty DB — in that case `pnpm db:migrate`
+runs every migration from 0000 onwards.
+
+#### Troubleshooting
+
+- **`ECONNREFUSED` or `ENOTFOUND`** — usually the wrong pooler host or
+  `DATABASE_URL` missing. Double-check you copied the Session pooler URI
+  (not Direct connection).
+- **`relation "..." already exists` on first migrate** — you skipped the
+  baseline step on a pre-existing DB. Run `pnpm db:baseline` once.
+- **`prepared statement "..." already exists`** — you're using the
+  Transaction pooler (port 6543) without `{ prepare: false }`. Switch to
+  Session pooler (port 5432) or update `lib/db/index.ts`.
 
 ## Project Structure
 
