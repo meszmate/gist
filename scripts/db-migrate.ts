@@ -29,7 +29,13 @@ async function main() {
     process.exit(1);
   }
 
-  const sql = postgres(databaseUrl, { max: 1, onnotice: () => {} });
+  // ssl: "require" handles Supabase/Neon/most managed Postgres which reject
+  // plain connections. For local dev DBs without SSL, set DISABLE_DB_SSL=1.
+  const sql = postgres(databaseUrl, {
+    max: 1,
+    onnotice: () => {},
+    ssl: process.env.DISABLE_DB_SSL ? false : "require",
+  });
 
   try {
     // 1. Ensure tracking table

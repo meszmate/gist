@@ -24,7 +24,13 @@ async function main() {
     process.exit(1);
   }
 
-  const sql = postgres(databaseUrl, { max: 1, onnotice: () => {} });
+  // Same SSL handling as db-migrate — managed Postgres (Supabase, Neon, etc.)
+  // requires SSL; set DISABLE_DB_SSL=1 for plain local dev DBs.
+  const sql = postgres(databaseUrl, {
+    max: 1,
+    onnotice: () => {},
+    ssl: process.env.DISABLE_DB_SSL ? false : "require",
+  });
 
   try {
     await sql.unsafe(`
