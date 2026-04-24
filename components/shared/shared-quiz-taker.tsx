@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 import type {
   QuestionConfig,
   UserAnswer,
@@ -232,7 +233,7 @@ export function SharedQuizTaker({
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-sm">
-                      {i + 1}. {ans.question}
+                      {i + 1}. {sanitizeQuestionText(ans.question)}
                     </p>
                     <Badge
                       variant={ans.isCorrect ? "default" : "destructive"}

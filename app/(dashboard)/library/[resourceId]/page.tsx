@@ -63,6 +63,7 @@ import { QuestionEditDialog } from "@/components/quiz/question-edit-dialog";
 import { ResourceSettingsDialog } from "@/components/resource/resource-settings-dialog";
 import { AccessControlDialog } from "@/components/resource/access-control-dialog";
 import { AddToCourseDialog } from "@/components/course/add-to-course-dialog";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -1022,7 +1023,7 @@ export default function ResourcePage() {
                               #{index + 1}
                             </span>
                             <p className="flex-1 text-sm font-medium truncate">
-                              {question.question}
+                              {sanitizeQuestionText(question.question)}
                             </p>
                             <Badge variant="secondary" className="text-xs">
                               {typeLabel}

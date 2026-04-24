@@ -9,6 +9,7 @@ import type {
   CorrectAnswerData,
   QuestionTypeSlug,
 } from "@/lib/types/quiz";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export interface QuizQuestion {
   id: string;
@@ -117,7 +118,9 @@ export function QuizPdfDocument({
               <View style={pdfStyles.questionHeader}>
                 <View style={{ flexDirection: "row", flex: 1 }}>
                   <Text style={pdfStyles.questionNumber}>{index + 1}.</Text>
-                  <Text style={pdfStyles.questionText}>{question.question}</Text>
+                  <Text style={pdfStyles.questionText}>
+                    {sanitizeQuestionText(question.question)}
+                  </Text>
                 </View>
                 {showPointValues && (
                   <Text style={pdfStyles.pointsBadge}>

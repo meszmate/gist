@@ -58,7 +58,7 @@ ${context.slice(0, 8000)}
 
 Be concise, helpful, and encouraging. If you don't know something or it's not in the material, say so.${locale === "hu" ? "\nIMPORTANT: Respond in Hungarian." : ""}`;
 
-    const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+    const MODEL = process.env.OPENAI_MODEL || "gpt-5.5";
 
     // Create streaming response
     const stream = await openai.chat.completions.create({

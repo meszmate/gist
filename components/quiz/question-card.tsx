@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Flag, AlertCircle } from "lucide-react";
 import { questionRenderers } from "./question-renderers";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 import type {
   QuestionTypeSlug,
   QuestionConfig,
@@ -97,9 +98,10 @@ export function QuestionCard({
           )}
         </div>
 
-        {/* Question Text */}
+        {/* Question Text — sanitize so raw `{{blank}}` syntax from leaked
+            template placeholders doesn't surface to the reader. */}
         <p className="text-lg font-medium leading-relaxed mb-6">
-          {questionText}
+          {sanitizeQuestionText(questionText)}
         </p>
 
         {/* Hint from config */}

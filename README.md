@@ -37,7 +37,7 @@ An AI-powered study platform built with Next.js. Create flashcards, quizzes, int
 - **Language**: TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: NextAuth.js v5 (Auth.js)
-- **AI**: OpenAI (configurable model, defaults to o4-mini)
+- **AI**: OpenAI (configurable model, defaults to gpt-5.5)
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui + Radix UI
 - **State Management**: TanStack Query (React Query)
@@ -95,7 +95,7 @@ Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 | `AUTH_GOOGLE_ID` | Google OAuth client ID | Yes |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret | Yes |
 | `OPENAI_API_KEY` | OpenAI API key for AI features | Yes |
-| `OPENAI_MODEL` | OpenAI model to use (defaults to `o4-mini`) | No |
+| `OPENAI_MODEL` | OpenAI model to use (defaults to `gpt-5.5`) | No |
 | `NEXT_PUBLIC_APP_URL` | Public app URL for share links | Yes |
 | `NEXT_PUBLIC_REPOSITORY_URL` | GitHub repository URL (shows in sidebar) | No |
 

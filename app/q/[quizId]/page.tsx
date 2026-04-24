@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useLocale } from "@/hooks/use-locale";
 import { getApiErrorMessage, localizeErrorMessage } from "@/lib/i18n/error-localizer";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 interface QuizQuestion {
   id: string;
@@ -277,7 +278,7 @@ export default function PublicQuizPage() {
                         <X className="h-5 w-5 text-red-500 mt-0.5" />
                       )}
                       <span className="font-medium">
-                        {index + 1}. {answer.question}
+                        {index + 1}. {sanitizeQuestionText(answer.question)}
                       </span>
                     </div>
                     <div className="space-y-2 ml-7">
