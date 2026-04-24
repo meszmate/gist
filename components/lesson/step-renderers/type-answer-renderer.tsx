@@ -5,6 +5,7 @@ import type { TypeAnswerContent, TypeAnswerAnswerData, TypeAnswerUserAnswer } fr
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Check, X } from "lucide-react";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function TypeAnswerRenderer({
   step,
@@ -20,7 +21,9 @@ export function TypeAnswerRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{content.question}</h3>
+      <h3 className="text-lg font-medium">
+        {sanitizeQuestionText(content.question)}
+      </h3>
       <div className="relative">
         <Input
           value={currentText}

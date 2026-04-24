@@ -6,6 +6,7 @@ import type { DragSortContent, DragSortAnswerData, DragSortUserAnswer } from "@/
 import { cn } from "@/lib/utils";
 import { GripVertical, Check, X } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function DragSortRenderer({
   step,
@@ -50,7 +51,9 @@ export function DragSortRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{content.instruction}</h3>
+      <h3 className="text-lg font-medium">
+        {sanitizeQuestionText(content.instruction)}
+      </h3>
       <p className="text-sm text-muted-foreground">{t("stepRenderer.dragSort")}</p>
       <div className="space-y-2">
         {currentOrder.map((id, index) => {

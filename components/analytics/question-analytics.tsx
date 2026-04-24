@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { FileQuestion } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 interface QuestionStat {
   id: string;
@@ -61,7 +62,9 @@ export function QuestionAnalytics({ questions }: QuestionAnalyticsProps) {
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{q.question}</p>
+                  <p className="text-sm font-medium truncate">
+                    {sanitizeQuestionText(q.question)}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs">
                       {t(`quiz.questionTypesShort.${q.questionType}`) || q.questionType}

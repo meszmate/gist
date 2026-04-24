@@ -4,6 +4,7 @@ import type { StepRendererProps } from "./types";
 import type { TrueFalseContent, TrueFalseAnswerData, TrueFalseUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function TrueFalseRenderer({
   step,
@@ -25,7 +26,9 @@ export function TrueFalseRenderer({
   return (
     <div className="space-y-6">
       <div className="p-6 bg-muted/50 rounded-xl border">
-        <p className="text-lg font-medium leading-relaxed">{content.statement}</p>
+        <p className="text-lg font-medium leading-relaxed">
+          {sanitizeQuestionText(content.statement)}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map((option) => {

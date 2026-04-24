@@ -6,6 +6,7 @@ import type { DragMatchContent, DragMatchAnswerData, DragMatchUserAnswer } from 
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function DragMatchRenderer({
   step,
@@ -94,7 +95,7 @@ export function DragMatchRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{instruction}</h3>
+      <h3 className="text-lg font-medium">{sanitizeQuestionText(instruction)}</h3>
       <p className="text-sm text-muted-foreground">{t("stepRenderer.dragMatch")}</p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">

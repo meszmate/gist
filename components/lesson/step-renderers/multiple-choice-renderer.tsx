@@ -4,6 +4,7 @@ import type { StepRendererProps } from "./types";
 import type { MultipleChoiceContent, MultipleChoiceAnswerData, MultipleChoiceUserAnswer } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function MultipleChoiceRenderer({
   step,
@@ -19,7 +20,9 @@ export function MultipleChoiceRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{content.question}</h3>
+      <h3 className="text-lg font-medium">
+        {sanitizeQuestionText(content.question)}
+      </h3>
       <div className="space-y-2">
         {content.options.map((option) => {
           const isSelected = selected === option.id;

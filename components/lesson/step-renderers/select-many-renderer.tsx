@@ -5,6 +5,7 @@ import type { SelectManyContent, SelectManyAnswerData, SelectManyUserAnswer } fr
 import { cn } from "@/lib/utils";
 import { Check, X, Square, CheckSquare } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 export function SelectManyRenderer({
   step,
@@ -29,7 +30,9 @@ export function SelectManyRenderer({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{content.question}</h3>
+      <h3 className="text-lg font-medium">
+        {sanitizeQuestionText(content.question)}
+      </h3>
       <p className="text-sm text-muted-foreground">{t("stepRenderer.selectMany")}</p>
       <div className="space-y-2">
         {content.options.map((option) => {

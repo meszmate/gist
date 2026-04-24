@@ -94,6 +94,23 @@ export function extractFillBlankIds(
   return orderedIds;
 }
 
+/**
+ * Strip raw `{{placeholder}}` syntax from text meant for display to a
+ * reader (a question prompt, statement, or instruction). Replaces every
+ * `{{…}}` token with a visible blank line (four underscores) so the
+ * learner sees a gap where the missing content belongs instead of the
+ * literal template syntax.
+ *
+ * Do NOT use this on the actual fill-blank template that gets parsed into
+ * input fields — those should flow through `parseFillBlankTemplate`.
+ * Use this only on prompt / heading text that accidentally contains
+ * placeholders (e.g. when the AI leaks a template into the wrong field).
+ */
+export function sanitizeQuestionText(text: string | null | undefined): string {
+  if (!text) return "";
+  return text.replace(/\{\{[^}]+\}\}/g, "____");
+}
+
 export function replaceGenericBlankPlaceholders(
   template: string,
   blankIds: string[]

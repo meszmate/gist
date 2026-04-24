@@ -31,6 +31,7 @@ import { QuestionCard } from "@/components/quiz/question-card";
 import { getResultRenderer } from "@/components/quiz/question-renderers";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 import Link from "next/link";
 import type {
   QuestionTypeSlug,
@@ -455,7 +456,7 @@ export default function QuizPage() {
                           )}
                           <div className="flex-1">
                             <span className="font-medium text-left">
-                              {index + 1}. {answer.question}
+                              {index + 1}. {sanitizeQuestionText(answer.question)}
                             </span>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs">

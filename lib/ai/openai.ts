@@ -19,7 +19,7 @@ import {
 
 export const openai = new OpenAI();
 
-export const MODEL = process.env.OPENAI_MODEL || "o4-mini";
+export const MODEL = process.env.OPENAI_MODEL || "gpt-5.5";
 
 export interface TokenUsageData {
   total_tokens: number;

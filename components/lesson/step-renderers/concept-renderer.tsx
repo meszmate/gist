@@ -3,6 +3,7 @@
 import type { StepRendererProps } from "./types";
 import type { ConceptContent } from "@/lib/types/lesson";
 import { cn } from "@/lib/utils";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 
 const styleMap = {
   info: "border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10",
@@ -31,9 +32,13 @@ export function ConceptRenderer({ step }: StepRendererProps) {
           {style === "success" && "✅"}
           {style === "default" && "📌"}
         </div>
-        <h3 className="text-lg font-bold">{content.title}</h3>
+        <h3 className="text-lg font-bold">
+          {sanitizeQuestionText(content.title)}
+        </h3>
       </div>
-      <p className="text-muted-foreground leading-relaxed">{content.description}</p>
+      <p className="text-muted-foreground leading-relaxed">
+        {sanitizeQuestionText(content.description)}
+      </p>
     </div>
   );
 }

@@ -38,6 +38,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/use-locale";
 import { QuizPdfPreview } from "@/components/pdf/quiz-pdf-preview";
+import { sanitizeQuestionText } from "@/lib/quiz/fill-blank-template";
 import type {
   QuestionConfig,
   CorrectAnswerData,
@@ -319,7 +320,9 @@ export default function QuestionsEditorPage() {
                       {parseFloat(question.points || "1")} pts
                     </Badge>
                   </div>
-                  <p className="font-medium line-clamp-2">{question.question}</p>
+                  <p className="font-medium line-clamp-2">
+                    {sanitizeQuestionText(question.question)}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
